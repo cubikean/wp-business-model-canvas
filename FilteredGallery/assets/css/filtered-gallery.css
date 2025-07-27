@@ -1,0 +1,551 @@
+/**
+ * FilteredGallery - Styles CSS principaux
+ * 
+ * Ce fichier contient tous les styles CSS pour le plugin FilteredGallery
+ */
+
+/* ========================================
+   VARIABLES CSS
+   ======================================== */
+:root {
+    --fg-primary-color: #0073aa;
+    --fg-secondary-color: #005a87;
+    --fg-accent-color: #ff6b35;
+    --fg-text-color: #333333;
+    --fg-light-gray: #f5f5f5;
+    --fg-border-color: #e0e0e0;
+    --fg-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --fg-border-radius: 4px;
+    --fg-transition: all 0.3s ease;
+    --fg-spacing: 20px;
+}
+
+/* ========================================
+   CONTENEUR PRINCIPAL DE LA GALERIE
+   ======================================== */
+.filtered-gallery {
+    margin: 2rem 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.filtered-gallery * {
+    box-sizing: border-box;
+}
+
+/* ========================================
+   FILTRES DE CATÉGORIES
+   ======================================== */
+.filtered-gallery-filters {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--fg-light-gray);
+    border-radius: var(--fg-border-radius);
+}
+
+.filtered-gallery-filter {
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border: 2px solid var(--fg-border-color);
+    border-radius: var(--fg-border-radius);
+    color: var(--fg-text-color);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--fg-transition);
+    font-size: 0.9rem;
+}
+
+.filtered-gallery-filter:hover,
+.filtered-gallery-filter.active {
+    background: var(--fg-primary-color);
+    border-color: var(--fg-primary-color);
+    color: white;
+    text-decoration: none;
+}
+
+.filtered-gallery-filter.active {
+    box-shadow: var(--fg-shadow);
+}
+
+/* ========================================
+   CONTENEUR DES IMAGES
+   ======================================== */
+.filtered-gallery-container {
+    position: relative;
+    min-height: 200px;
+}
+
+.filtered-gallery-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--fg-text-color);
+    font-style: italic;
+}
+
+/* ========================================
+   GRID DES IMAGES
+   ======================================== */
+.filtered-gallery-grid {
+    display: grid;
+    gap: var(--fg-spacing);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Grille responsive */
+.filtered-gallery-grid.columns-1 {
+    grid-template-columns: 1fr;
+}
+
+.filtered-gallery-grid.columns-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.filtered-gallery-grid.columns-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.filtered-gallery-grid.columns-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.filtered-gallery-grid.columns-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.filtered-gallery-grid.columns-6 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+/* ========================================
+   ÉLÉMENTS DE LA GALERIE
+   ======================================== */
+.filtered-gallery-item {
+    position: relative;
+    background: white;
+    border-radius: var(--fg-border-radius);
+    overflow: hidden;
+    box-shadow: var(--fg-shadow);
+    transition: var(--fg-transition);
+    cursor: pointer;
+}
+
+.filtered-gallery-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.filtered-gallery-item img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    display: block;
+    transition: var(--fg-transition);
+}
+
+.filtered-gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+/* ========================================
+   OVERLAY ET INFORMATIONS
+   ======================================== */
+.filtered-gallery-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    padding: 1.5rem 1rem 1rem;
+    transform: translateY(100%);
+    transition: var(--fg-transition);
+}
+
+.filtered-gallery-item:hover .filtered-gallery-overlay {
+    transform: translateY(0);
+}
+
+.filtered-gallery-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+}
+
+.filtered-gallery-description {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.filtered-gallery-category {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--fg-accent-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 2;
+}
+
+/* ========================================
+   CARROUSEL LIGHTBOX
+   ======================================== */
+.filtered-gallery-carousel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.filtered-gallery-carousel.active {
+    display: flex;
+}
+
+.filtered-gallery-carousel-content {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    height: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.filtered-gallery-carousel-close {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--fg-transition);
+    z-index: 10;
+}
+
+.filtered-gallery-carousel-close:hover {
+    background: var(--fg-accent-color);
+    color: white;
+}
+
+.filtered-gallery-carousel-prev,
+.filtered-gallery-carousel-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--fg-transition);
+    z-index: 10;
+
+    /* Chevrons personnalisés */
+    &::before {
+        content: '';
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-style: solid;
+        border-width: 3px 3px 0 0;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+    }
+}
+
+.filtered-gallery-carousel-prev::before {
+    transform: translate(-30%, -50%) rotate(-135deg);
+}
+
+.filtered-gallery-carousel-next::before {
+    transform: translate(-70%, -50%) rotate(45deg);
+}
+
+.filtered-gallery-carousel-prev {
+    left: -80px;
+}
+
+.filtered-gallery-carousel-next {
+    right: -80px;
+}
+
+.filtered-gallery-carousel-prev:hover,
+.filtered-gallery-carousel-next:hover {
+    background: var(--fg-accent-color);
+    color: white;
+}
+
+.filtered-gallery-carousel-slide {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.filtered-gallery-carousel-slide img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.filtered-gallery-carousel-info {
+    margin-top: 1rem;
+    text-align: center;
+    color: white;
+    max-width: 600px;
+}
+
+.filtered-gallery-carousel-title {
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.filtered-gallery-carousel-description {
+    font-size: 1rem;
+    margin: 0 0 1rem 0;
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+.filtered-gallery-carousel-counter {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.filtered-gallery-carousel-thumbnails {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.filtered-gallery-carousel-thumbnails .thumbnail {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: var(--fg-transition);
+    border: 2px solid transparent;
+}
+
+.filtered-gallery-carousel-thumbnails .thumbnail:hover {
+    opacity: 0.8;
+}
+
+.filtered-gallery-carousel-thumbnails .thumbnail.active {
+    opacity: 1;
+    border-color: var(--fg-accent-color);
+}
+
+.filtered-gallery-carousel-thumbnails .thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+/* Empêcher le défilement de la page quand le carrousel est ouvert */
+body.filtered-gallery-carousel-open {
+    overflow: hidden;
+}
+
+/* ========================================
+   MESSAGE "AUCUNE IMAGE"
+   ======================================== */
+.filtered-gallery-no-images {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--fg-text-color);
+    font-style: italic;
+}
+
+.filtered-gallery-no-images h3 {
+    margin: 0 0 1rem 0;
+    color: var(--fg-primary-color);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filtered-gallery-item {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Animation pour le chargement AJAX */
+.filtered-gallery-container.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+    .filtered-gallery-filters {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .filtered-gallery-filter {
+        width: 100%;
+        max-width: 300px;
+        text-align: center;
+    }
+    
+    .filtered-gallery-grid.columns-3,
+    .filtered-gallery-grid.columns-4,
+    .filtered-gallery-grid.columns-5,
+    .filtered-gallery-grid.columns-6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .filtered-gallery-item img {
+        height: 200px;
+    }
+    
+    .filtered-gallery-overlay {
+        transform: translateY(0);
+        background: rgba(0, 0, 0, 0.7);
+    }
+}
+
+@media (max-width: 480px) {
+    .filtered-gallery-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+    }
+    
+    .filtered-gallery-item img {
+        height: 250px;
+    }
+    
+    .filtered-gallery-carousel {
+        padding: 0.5rem;
+    }
+    
+    .filtered-gallery-carousel-prev,
+    .filtered-gallery-carousel-next {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+    
+    .filtered-gallery-carousel-prev {
+        left: 10px;
+    }
+    
+    .filtered-gallery-carousel-next {
+        right: 10px;
+    }
+    
+    .filtered-gallery-carousel-thumbnails {
+        max-height: 80px;
+    }
+    
+    .filtered-gallery-carousel-thumbnails .thumbnail {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+/* ========================================
+   ACCESSIBILITÉ
+   ======================================== */
+.filtered-gallery-filter:focus,
+.filtered-gallery-item:focus {
+    outline: 2px solid var(--fg-primary-color);
+    outline-offset: 2px;
+}
+
+/* Support pour les préférences de réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+    .filtered-gallery-item,
+    .filtered-gallery-filter,
+    .filtered-gallery-item img,
+    .filtered-gallery-overlay {
+        transition: none;
+    }
+    
+    .filtered-gallery-item:hover {
+        transform: none;
+    }
+    
+    .filtered-gallery-item:hover img {
+        transform: none;
+    }
+}
+
+/* ========================================
+   UTILITAIRES
+   ======================================== */
+.filtered-gallery-hidden {
+    display: none !important;
+}
+
+.filtered-gallery-visible {
+    display: block !important;
+}
+
+.filtered-gallery-text-center {
+    text-align: center;
+}
+
+.filtered-gallery-mb-1 { margin-bottom: 0.5rem; }
+.filtered-gallery-mb-2 { margin-bottom: 1rem; }
+.filtered-gallery-mb-3 { margin-bottom: 1.5rem; }
+.filtered-gallery-mb-4 { margin-bottom: 2rem; } 

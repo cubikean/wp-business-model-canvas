@@ -1,0 +1,738 @@
+/**
+ * Styles CSS pour l'administration de FilteredGallery
+ * Interface WordPress classique et professionnelle
+ *
+ * @package FilteredGallery
+ * @since 1.0.0
+ */
+
+/* ========================================
+   LAYOUT PRINCIPAL
+   ======================================== */
+
+.filtered-gallery-admin-content {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* ========================================
+   SIDEBAR
+   ======================================== */
+
+.filtered-gallery-admin-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filtered-gallery-admin-sidebar > div {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 15px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.filtered-gallery-admin-sidebar h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+    border-bottom: 1px solid #ccd0d4;
+    padding-bottom: 8px;
+}
+
+/* ========================================
+   STATISTIQUES
+   ======================================== */
+
+.filtered-gallery-admin-stats {
+    background: #f6f7f7;
+    border-color: #0073aa;
+}
+
+.filtered-gallery-admin-stats h3 {
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.filtered-gallery-admin-stats ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.filtered-gallery-admin-stats li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.filtered-gallery-admin-stats li:last-child {
+    border-bottom: none;
+}
+
+.filtered-gallery-admin-stats strong {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0073aa;
+}
+
+/* ========================================
+   ACTIONS RAPIDES
+   ======================================== */
+
+.filtered-gallery-admin-actions {
+    background: #f6f7f7;
+    border-color: #0073aa;
+}
+
+.filtered-gallery-admin-actions h3 {
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.filtered-gallery-admin-actions .button {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+    background: #0073aa;
+    border-color: #0073aa;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.filtered-gallery-admin-actions .button:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+.filtered-gallery-admin-actions .button:last-child {
+    margin-bottom: 0;
+}
+
+/* ========================================
+   AIDE
+   ======================================== */
+
+.filtered-gallery-admin-help {
+    background: #f6f7f7;
+    border-color: #0073aa;
+}
+
+.filtered-gallery-admin-help h3 {
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.filtered-gallery-admin-help p {
+    margin: 6px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #1d2327;
+}
+
+.filtered-gallery-admin-help hr {
+    border: none;
+    border-top: 1px solid #ccd0d4;
+    margin: 12px 0;
+}
+
+.filtered-gallery-admin-help code {
+    background: #f0f0f1;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #1d2327;
+}
+
+/* ========================================
+   OUTILS
+   ======================================== */
+
+.filtered-gallery-admin-tools {
+    background: #f6f7f7;
+    border-color: #0073aa;
+}
+
+.filtered-gallery-admin-tools h3 {
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.filtered-gallery-admin-tools .button {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+    background: #f6f7f7;
+    border-color: #ccd0d4;
+    color: #1d2327;
+    transition: all 0.2s ease;
+}
+
+.filtered-gallery-admin-tools .button:hover {
+    background: #e5e5e5;
+    border-color: #0073aa;
+}
+
+.filtered-gallery-admin-tools .description {
+    font-size: 11px;
+    color: #646970;
+    margin: 4px 0 12px 0;
+    line-height: 1.3;
+}
+
+/* ========================================
+   ZONE PRINCIPALE
+   ======================================== */
+
+.filtered-gallery-admin-main {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.filtered-gallery-admin-main h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+    border-bottom: 1px solid #ccd0d4;
+    padding-bottom: 8px;
+}
+
+/* ========================================
+   ACTIONS EN LOT
+   ======================================== */
+
+.bulk-actions-wrapper {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f6f7f7;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bulk-actions select {
+    min-width: 180px;
+    padding: 6px 8px;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.bulk-actions .button {
+    padding: 6px 12px;
+    background: #f6f7f7;
+    border: 1px solid #ccd0d4;
+    color: #1d2327;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bulk-actions .button:hover:not(:disabled) {
+    background: #e5e5e5;
+    border-color: #0073aa;
+}
+
+.bulk-actions .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#bulk-category-selector {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+}
+
+#bulk-category-selector label {
+    font-weight: 600;
+    margin-right: 8px;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+#bulk-category-selector select {
+    margin-left: 8px;
+    padding: 4px 8px;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+    min-width: 120px;
+}
+
+#apply-bulk-category {
+    margin-left: 8px;
+    background: #0073aa;
+    border-color: #0073aa;
+    color: white;
+}
+
+#apply-bulk-category:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+/* ========================================
+   ZONE DE SUPPRESSION EN LOT
+   ======================================== */
+
+#bulk-delete-selector {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #d63638;
+    border-radius: 3px;
+}
+
+#bulk-delete-selector p:first-child {
+    color: #d63638;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    font-size: 13px;
+}
+
+#bulk-delete-selector p:last-of-type {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: #646970;
+    line-height: 1.4;
+}
+
+#apply-bulk-delete {
+    background: #d63638;
+    border-color: #d63638;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+#apply-bulk-delete:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+}
+
+/* ========================================
+   TABLEAU
+   ======================================== */
+
+.wp-list-table {
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.wp-list-table thead th {
+    background: #f6f7f7;
+    color: #1d2327;
+    border: none;
+    border-bottom: 1px solid #ccd0d4;
+    padding: 12px 10px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.wp-list-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.wp-list-table tbody tr:hover {
+    background-color: #f6f7f7;
+}
+
+.wp-list-table tbody td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f1;
+    font-size: 13px;
+}
+
+.wp-list-table thead th.check-column {
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 6px;
+}
+
+/* Colonnes du tableau */
+.check-column {
+    width: 35px;
+    text-align: center;
+}
+
+.check-column input[type="checkbox"] {
+    margin: 0;
+}
+
+.wp-list-table .column-image {
+    width: 70px;
+}
+
+.wp-list-table .column-category {
+    width: 120px;
+}
+
+.wp-list-table .column-date {
+    width: 100px;
+}
+
+.wp-list-table .column-actions {
+    width: 100px;
+    text-align: center;
+}
+
+/* Lignes sélectionnées */
+.wp-list-table tr.selected {
+    background-color: #e7f3ff !important;
+}
+
+.wp-list-table tr.selected:hover {
+    background-color: #d1e7ff !important;
+}
+
+.wp-list-table tr.selected td {
+    border-bottom-color: #b3d9ff;
+}
+
+/* ========================================
+   BOUTONS D'ACTION
+   ======================================== */
+
+.wp-list-table .button-small {
+    margin-right: 6px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.wp-list-table .button-small:hover {
+    background: #e5e5e5;
+}
+
+.wp-list-table .button-small:last-child {
+    margin-right: 0;
+}
+
+/* ========================================
+   ZONE VIDE
+   ======================================== */
+
+.filtered-gallery-admin-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f6f7f7;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    color: #1d2327;
+}
+
+.filtered-gallery-admin-empty p {
+    margin: 12px 0;
+    font-size: 14px;
+    color: #646970;
+}
+
+.filtered-gallery-admin-empty .button {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: white;
+    padding: 8px 16px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.filtered-gallery-admin-empty .button:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+/* ========================================
+   MODAL
+   ======================================== */
+
+.filtered-gallery-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.filtered-gallery-modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 25px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    width: 85%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.filtered-gallery-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.filtered-gallery-modal-header h2 {
+    margin: 0;
+    color: #1d2327;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.filtered-gallery-modal-close {
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #646970;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.filtered-gallery-modal-close:hover {
+    background: #f6f7f7;
+    color: #1d2327;
+}
+
+/* ========================================
+   FORMULAIRES
+   ======================================== */
+
+.edit-image-form {
+    padding: 15px 0;
+}
+
+.edit-image-form .form-field {
+    margin-bottom: 20px;
+}
+
+.edit-image-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+.edit-image-form input[type="text"],
+.edit-image-form input[type="number"],
+.edit-image-form textarea,
+.edit-image-form select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.edit-image-form input[type="text"]:focus,
+.edit-image-form input[type="number"]:focus,
+.edit-image-form textarea:focus,
+.edit-image-form select:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 1px #0073aa;
+}
+
+.edit-image-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.edit-image-form .form-actions {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #ccd0d4;
+    text-align: right;
+}
+
+.edit-image-form .form-actions .button {
+    margin-left: 8px;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.edit-image-form .form-actions .button:hover {
+    background: #e5e5e5;
+}
+
+.edit-image-form .form-actions .button:first-child {
+    margin-left: 0;
+}
+
+/* ========================================
+   IMAGES SÉLECTIONNÉES
+   ======================================== */
+
+.selected-images-preview {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f6f7f7;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    display: none;
+}
+
+.selected-images-preview h4 {
+    margin: 0 0 12px 0;
+    color: #1d2327;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.selected-image-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+}
+
+.selected-image-item:last-child {
+    margin-bottom: 0;
+}
+
+.selected-image-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 12px;
+    border-radius: 3px;
+    border: 1px solid #ccd0d4;
+}
+
+.selected-image-item span {
+    flex: 1;
+    font-weight: 500;
+    color: #1d2327;
+    font-size: 13px;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .filtered-gallery-admin-content {
+        grid-template-columns: 250px 1fr;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .filtered-gallery-admin-content {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .filtered-gallery-admin-sidebar {
+        order: 2;
+    }
+    
+    .filtered-gallery-admin-main {
+        order: 1;
+    }
+    
+    .bulk-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .bulk-actions select,
+    .bulk-actions .button {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    .filtered-gallery-modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 20px;
+    }
+    
+    .wp-list-table {
+        font-size: 12px;
+    }
+    
+    .wp-list-table .column-actions {
+        width: 80px;
+    }
+    
+    .wp-list-table .button-small {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .filtered-gallery-admin-main {
+        padding: 15px;
+    }
+    
+    .filtered-gallery-admin-sidebar > div {
+        padding: 12px;
+    }
+    
+    .wp-list-table thead th,
+    .wp-list-table tbody td {
+        padding: 6px 4px;
+    }
+    
+    .check-column {
+        width: 25px;
+    }
+    
+    .wp-list-table .column-image {
+        width: 50px;
+    }
+    
+    .wp-list-table .column-category,
+    .wp-list-table .column-date {
+        display: none;
+    }
+} 
