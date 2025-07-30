@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: FilteredGallery
- * Plugin URI: https://votresite.com/filtered-gallery
+ * Plugin URI: https://github.com/cubikean/WPlugins/
  * Description: Un plugin WordPress pour créer des galeries d'images avec filtres par catégories. Permet d'afficher des images organisées par catégories avec des boutons de filtrage interactifs.
  * Version: 1.0.0
- * Author: Votre Nom
- * Author URI: https://votresite.com
+ * Author: Cubikean
+ * Author URI: https://cubicom.fr
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: filtered-gallery
@@ -15,6 +15,7 @@
  * Requires PHP: 7.4
  * Network: false
  */
+
 
 // Empêcher l'accès direct
 if (!defined('ABSPATH')) {
