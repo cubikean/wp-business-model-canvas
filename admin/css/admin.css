@@ -1,0 +1,444 @@
+/* Styles d'administration pour WP Business Model Canvas */
+
+.wp-bmc-admin-page {
+    margin: 20px 0;
+}
+
+.wp-bmc-admin-header {
+    background: linear-gradient(135deg, #0073aa 0%, #005177 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.wp-bmc-admin-header h1 {
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 300;
+}
+
+.wp-bmc-admin-header p {
+    margin: 10px 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+/* Cartes de statistiques */
+.wp-bmc-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.wp-bmc-stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-align: center;
+    border-left: 4px solid #0073aa;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.wp-bmc-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.wp-bmc-stat-card h3 {
+    margin: 0 0 15px 0;
+    color: #0073aa;
+    font-size: 1.2em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-number {
+    font-size: 3em;
+    font-weight: bold;
+    color: #0073aa;
+    margin: 15px 0;
+    line-height: 1;
+}
+
+.wp-bmc-stat-card p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.9em;
+}
+
+/* Actions d'administration */
+.wp-bmc-admin-actions {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 30px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.wp-bmc-admin-actions h2 {
+    margin: 0 0 20px 0;
+    color: #0073aa;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .button {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+}
+
+.action-buttons .button-primary:hover {
+    background: #005177;
+    border-color: #005177;
+    transform: translateY(-1px);
+}
+
+.action-buttons .button-secondary {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+.action-buttons .button-secondary:hover {
+    background: #5a6268;
+    border-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+/* Tableaux */
+.wp-bmc-recent-users,
+.wp-bmc-recent-projects {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 30px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.wp-bmc-recent-users h2,
+.wp-bmc-recent-projects h2 {
+    margin: 0 0 20px 0;
+    color: #0073aa;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.wp-list-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.wp-list-table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.wp-list-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.wp-list-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Badges de statut */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.status-badge.status-draft {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.status-published {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Informations système */
+.wp-bmc-system-info {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin: 30px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.wp-bmc-system-info h2 {
+    margin: 0 0 20px 0;
+    color: #0073aa;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.form-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    width: 200px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.form-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    color: #6c757d;
+}
+
+/* Notifications */
+.notice {
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.notice-success {
+    background: #d4edda;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+.notice-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left-color: #dc3545;
+}
+
+.notice-warning {
+    background: #fff3cd;
+    color: #856404;
+    border-left-color: #ffc107;
+}
+
+/* Boutons d'action dans les tableaux */
+.button-link-delete {
+    color: #dc3545 !important;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.button-link-delete:hover {
+    background: #dc3545;
+    color: white !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wp-bmc-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .button {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .wp-list-table {
+        font-size: 14px;
+    }
+    
+    .wp-list-table th,
+    .wp-list-table td {
+        padding: 8px;
+    }
+    
+    .form-table th,
+    .form-table td {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+    
+    .form-table th {
+        border-bottom: none;
+        padding-bottom: 5px;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wp-bmc-stat-card,
+.wp-bmc-admin-actions,
+.wp-bmc-recent-users,
+.wp-bmc-recent-projects,
+.wp-bmc-system-info {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Icônes (si disponibles) */
+.wp-bmc-admin-header::before {
+    content: "📊";
+    font-size: 3em;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.wp-bmc-stat-card::before {
+    content: "📈";
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Mode sombre (optionnel) */
+@media (prefers-color-scheme: dark) {
+    .wp-bmc-stat-card,
+    .wp-bmc-admin-actions,
+    .wp-bmc-recent-users,
+    .wp-bmc-recent-projects,
+    .wp-bmc-system-info {
+        background: #2d3748;
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+    
+    .wp-list-table th {
+        background: #4a5568;
+        color: #e2e8f0;
+        border-bottom-color: #718096;
+    }
+    
+    .wp-list-table td {
+        border-bottom-color: #4a5568;
+        color: #cbd5e0;
+    }
+    
+    .wp-list-table tbody tr:hover {
+        background: #4a5568;
+    }
+}
+
+.wp-bmc-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.wp-bmc-stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.wp-bmc-stat-card h3 {
+    margin: 0 0 10px 0;
+    color: #0073aa;
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #0073aa;
+    margin: 10px 0;
+}
+
+.wp-bmc-admin-actions {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.wp-bmc-recent-users,
+.wp-bmc-recent-projects {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.status-draft {
+    background: #ffc107;
+    color: #856404;
+}
+
+.status-badge.status-published {
+    background: #28a745;
+    color: white;
+}
+
+.wp-bmc-system-info {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
