@@ -2,8 +2,6 @@
 
 Un plugin WordPress complet pour créer et gérer des Business Model Canvas avec un système d'authentification, d'édition collaborative et de notation par les administrateurs.
 
-> **Note** : Ce plugin fait partie de la collection [WPlugins](https://github.com/cubikean/WPlugins) - une collection de plugins WordPress personnalisés développés sur mesure.
-
 ## 🎯 Fonctionnalités
 
 ### 👥 Système d'authentification
