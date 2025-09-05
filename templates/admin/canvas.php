@@ -14,21 +14,12 @@ $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 
 // Si c'est une vue admin avec un user_id spécifique, récupérer le projet de cet utilisateur
 if ($admin_view && $user_id > 0) {
-    // Debug : vérifier si l'utilisateur existe
-    $user_info = WP_BMC_Database::get_user($user_id);
-    if (!$user_info) {
-        echo '<div class="wp-bmc-error">Utilisateur ID ' . $user_id . ' non trouvé dans la base de données BMC.</div>';
-        return;
-    }
     
     $user_projects = WP_BMC_Database::get_user_projects($user_id);
     if (!empty($user_projects)) {
         $project = $user_projects[0]; // L'utilisateur ne peut avoir qu'un seul projet
         $project_id = $project->id;
-    } else {
-        echo '<div class="wp-bmc-error">Aucun projet trouvé pour l\'utilisateur ' . $user_info->first_name . ' ' . $user_info->last_name . ' (ID: ' . $user_id . ').</div>';
-        return;
-    }
+    } 
 } else {
     $project = WP_BMC_Database::get_project($project_id);
 }

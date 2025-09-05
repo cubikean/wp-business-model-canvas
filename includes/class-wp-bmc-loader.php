@@ -99,6 +99,13 @@ class WP_BMC_Loader {
             WP_BMC_VERSION
         );
         
+        wp_enqueue_style(
+            'wp-bmc-admin-dashboard',
+            WP_BMC_PLUGIN_URL . 'admin/css/admin-dashboard.css',
+            array('wp-bmc-admin'),
+            WP_BMC_VERSION
+        );
+        
         wp_enqueue_script(
             'wp-bmc-admin',
             WP_BMC_PLUGIN_URL . 'admin/js/admin.js',
@@ -152,6 +159,16 @@ class WP_BMC_Loader {
             WP_BMC_VERSION,
             true
         );
+        
+        // Si c'est un admin, charger aussi les styles admin-dashboard
+        if (current_user_can('manage_options')) {
+            wp_enqueue_style(
+                'wp-bmc-admin-dashboard',
+                WP_BMC_PLUGIN_URL . 'admin/css/admin-dashboard.css',
+                array('wp-bmc-public'),
+                WP_BMC_VERSION
+            );
+        }
         
         wp_localize_script('wp-bmc-public', 'wp_bmc_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
