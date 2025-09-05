@@ -47,6 +47,11 @@ class WP_BMC_Shortcodes {
     public function dashboard() {
         WP_BMC_Auth::require_login();
         
+        // Si c'est un administrateur WordPress, utiliser le template admin
+        if (current_user_can('manage_options')) {
+            return WP_BMC_Template_Loader::get_template_content('admin/dashboard');
+        }
+        
         return WP_BMC_Template_Loader::get_template_content('public/dashboard');
     }
     
@@ -56,14 +61,12 @@ class WP_BMC_Shortcodes {
     public function canvas() {
         WP_BMC_Auth::require_login();
         
-        // Charger les scripts pour les admins
-        if (current_user_can('manage_options')) {
-            wp_enqueue_script('jquery');
-            wp_enqueue_script('wp-bmc-canvas-admin', WP_BMC_PLUGIN_URL . 'public/js/canvas-admin.js', array('jquery'), WP_BMC_VERSION, true);
-            wp_localize_script('wp-bmc-canvas-admin', 'wp_bmc_ajax', array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('wp_bmc_nonce')
-            ));
+        // Vérifier si c'est une vue admin
+        $admin_view = isset($_GET['admin_view']) && $_GET['admin_view'] === 'true';
+        
+        // Si c'est une vue admin et que l'utilisateur est admin, utiliser le template admin
+        if ($admin_view && current_user_can('manage_options')) {
+            return WP_BMC_Template_Loader::get_template_content('admin/canvas');
         }
         
         return WP_BMC_Template_Loader::get_template_content('public/canvas');

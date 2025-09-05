@@ -72,6 +72,21 @@ function wp_bmc_deactivate() {
     flush_rewrite_rules();
 }
 
+// Fonction utilitaire pour inclure le template d'édition
+function wp_bmc_include_edit_section($context = 'public') {
+    $template_path = WP_BMC_PLUGIN_DIR . 'templates/' . $context . '/edit-section.php';
+    
+    if (file_exists($template_path)) {
+        include $template_path;
+    } else {
+        // Fallback vers le template public si le template spécifique n'existe pas
+        $fallback_path = WP_BMC_PLUGIN_DIR . 'templates/public/edit-section.php';
+        if (file_exists($fallback_path)) {
+            include $fallback_path;
+        }
+    }
+}
+
 // Fonction pour créer les pages nécessaires
 function wp_bmc_create_pages() {
     $pages = array(

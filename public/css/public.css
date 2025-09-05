@@ -2,6 +2,35 @@
 
 /* Variables CSS */
 
+/* Indicateur de chargement pour les vues AJAX */
+.canvas-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    font-size: 16px;
+    color: var(--text-muted);
+    background: var(--light-gray);
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.canvas-loading::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 :root {
     --primary-color: #0073aa;
     --secondary-color: #005177;

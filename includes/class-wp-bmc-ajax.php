@@ -608,3 +608,186 @@ function wp_bmc_save_section_rating_handler() {
         wp_send_json_error('Erreur lors de la sauvegarde de la note.');
     }
 }
+
+// Handler pour charger une vue du canvas via AJAX
+add_action('wp_ajax_wp_bmc_load_canvas_view', 'wp_bmc_load_canvas_view_handler');
+function wp_bmc_load_canvas_view_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    $current_user = WP_BMC_Auth::get_current_user();
+    if (!$current_user) {
+        wp_send_json_error('Utilisateur non connecté.');
+    }
+    
+    $view = sanitize_text_field($_POST['view']);
+    if (!in_array($view, ['synthetic', 'global'])) {
+        wp_send_json_error('Vue invalide.');
+    }
+    
+    // Récupérer les données de l'utilisateur
+    $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+    $project = !empty($user_projects) ? $user_projects[0] : null;
+    
+    if (!$project) {
+        wp_send_json_error('Aucun projet trouvé.');
+    }
+    
+    $canvas_data = WP_BMC_Database::get_canvas_data($project->id);
+    $project_ratings = WP_BMC_Database::get_project_ratings($project->id);
+    
+    // Configuration des sections du canvas
+    $canvas_sections = array(
+        'key_partners' => array(
+            'title' => 'Partenaires clés',
+            'placeholder' => 'Qui sont vos partenaires clés ?',
+            'synthetic' => false
+        ),
+        'key_activities' => array(
+            'title' => 'Activités clés',
+            'placeholder' => 'Quelles sont vos activités clés ?',
+            'synthetic' => false
+        ),
+        'key_resources' => array(
+            'title' => 'Ressources clés',
+            'placeholder' => 'Quelles sont vos ressources clés ?',
+            'synthetic' => false
+        ),
+        'value_proposition' => array(
+            'title' => 'Proposition de valeur',
+            'placeholder' => 'Quelle est votre proposition de valeur ?',
+            'synthetic' => true
+        ),
+        'customer_relationships' => array(
+            'title' => 'Relations clients',
+            'placeholder' => 'Quel type de relation établissez-vous avec vos clients ?',
+            'synthetic' => false
+        ),
+        'channels' => array(
+            'title' => 'Canaux',
+            'placeholder' => 'Quels canaux utilisez-vous pour atteindre vos clients ?',
+            'synthetic' => false
+        ),
+        'customer_segments' => array(
+            'title' => 'Segments clients',
+            'placeholder' => 'Quels sont vos segments clients ?',
+            'synthetic' => true
+        ),
+        'cost_structure' => array(
+            'title' => 'Structure des coûts',
+            'placeholder' => 'Quels sont vos coûts principaux ?',
+            'synthetic' => false
+        ),
+        'revenue_streams' => array(
+            'title' => 'Sources de revenus',
+            'placeholder' => 'Quelles sont vos sources de revenus ?',
+            'synthetic' => true
+        )
+    );
+    
+    // Fonction pour afficher une section de canvas
+    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project, $view_mode) {
+        $content = isset($canvas_data[$section_key]) ? esc_textarea($canvas_data[$section_key]) : '';
+        $section_class = $section_key;
+        
+        // Classes CSS spécifiques pour certaines sections
+        if ($section_key === 'value_proposition') {
+            $section_class .= ' value-proposition';
+        }
+        
+        // Déterminer si la section doit être affichée dans la vue synthétique
+        $show_in_synthetic = $section_config['synthetic'];
+        
+        // Filtrer les sections selon la vue
+        if ($view_mode === 'synthetic' && !$show_in_synthetic) {
+            return '';
+        }
+        
+        // Récupérer les notes de l'admin
+        $ratings = WP_BMC_Database::get_project_ratings($project->id);
+        $section_rating = null;
+        foreach ($ratings as $rating) {
+            if ($rating->section === $section_key) {
+                $section_rating = $rating;
+                break;
+            }
+        }
+        
+        ob_start();
+        ?>
+        <div class="<?php echo $view_mode === 'synthetic' ? 'synthetic-section' : 'canvas-section'; ?> <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>">
+            <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>" title="Éditer cette brique">
+                <i class="fas fa-edit"></i>
+            </button>
+            <h3><?php echo esc_html($section_config['title']); ?></h3>
+            <textarea class="canvas-textarea" disabled placeholder="<?php echo esc_attr($section_config['placeholder']); ?>"><?php echo $content; ?></textarea>
+            
+            <?php if ($section_rating): ?>
+                <!-- Affichage des notes de l'admin -->
+                <div class="admin-rating-display" id="rating-display-<?php echo $section_key; ?>">
+                    <div class="rating-info">
+                        <div class="rating-score">
+                            <i class="fas fa-star"></i>
+                            Note admin : <?php echo esc_html($section_rating->rating); ?>/10
+                        </div>
+                        <?php if ($section_rating->comment): ?>
+                            <div class="rating-comment">
+                                <strong>Commentaire :</strong> <?php echo esc_html($section_rating->comment); ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="rating-date">
+                            Noté le : <?php echo date('d/m/Y', strtotime($section_rating->created_at)); ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    
+    // Générer le HTML selon la vue
+    ob_start();
+    
+    if ($view === 'synthetic') {
+        // Vue synthétique - 3 briques principales
+        echo '<div class="canvas-synthetic">';
+        echo '<div class="synthetic-grid">';
+        
+        $synthetic_order = array('customer_segments', 'value_proposition', 'revenue_streams');
+        foreach ($synthetic_order as $section_key) {
+            if (isset($canvas_sections[$section_key])) {
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view);
+            }
+        }
+        
+        echo '</div>';
+        echo '</div>';
+        
+    } else {
+        // Vue globale - Toutes les briques
+        echo '<div class="canvas-global">';
+        echo '<div class="canvas-grid">';
+        
+        $global_order = array(
+            'key_partners', 'key_activities', 'key_resources',
+            'value_proposition', 'customer_relationships', 'channels',
+            'customer_segments', 'cost_structure', 'revenue_streams'
+        );
+        
+        foreach ($global_order as $section_key) {
+            if (isset($canvas_sections[$section_key])) {
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view);
+            }
+        }
+        
+        echo '</div>';
+        echo '</div>';
+    }
+    
+    $html = ob_get_clean();
+    
+    wp_send_json_success(array(
+        'html' => $html,
+        'view' => $view
+    ));
+}

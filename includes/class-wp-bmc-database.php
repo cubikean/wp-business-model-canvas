@@ -176,6 +176,22 @@ class WP_BMC_Database {
     }
     
     /**
+     * Obtenir un utilisateur par son ID
+     */
+    public static function get_user($user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE user_id = %d",
+                $user_id
+            )
+        );
+    }
+    
+    /**
      * Sauvegarder les données du canvas
      */
     public static function save_canvas_data($project_id, $section, $content) {

@@ -156,13 +156,31 @@ class WP_BMC_Auth {
             return false;
         }
         
+        $current_user_id = get_current_user_id();
+        
+        // Si c'est un administrateur WordPress, créer un objet utilisateur virtuel
+        if (current_user_can('manage_options')) {
+            $wp_user = get_userdata($current_user_id);
+            if ($wp_user) {
+                return (object) array(
+                    'user_id' => $current_user_id,
+                    'email' => $wp_user->user_email,
+                    'first_name' => $wp_user->first_name ?: 'Admin',
+                    'last_name' => $wp_user->last_name ?: 'WordPress',
+                    'company' => 'Administration WordPress',
+                    'is_admin' => true
+                );
+            }
+        }
+        
+        // Sinon, chercher dans la table BMC
         global $wpdb;
         $table = $wpdb->prefix . 'bmc_users';
         
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM $table WHERE user_id = %d",
-                get_current_user_id()
+                $current_user_id
             )
         );
     }
@@ -172,6 +190,13 @@ class WP_BMC_Auth {
      */
     public static function require_login() {
         if (!self::is_logged_in()) {
+            wp_redirect(home_url('/login/'));
+            exit;
+        }
+        
+        // Vérifier si l'utilisateur a accès
+        $current_user = self::get_current_user();
+        if (!$current_user) {
             wp_redirect(home_url('/login/'));
             exit;
         }

@@ -15,11 +15,22 @@ $users_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_users");
 $projects_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_projects");
 $canvas_data_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_canvas_data");
 
-// Obtenir les derniers utilisateurs
+// Obtenir les derniers utilisateurs (pour la section récente)
 $recent_users = $wpdb->get_results("
     SELECT * FROM {$wpdb->prefix}bmc_users 
     ORDER BY created_at DESC 
     LIMIT 10
+");
+
+// Obtenir tous les utilisateurs (pour la liste complète)
+$all_users = $wpdb->get_results("
+    SELECT u.*, 
+           COUNT(p.id) as project_count,
+           MAX(p.created_at) as last_project_date
+    FROM {$wpdb->prefix}bmc_users u
+    LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.user_id = p.user_id
+    GROUP BY u.user_id
+    ORDER BY u.created_at DESC
 ");
 
 // Obtenir les derniers projets
@@ -41,143 +52,93 @@ $recent_projects = $wpdb->get_results("
         </div>
     <?php endif; ?>
     
-    <!-- Statistiques -->
-    <div class="wp-bmc-stats-grid">
-        <div class="wp-bmc-stat-card">
-            <h3>Utilisateurs</h3>
-            <div class="stat-number"><?php echo $users_count; ?></div>
-            <p>Comptes créés</p>
-        </div>
-        
-        <div class="wp-bmc-stat-card">
-            <h3>Projets</h3>
-            <div class="stat-number"><?php echo $projects_count; ?></div>
-            <p>Canvas créés</p>
-        </div>
-        
-        <div class="wp-bmc-stat-card">
-            <h3>Sections</h3>
-            <div class="stat-number"><?php echo $canvas_data_count; ?></div>
-            <p>Données sauvegardées</p>
-        </div>
-    </div>
     
-    <!-- Actions d'administration -->
-    <div class="wp-bmc-admin-actions">
-        <h2>Actions d'administration</h2>
+    <!-- Liste complète des utilisateurs -->
+    <div class="wp-bmc-all-users">
+        <h2>Tous les utilisateurs</h2>
         
-        <form method="post" action="">
-            <?php wp_nonce_field('wp_bmc_admin_nonce'); ?>
-            <input type="hidden" name="action" value="wp_bmc_admin_action">
-            
-            <div class="action-buttons">
-                <button type="submit" name="bmc_action" value="export_data" class="button button-primary">
-                    Exporter les données
-                </button>
-                
-                <button type="submit" name="bmc_action" value="clear_cache" class="button button-secondary">
-                    Vider le cache
-                </button>
+        <div class="wp-bmc-users-controls">
+            <div class="users-search">
+                <input type="text" id="users-search" placeholder="Rechercher un utilisateur..." class="regular-text">
             </div>
-        </form>
-    </div>
-    
-    <!-- Derniers utilisateurs -->
-    <div class="wp-bmc-recent-users">
-        <h2>Derniers utilisateurs</h2>
+            <div class="users-filters">
+                <select id="users-filter-status">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actifs</option>
+                    <option value="inactive">Inactifs</option>
+                </select>
+            </div>
+        </div>
         
-        <table class="wp-list-table widefat fixed striped">
+        <table class="wp-list-table widefat fixed striped" id="users-table">
             <thead>
                 <tr>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Entreprise</th>
-                    <th>Date d'inscription</th>
+                    <th class="sortable" data-sort="name">
+                        Nom <span class="sort-indicator"></span>
+                    </th>
+                    <th class="sortable" data-sort="email">
+                        Email <span class="sort-indicator"></span>
+                    </th>
+                    
+                    <th class="sortable" data-sort="created_at">
+                        Inscription <span class="sort-indicator"></span>
+                    </th>
+                    <th class="sortable" data-sort="last_project_date">
+                        Dernier projet <span class="sort-indicator"></span>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($recent_users as $user): ?>
-                    <tr>
-                        <td><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></td>
-                        <td><?php echo esc_html($user->email); ?></td>
-                        <td><?php echo esc_html($user->company); ?></td>
-                        <td><?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?></td>
-                        <td>
-                            <form method="post" action="" style="display: inline;">
-                                <?php wp_nonce_field('wp_bmc_admin_nonce'); ?>
-                                <input type="hidden" name="action" value="wp_bmc_admin_action">
-                                <input type="hidden" name="bmc_action" value="delete_user">
-                                <input type="hidden" name="user_id" value="<?php echo $user->user_id; ?>">
-                                <button type="submit" class="button button-small button-link-delete" 
-                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                    Supprimer
-                                </button>
-                            </form>
+                <?php foreach ($all_users as $user): ?>
+                    <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
+                        <td class="user-name">
+                            <strong><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></strong>
                         </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Derniers projets -->
-    <div class="wp-bmc-recent-projects">
-        <h2>Derniers projets</h2>
-        
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th>Titre</th>
-                    <th>Utilisateur</th>
-                    <th>Statut</th>
-                    <th>Date de création</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($recent_projects as $project): ?>
-                    <tr>
-                        <td><?php echo esc_html($project->title); ?></td>
-                        <td><?php echo esc_html($project->first_name . ' ' . $project->last_name); ?></td>
-                        <td>
-                            <span class="status-badge status-<?php echo $project->status; ?>">
-                                <?php echo ucfirst($project->status); ?>
-                            </span>
-                        </td>
-                        <td><?php echo date('d/m/Y H:i', strtotime($project->created_at)); ?></td>
-                        <td>
-                            <a href="<?php echo home_url('/business-model-canvas/?project_id=' . $project->id); ?>" class="button button-small button-primary">
-                                Voir le projet
+                        <td class="user-email">
+                            <a href="mailto:<?php echo esc_attr($user->email); ?>">
+                                <?php echo esc_html($user->email); ?>
                             </a>
                         </td>
+                       
+                        <td class="user-registration">
+                            <?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?>
+                        </td>
+                        <td class="user-last-project">
+                            <?php if ($user->last_project_date): ?>
+                                <?php echo date('d/m/Y H:i', strtotime($user->last_project_date)); ?>
+                            <?php else: ?>
+                                <span class="no-project">Aucun projet</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="user-actions">
+                            <div class="action-buttons">
+                                <button class="button button-small button-primary view-user-btn" 
+                                        data-user-id="<?php echo $user->user_id; ?>"
+                                        title="Voir le profil">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                
+                                <form method="post" action="" style="display: inline;">
+                                    <?php wp_nonce_field('wp_bmc_admin_nonce'); ?>
+                                    <input type="hidden" name="action" value="wp_bmc_admin_action">
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-    </div>
-    
-    <!-- Informations système -->
-    <div class="wp-bmc-system-info">
-        <h2>Informations système</h2>
         
-        <table class="form-table">
-            <tr>
-                <th>Version du plugin</th>
-                <td><?php echo WP_BMC_VERSION; ?></td>
-            </tr>
-            <tr>
-                <th>Version WordPress</th>
-                <td><?php echo get_bloginfo('version'); ?></td>
-            </tr>
-            <tr>
-                <th>Version PHP</th>
-                <td><?php echo PHP_VERSION; ?></td>
-            </tr>
-            <tr>
-                <th>Base de données</th>
-                <td><?php echo $wpdb->db_version(); ?></td>
-            </tr>
-        </table>
+        <div class="wp-bmc-users-pagination">
+            <div class="pagination-info">
+                <span id="users-count"><?php echo count($all_users); ?> utilisateur(s) au total</span>
+            </div>
+        </div>
     </div>
 </div>
+
+<?php
+// Inclure le template d'édition pour l'admin
+wp_bmc_include_edit_section('admin');
+?>

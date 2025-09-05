@@ -15,6 +15,7 @@ if (!$current_user) {
     exit;
 }
 
+// Pour les utilisateurs BMC normaux
 $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
 
 // L'utilisateur ne peut avoir qu'un seul projet
@@ -254,80 +255,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 
 <div id="wp-bmc-dashboard-message" class="wp-bmc-message" style="display: none;"></div>
 
-<!-- Popup d'édition des briques -->
-<div id="wp-bmc-edit-popup" class="wp-bmc-popup">
-    <div class="popup-overlay"></div>
-    <div class="popup-content">
-        <div class="popup-header">
-            <h3 id="popup-title">Éditer la brique</h3>
-            <button class="popup-close" id="popup-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <div class="popup-body">
-            <!-- Section éditeur -->
-            <div class="editor-section">
-                <label for="wysiwyg-editor">Contenu de la brique</label>
-                <div id="wysiwyg-editor">
-                    <!-- L'éditeur sera initialisé par JavaScript -->
-                </div>
-            </div>
-            
-            <!-- Section fichiers -->
-            <div class="files-section">
-                <div class="files-header">
-                    <h4>Fichiers attachés</h4>
-                    <button type="button" class="add-file-btn" id="add-file-btn">
-                        <i class="fas fa-plus"></i> Ajouter des fichiers
-                    </button>
-                </div>
-                <div class="files-list" id="files-list">
-                    <div class="no-files">Aucun fichier attaché</div>
-                </div>
-                <input type="file" id="file-input" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
-            </div>
-            
-            <!-- Section documents de référence -->
-            <div class="documents-section">
-                <div class="documents-header">
-                    <h4>Documents de référence</h4>
-                    <button type="button" class="view-documents-btn" id="view-documents-btn">
-                        <i class="fas fa-eye"></i> Consulter les documents
-                    </button>
-                </div>
-                <div class="documents-list" id="documents-list">
-                    <div class="no-documents">Aucun document disponible</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="popup-footer">
-            <button type="button" class="popup-btn popup-btn-secondary" id="popup-cancel">Annuler</button>
-            <button type="button" class="popup-btn popup-btn-primary" id="popup-save">Sauvegarder</button>
-        </div>
-    </div>
-</div>
-
-<!-- Popup des documents de référence -->
-<div id="wp-bmc-documents-popup" class="wp-bmc-popup">
-    <div class="popup-overlay"></div>
-    <div class="popup-content">
-        <div class="popup-header">
-            <h3>Documents de référence</h3>
-            <button class="popup-close" id="documents-popup-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <div class="popup-body">
-            <div class="documents-grid" id="documents-grid">
-                <!-- Les documents seront chargés dynamiquement -->
-            </div>
-        </div>
-        
-        <div class="popup-footer">
-            <button type="button" class="popup-btn popup-btn-secondary" id="documents-popup-close">Fermer</button>
-        </div>
-    </div>
-</div>
+<?php
+// Inclure le template d'édition réutilisable
+wp_bmc_include_edit_section('public');
+?>

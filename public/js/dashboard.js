@@ -47,17 +47,64 @@ jQuery(document).ready(function($) {
     // ========================================
     $('.view-toggle button').on('click', function() {
         var view = $(this).data('view');
+        var $button = $(this);
+        
+        // Mettre à jour l'URL sans recharger la page
         var currentUrl = new URL(window.location);
-        
-        // Mettre à jour le paramètre de vue
         currentUrl.searchParams.set('view', view);
+        window.history.pushState({}, '', currentUrl.toString());
         
-        // Rediriger vers la nouvelle vue
-        window.location.href = currentUrl.toString();
+        // Mettre à jour les boutons actifs
+        $('.view-toggle button').removeClass('wp-bmc-btn-primary').addClass('wp-bmc-btn-secondary');
+        $button.removeClass('wp-bmc-btn-secondary').addClass('wp-bmc-btn-primary');
+        
+        // Recharger le contenu du canvas via AJAX
+        loadCanvasView(view);
     });
     
+    // Fonction pour charger une vue du canvas via AJAX
+    function loadCanvasView(view) {
+        var $canvasContainer = $('.canvas-container');
+        var $loadingIndicator = $('<div class="canvas-loading">Chargement...</div>');
+        
+        // Afficher l'indicateur de chargement
+        $canvasContainer.html($loadingIndicator);
+        
+        // Charger le contenu via AJAX
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_load_canvas_view',
+            view: view,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                $canvasContainer.html(response.data.html);
+                // Réinitialiser les événements pour les nouveaux éléments
+                initCanvasEvents();
+            } else {
+                $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
+            }
+        }).fail(function() {
+            $canvasContainer.html('<div class="wp-bmc-error">Erreur de connexion. Veuillez réessayer.</div>');
+        });
+    }
+    
+    // Fonction pour initialiser les événements du canvas
+    function initCanvasEvents() {
+        // Réattacher les événements aux boutons d'édition
+        $('.edit-brick-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var sectionName = $(this).data('section');
+            var sectionTitle = getSectionTitle(sectionName);
+            var currentContent = $('[data-section="' + sectionName + '"] .canvas-textarea').val();
+            
+            openEditView(sectionName, sectionTitle, currentContent);
+        });
+    }
+    
     // ========================================
-    // POPUP D'ÉDITION DES BRIQUES
+    // VUE D'ÉDITION DES BRIQUES
     // ========================================
     
     // Gérer le clic sur les boutons d'édition
@@ -69,14 +116,18 @@ jQuery(document).ready(function($) {
         var sectionTitle = getSectionTitle(sectionName);
         var currentContent = $('[data-section="' + sectionName + '"] .canvas-textarea').val();
         
-        openEditPopup(sectionName, sectionTitle, currentContent);
+        openEditView(sectionName, sectionTitle, currentContent);
     });
     
-    // Ouvrir la popup d'édition
-    function openEditPopup(sectionName, sectionTitle, content) {
-        // Mettre à jour le contenu de la popup
-        $('#popup-title').text('Éditer : ' + sectionTitle);
-        $('#wp-bmc-edit-popup').attr('data-section', sectionName);
+    // Ouvrir la vue d'édition
+    function openEditView(sectionName, sectionTitle, content) {
+        // Masquer le contenu principal (gérer les deux cas : dashboard et canvas)
+        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view)').hide();
+        $('.wp-bmc-canvas-container > *:not(#wp-bmc-edit-view)').hide();
+        
+        // Mettre à jour le contenu de la vue d'édition
+        $('#edit-section-title').text('Éditer : ' + sectionTitle);
+        $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
         // Initialiser l'éditeur WYSIWYG
         initWysiwygEditor(content);
@@ -87,15 +138,17 @@ jQuery(document).ready(function($) {
         // Charger les documents de référence
         loadReferenceDocuments(sectionName);
         
-        // Afficher la popup
-        $('#wp-bmc-edit-popup').fadeIn(300);
-        $('body').addClass('popup-open');
+        // Afficher la vue d'édition
+        $('#wp-bmc-edit-view').fadeIn(300);
     }
     
-    // Fermer la popup d'édition
-    function closeEditPopup() {
-        $('#wp-bmc-edit-popup').fadeOut(300);
-        $('body').removeClass('popup-open');
+    // Fermer la vue d'édition
+    function closeEditView() {
+        $('#wp-bmc-edit-view').fadeOut(300);
+        
+        // Réafficher le contenu principal (gérer les deux cas : dashboard et canvas)
+        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view)').show();
+        $('.wp-bmc-canvas-container > *:not(#wp-bmc-edit-view)').show();
         
         // Détruire l'éditeur WYSIWYG
         if (window.wysiwygEditor) {
@@ -104,15 +157,20 @@ jQuery(document).ready(function($) {
         }
     }
     
-    // Gestionnaires d'événements pour les popups existantes
+    // Gestionnaires d'événements pour la vue d'édition
     $(document).ready(function() {
-        // Fermer la popup d'édition
-        $('#popup-close, .popup-overlay, #popup-cancel').on('click', function() {
-            closeEditPopup();
+        // Bouton de retour au tableau de bord
+        $('#back-to-dashboard').on('click', function() {
+            closeEditView();
+        });
+        
+        // Bouton d'annulation
+        $('#edit-cancel').on('click', function() {
+            closeEditView();
         });
         
         // Sauvegarder le contenu
-        $('#popup-save').on('click', function() {
+        $('#edit-save').on('click', function() {
             saveBrickContent();
         });
         
@@ -207,7 +265,7 @@ jQuery(document).ready(function($) {
          $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
              if (response.success) {
                  // Recharger la liste des fichiers
-                 var sectionName = $('#wp-bmc-edit-popup').attr('data-section');
+                 var sectionName = $('#wp-bmc-edit-view').attr('data-section');
                  loadSectionFiles(sectionName);
                  $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Fichier supprimé avec succès !</div>').show();
              } else {
@@ -218,7 +276,7 @@ jQuery(document).ready(function($) {
      
      // Sauvegarder le contenu de la brique
     function saveBrickContent() {
-        var sectionName = $('#wp-bmc-edit-popup').attr('data-section');
+        var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         var content = '';
         
         if (window.wysiwygEditor) {
@@ -233,8 +291,8 @@ jQuery(document).ready(function($) {
         // Sauvegarder automatiquement
         autoSaveCanvas();
         
-        // Fermer la popup
-        closeEditPopup();
+        // Fermer la vue d'édition
+        closeEditView();
         
         // Afficher un message de succès
         $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Contenu sauvegardé avec succès !</div>').show();
@@ -356,7 +414,7 @@ jQuery(document).ready(function($) {
     
     // Uploader les fichiers
     function uploadFiles(files) {
-        var sectionName = $('#wp-bmc-edit-popup').attr('data-section');
+        var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         var formData = new FormData();
         
         formData.append('action', 'wp_bmc_upload_file');
@@ -705,9 +763,9 @@ jQuery(document).ready(function($) {
             $('#wp-bmc-export-pdf').click();
         }
         
-        // Échap pour fermer les popups
+        // Échap pour fermer les vues d'édition
         if (e.key === 'Escape') {
-            closeEditPopup();
+            closeEditView();
             $('#wp-bmc-documents-popup').remove();
         }
     });
@@ -741,14 +799,38 @@ jQuery(document).ready(function($) {
     }
     
     // ========================================
+    // ACTIONS ADMINISTRATEUR
+    // ========================================
+    
+    // Voir le canvas de l'utilisateur (pour les admins)
+    $(document).on('click', '.view-user-btn', function(e) {
+        e.preventDefault();
+        
+        var userId = $(this).data('user-id');
+        if (!userId) {
+            console.error('ID utilisateur manquant');
+            return;
+        }
+        
+        // Rediriger vers le canvas de l'utilisateur avec les paramètres admin
+        var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&user_id=' + userId;
+        window.open(canvasUrl, '_blank');
+    });
+    
+    // ========================================
     // EXPOSER LES FONCTIONS GLOBALEMENT
     // ========================================
     window.WP_BMC_Dashboard = {
         autoSaveCanvas: autoSaveCanvas,
         updateLastSavedTime: updateLastSavedTime,
         getCurrentViewMode: getCurrentViewMode,
-        openEditPopup: openEditPopup,
-        closeEditPopup: closeEditPopup
+        openEditView: openEditView,
+        closeEditView: closeEditView,
+        loadCanvasView: loadCanvasView,
+        initCanvasEvents: initCanvasEvents
     };
+    
+    // Initialiser les événements du canvas au chargement
+    initCanvasEvents();
     
 });

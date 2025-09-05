@@ -1,7 +1,7 @@
 <?php
 /**
- * Template pour le Business Model Canvas - Vue Utilisateur
- * Interface complète du canvas pour les utilisateurs BMC
+ * Template pour le Business Model Canvas - Vue Administrateur
+ * Permet aux admins de voir et éditer le canvas de n'importe quel utilisateur
  */
 
 if (!defined('ABSPATH')) {
@@ -9,7 +9,30 @@ if (!defined('ABSPATH')) {
 }
 
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
-$project = WP_BMC_Database::get_project($project_id);
+$admin_view = isset($_GET['admin_view']) && $_GET['admin_view'] === 'true';
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+
+// Si c'est une vue admin avec un user_id spécifique, récupérer le projet de cet utilisateur
+if ($admin_view && $user_id > 0) {
+    // Debug : vérifier si l'utilisateur existe
+    $user_info = WP_BMC_Database::get_user($user_id);
+    if (!$user_info) {
+        echo '<div class="wp-bmc-error">Utilisateur ID ' . $user_id . ' non trouvé dans la base de données BMC.</div>';
+        return;
+    }
+    
+    $user_projects = WP_BMC_Database::get_user_projects($user_id);
+    if (!empty($user_projects)) {
+        $project = $user_projects[0]; // L'utilisateur ne peut avoir qu'un seul projet
+        $project_id = $project->id;
+    } else {
+        echo '<div class="wp-bmc-error">Aucun projet trouvé pour l\'utilisateur ' . $user_info->first_name . ' ' . $user_info->last_name . ' (ID: ' . $user_id . ').</div>';
+        return;
+    }
+} else {
+    $project = WP_BMC_Database::get_project($project_id);
+}
+
 $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
 
 // Récupérer les notes de l'admin pour ce projet
@@ -56,7 +79,7 @@ $canvas_sections = array(
 );
 
 // Fonction pour afficher une section de canvas
-function render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings) {
+function render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, $is_admin) {
     $content = isset($canvas_data[$section_key]) ? esc_textarea($canvas_data[$section_key]) : '';
     $section_class = $section_key;
     
@@ -73,6 +96,12 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
         <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>">
             <i class="fas fa-edit"></i>
         </button>
+        
+        <?php if ($is_admin): ?>
+        <button class="rate-brick-btn" data-section="<?php echo $section_key; ?>" title="Noter cette brique">
+            <i class="fas fa-star"></i>
+        </button>
+        <?php endif; ?>
         
         <!-- Fichiers attachés -->
         <div class="canvas-files">
@@ -139,9 +168,21 @@ if (!$project) {
     return;
 }
 
-// Vérifier que l'utilisateur peut accéder à ce projet
-$current_user = WP_BMC_Auth::get_current_user();
-if (!$current_user || $current_user->user_id != $project->user_id) {
+// Vérifier si l'utilisateur connecté est admin
+$is_admin = current_user_can('manage_options');
+
+// Si c'est une vue admin, permettre l'accès
+if ($admin_view && $is_admin) {
+    // L'admin peut voir le canvas de n'importe quel utilisateur
+    $is_admin = true;
+} elseif (!$is_admin) {
+    // Si l'utilisateur n'est pas admin, vérifier s'il essaie d'accéder à son propre projet
+    $current_user = WP_BMC_Auth::get_current_user();
+    if (!$current_user || $current_user->user_id != $project->user_id) {
+        wp_redirect(home_url('/login/'));
+        exit;
+    }
+} else {
     wp_redirect(home_url('/login/'));
     exit;
 }
@@ -150,6 +191,19 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
 <div class="wp-bmc-canvas-container">
     <div class="canvas-header">
         <h1><?php echo esc_html($project->title); ?></h1>
+        
+        <?php if ($admin_view && $user_id > 0): ?>
+            <?php 
+            $user_info = WP_BMC_Database::get_user($user_id);
+            if ($user_info): ?>
+                <div class="admin-user-info">
+                    <span class="user-label">Canvas de :</span>
+                    <strong><?php echo esc_html($user_info->first_name . ' ' . $user_info->last_name); ?></strong>
+                    <span class="user-company">(<?php echo esc_html($user_info->company); ?>)</span>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+        
         <div class="canvas-actions">
             <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
                 Sauvegarder
@@ -174,7 +228,7 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
         
         foreach ($canvas_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings);
+                echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings, $is_admin);
             }
         }
         ?>
@@ -191,8 +245,13 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
 </div>
 
 <?php
-// Inclure le template d'édition réutilisable pour les utilisateurs
-wp_bmc_include_edit_section('public');
+// Inclure le template d'édition réutilisable pour l'admin
+wp_bmc_include_edit_section('admin');
 ?>
+
+<!-- Indicateur admin -->
+<div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+    <i class="fas fa-user-shield"></i> Mode Administrateur
+</div>
 
 <div id="wp-bmc-canvas-message" class="wp-bmc-message" style="display: none;"></div>
