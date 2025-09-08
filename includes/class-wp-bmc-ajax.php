@@ -609,6 +609,47 @@ function wp_bmc_save_section_rating_handler() {
     }
 }
 
+// Handler pour demander une notation
+add_action('wp_ajax_wp_bmc_request_grading', 'wp_bmc_request_grading_handler');
+function wp_bmc_request_grading_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour demander une notation.');
+    }
+    
+    $section = sanitize_text_field($_POST['section']);
+    $section_title = sanitize_text_field($_POST['section_title']);
+    
+    if (empty($section)) {
+        wp_send_json_error('Section invalide.');
+    }
+    
+    // Récupérer le projet de l'utilisateur
+    $user = WP_BMC_Auth::get_current_user();
+    $projects = WP_BMC_Database::get_user_projects($user->user_id);
+    
+    if (empty($projects)) {
+        wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+    }
+    
+    $project = $projects[0];
+    
+    // Enregistrer la demande de notation
+    $result = WP_BMC_Database::save_grading_request($project->id, $section, $section_title, $user->user_id);
+    
+    if ($result) {
+        // Envoyer une notification aux administrateurs
+        wp_bmc_notify_admins_grading_request($project, $section, $section_title, $user);
+        
+        wp_send_json_success(array(
+            'message' => 'Demande de notation envoyée avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'envoi de la demande de notation.');
+    }
+}
+
 // Handler pour charger une vue du canvas via AJAX
 add_action('wp_ajax_wp_bmc_load_canvas_view', 'wp_bmc_load_canvas_view_handler');
 function wp_bmc_load_canvas_view_handler() {
@@ -789,5 +830,98 @@ function wp_bmc_load_canvas_view_handler() {
     wp_send_json_success(array(
         'html' => $html,
         'view' => $view
+    ));
+}
+
+// Fonction pour notifier les administrateurs d'une demande de notation
+function wp_bmc_notify_admins_grading_request($project, $section, $section_title, $user) {
+    // Récupérer tous les administrateurs
+    $admins = get_users(array('role' => 'administrator'));
+    
+    if (empty($admins)) {
+        return;
+    }
+    
+    // Préparer le message
+    $user_name = isset($user->display_name) ? $user->display_name : ($user->first_name . ' ' . $user->last_name);
+    $message = sprintf(
+        'Un étudiant (%s) demande une notation pour la section "%s" de son projet "%s".',
+        $user_name,
+        $section_title,
+        $project->title
+    );
+    
+    // Créer une notification dans le dashboard admin
+    foreach ($admins as $admin) {
+        // Enregistrer la notification dans la base de données
+        WP_BMC_Database::save_admin_notification(
+            $admin->ID,
+            'grading_request',
+            $message,
+            array(
+                'project_id' => $project->id,
+                'section' => $section,
+                'section_title' => $section_title,
+                'user_id' => $user->user_id,
+                'user_name' => $user_name
+            )
+        );
+    }
+    
+    // Optionnel : Envoyer un email aux administrateurs
+    $subject = 'Demande de notation - ' . $project->title;
+    $email_message = $message . "\n\n";
+    $email_message .= "Projet : " . $project->title . "\n";
+    $email_message .= "Section : " . $section_title . "\n";
+    $email_message .= "Étudiant : " . $user_name . "\n";
+    $email_message .= "Date : " . date('d/m/Y H:i') . "\n\n";
+    $email_message .= "Connectez-vous au dashboard admin pour noter cette section.";
+    
+    foreach ($admins as $admin) {
+        wp_mail($admin->user_email, $subject, $email_message);
+    }
+}
+
+// Handler pour marquer une notification comme lue (admin)
+add_action('wp_ajax_wp_bmc_mark_notification_read', 'wp_bmc_mark_notification_read_handler');
+function wp_bmc_mark_notification_read_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès réservé aux administrateurs.');
+    }
+    
+    $notification_id = intval($_POST['notification_id']);
+    $admin_id = get_current_user_id();
+    
+    if (!$notification_id) {
+        wp_send_json_error('ID de notification invalide.');
+    }
+    
+    $result = WP_BMC_Database::mark_notification_read($notification_id, $admin_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Notification marquée comme lue.'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour de la notification.');
+    }
+}
+
+// Handler pour obtenir les notifications non lues (admin)
+add_action('wp_ajax_wp_bmc_get_unread_notifications', 'wp_bmc_get_unread_notifications_handler');
+function wp_bmc_get_unread_notifications_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès réservé aux administrateurs.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $notifications = WP_BMC_Database::get_unread_notifications($admin_id);
+    
+    wp_send_json_success(array(
+        'notifications' => $notifications
     ));
 }

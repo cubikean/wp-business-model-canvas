@@ -66,6 +66,20 @@ function wp_bmc_activate() {
     flush_rewrite_rules();
 }
 
+// Mise à jour du plugin
+add_action('admin_init', 'wp_bmc_check_update');
+function wp_bmc_check_update() {
+    $current_version = get_option('wp_bmc_version', '0.0.0');
+    
+    if (version_compare($current_version, WP_BMC_VERSION, '<')) {
+        // Mettre à jour les tables de base de données
+        WP_BMC_Database::create_tables();
+        
+        // Mettre à jour la version
+        update_option('wp_bmc_version', WP_BMC_VERSION);
+    }
+}
+
 // Désactivation du plugin
 register_deactivation_hook(__FILE__, 'wp_bmc_deactivate');
 function wp_bmc_deactivate() {

@@ -21,6 +21,14 @@ jQuery(document).ready(function($) {
     });
     
     // ========================================
+    // FILTRAGE PAR DEMANDE DE NOTATION
+    // ========================================
+    $('#users-filter-grading').on('change', function() {
+        var gradingStatus = $(this).val();
+        filterUsersByGradingStatus(gradingStatus);
+    });
+    
+    // ========================================
     // TRI DES COLONNES
     // ========================================
     $('.sortable').on('click', function() {
@@ -35,6 +43,51 @@ jQuery(document).ready(function($) {
         
         // Trier le tableau
         sortUsersTable(column, currentOrder);
+    });
+    
+    // ========================================
+    // GESTION DES NOTIFICATIONS
+    // ========================================
+    
+    // Marquer une notification comme lue
+    $(document).on('click', '.mark-read-btn', function() {
+        var $btn = $(this);
+        var notificationId = $btn.data('notification-id');
+        var $notification = $btn.closest('.notification-item');
+        
+        $btn.prop('disabled', true).text('En cours...');
+        
+        $.post(ajaxurl, {
+            action: 'wp_bmc_mark_notification_read',
+            notification_id: notificationId,
+            nonce: wp_bmc_admin_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                $notification.fadeOut(300, function() {
+                    $(this).remove();
+                });
+                showMessage('Notification marquée comme lue.', 'success');
+            } else {
+                showMessage('Erreur : ' + response.data, 'error');
+            }
+        }).always(function() {
+            $btn.prop('disabled', false).text('Marquer comme lu');
+        });
+    });
+    
+    // Noter une section depuis une notification
+    $(document).on('click', '.grade-btn', function() {
+        var projectId = $(this).data('project-id');
+        var section = $(this).data('section');
+        openGradingModal(projectId, section);
+    });
+    
+    // Noter une section depuis les demandes en attente
+    $(document).on('click', '.grade-section-btn', function() {
+        var projectId = $(this).data('project-id');
+        var section = $(this).data('section');
+        var sectionTitle = $(this).data('section-title');
+        openGradingModal(projectId, section, sectionTitle);
     });
     
     // ========================================
@@ -170,6 +223,28 @@ jQuery(document).ready(function($) {
         updateUsersCount();
     }
     
+    // Filtrer les utilisateurs par statut de demande de notation
+    function filterUsersByGradingStatus(gradingStatus) {
+        $('.user-row').each(function() {
+            var $row = $(this);
+            var $gradingStatus = $row.find('.grading-status');
+            
+            if (gradingStatus === '') {
+                $row.show();
+            } else if (gradingStatus === 'no-requests' && $gradingStatus.hasClass('no-requests')) {
+                $row.show();
+            } else if (gradingStatus === 'pending' && $gradingStatus.hasClass('pending')) {
+                $row.show();
+            } else if (gradingStatus === 'graded' && $gradingStatus.hasClass('graded')) {
+                $row.show();
+            } else {
+                $row.hide();
+            }
+        });
+        
+        updateUsersCount();
+    }
+    
     // Trier le tableau des utilisateurs
     function sortUsersTable(column, order) {
         var $tbody = $('#users-table tbody');
@@ -204,6 +279,23 @@ jQuery(document).ready(function($) {
                     var bText = $(b).find('.user-last-project').text().trim();
                     aVal = aText === 'Aucun projet' ? new Date(0) : new Date(aText);
                     bVal = bText === 'Aucun projet' ? new Date(0) : new Date(bText);
+                    break;
+                case 'grading_status':
+                    var aStatus = $(a).find('.grading-status').attr('class');
+                    var bStatus = $(b).find('.grading-status').attr('class');
+                    // Priorité : pending > graded > no-requests > other
+                    var statusPriority = {
+                        'pending': 1,
+                        'graded': 2,
+                        'no-requests': 3,
+                        'other': 4
+                    };
+                    aVal = 5; // valeur par défaut
+                    bVal = 5;
+                    for (var status in statusPriority) {
+                        if (aStatus && aStatus.includes(status)) aVal = statusPriority[status];
+                        if (bStatus && bStatus.includes(status)) bVal = statusPriority[status];
+                    }
                     break;
                 default:
                     return 0;
@@ -307,6 +399,82 @@ jQuery(document).ready(function($) {
                 $message.remove();
             });
         }, 3000);
+    }
+    
+    // Fonction pour ouvrir la modal de notation
+    function openGradingModal(projectId, section, sectionTitle) {
+        var modal = $('<div class="wp-bmc-popup grading-modal">' +
+            '<div class="popup-overlay"></div>' +
+            '<div class="popup-content">' +
+                '<div class="popup-header">' +
+                    '<h3>Noter la section : ' + (sectionTitle || section) + '</h3>' +
+                    '<button class="popup-close">&times;</button>' +
+                '</div>' +
+                '<div class="popup-body">' +
+                    '<form id="grading-form">' +
+                        '<div class="grading-field">' +
+                            '<label for="rating">Note (0-10) :</label>' +
+                            '<input type="number" id="rating" name="rating" min="0" max="10" required>' +
+                        '</div>' +
+                        '<div class="grading-field">' +
+                            '<label for="comment">Commentaire :</label>' +
+                            '<textarea id="comment" name="comment" rows="4" placeholder="Commentaires sur cette section..."></textarea>' +
+                        '</div>' +
+                        '<div class="grading-actions">' +
+                            '<button type="submit" class="button button-primary">Sauvegarder la note</button>' +
+                            '<button type="button" class="button popup-close">Annuler</button>' +
+                        '</div>' +
+                    '</form>' +
+                '</div>' +
+            '</div>' +
+        '</div>');
+        
+        $('body').append(modal);
+        modal.fadeIn(300);
+        
+        // Gérer la soumission du formulaire
+        modal.find('#grading-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            var $form = $(this);
+            var $submitBtn = $form.find('button[type="submit"]');
+            var originalText = $submitBtn.text();
+            
+            $submitBtn.prop('disabled', true).text('Sauvegarde...');
+            
+            var formData = {
+                action: 'wp_bmc_save_section_rating',
+                project_id: projectId,
+                section: section,
+                rating: $('#rating').val(),
+                comment: $('#comment').val(),
+                nonce: wp_bmc_admin_ajax.nonce
+            };
+            
+            $.post(ajaxurl, formData, function(response) {
+                if (response.success) {
+                    showMessage('Note sauvegardée avec succès !', 'success');
+                    modal.fadeOut(300, function() {
+                        modal.remove();
+                    });
+                    // Recharger la page pour voir les changements
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showMessage('Erreur lors de la sauvegarde : ' + response.data, 'error');
+                }
+            }).always(function() {
+                $submitBtn.prop('disabled', false).text(originalText);
+            });
+        });
+        
+        // Gérer la fermeture
+        modal.find('.popup-close, .popup-overlay').on('click', function() {
+            modal.fadeOut(300, function() {
+                modal.remove();
+            });
+        });
     }
     
     // ========================================

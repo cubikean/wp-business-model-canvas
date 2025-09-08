@@ -69,10 +69,46 @@ class WP_BMC_Database {
             KEY section (section)
         ) $charset_collate;";
         
+        // Table des demandes de notation
+        $table_grading_requests = $wpdb->prefix . 'bmc_grading_requests';
+        $sql_grading_requests = "CREATE TABLE $table_grading_requests (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            section varchar(50) NOT NULL,
+            section_title varchar(100) NOT NULL,
+            user_id bigint(20) NOT NULL,
+            status varchar(20) DEFAULT 'pending',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY project_id (project_id),
+            KEY section (section),
+            KEY user_id (user_id),
+            KEY status (status)
+        ) $charset_collate;";
+        
+        // Table des notifications admin
+        $table_admin_notifications = $wpdb->prefix . 'bmc_admin_notifications';
+        $sql_admin_notifications = "CREATE TABLE $table_admin_notifications (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            admin_id bigint(20) NOT NULL,
+            type varchar(50) NOT NULL,
+            message text NOT NULL,
+            data text,
+            is_read tinyint(1) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY admin_id (admin_id),
+            KEY type (type),
+            KEY is_read (is_read)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
         dbDelta($sql_canvas_data);
+        dbDelta($sql_grading_requests);
+        dbDelta($sql_admin_notifications);
     }
     
         /**
@@ -510,6 +546,136 @@ class WP_BMC_Database {
                 "SELECT * FROM $table WHERE project_id = %d ORDER BY section, created_at DESC",
                 $project_id
             )
+        );
+    }
+    
+    /**
+     * Sauvegarder une demande de notation
+     */
+    public static function save_grading_request($project_id, $section, $section_title, $user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_grading_requests';
+        
+        // Vérifier si une demande existe déjà pour cette section
+        $existing_request = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE project_id = %d AND section = %s AND status = 'pending'",
+                $project_id,
+                $section
+            )
+        );
+        
+        if ($existing_request) {
+            // Mettre à jour la demande existante
+            $result = $wpdb->update(
+                $table,
+                array(
+                    'updated_at' => current_time('mysql')
+                ),
+                array(
+                    'project_id' => $project_id,
+                    'section' => $section,
+                    'status' => 'pending'
+                ),
+                array('%s'),
+                array('%d', '%s', '%s')
+            );
+            
+            return $result !== false;
+        } else {
+            // Créer une nouvelle demande
+            $result = $wpdb->insert(
+                $table,
+                array(
+                    'project_id' => $project_id,
+                    'section' => $section,
+                    'section_title' => $section_title,
+                    'user_id' => $user_id,
+                    'status' => 'pending'
+                ),
+                array('%d', '%s', '%s', '%d', '%s')
+            );
+            
+            return $result ? $wpdb->insert_id : false;
+        }
+    }
+    
+    /**
+     * Sauvegarder une notification admin
+     */
+    public static function save_admin_notification($admin_id, $type, $message, $data = array()) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_notifications';
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'admin_id' => $admin_id,
+                'type' => $type,
+                'message' => $message,
+                'data' => json_encode($data),
+                'is_read' => 0
+            ),
+            array('%d', '%s', '%s', '%s', '%d')
+        );
+        
+        return $result ? $wpdb->insert_id : false;
+    }
+    
+    /**
+     * Obtenir les notifications non lues d'un admin
+     */
+    public static function get_unread_notifications($admin_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_notifications';
+        
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE admin_id = %d AND is_read = 0 ORDER BY created_at DESC",
+                $admin_id
+            )
+        );
+    }
+    
+    /**
+     * Marquer une notification comme lue
+     */
+    public static function mark_notification_read($notification_id, $admin_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_notifications';
+        
+        return $wpdb->update(
+            $table,
+            array('is_read' => 1),
+            array(
+                'id' => $notification_id,
+                'admin_id' => $admin_id
+            ),
+            array('%d'),
+            array('%d', '%d')
+        );
+    }
+    
+    /**
+     * Obtenir les demandes de notation en attente
+     */
+    public static function get_pending_grading_requests() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_grading_requests';
+        
+        return $wpdb->get_results(
+            "SELECT gr.*, p.title as project_title, 
+                    COALESCE(u.display_name, CONCAT(u.first_name, ' ', u.last_name), u.user_login) as user_name 
+             FROM $table gr 
+             JOIN {$wpdb->prefix}bmc_projects p ON gr.project_id = p.id 
+             JOIN {$wpdb->users} u ON gr.user_id = u.ID 
+             WHERE gr.status = 'pending' 
+             ORDER BY gr.created_at DESC"
         );
     }
 }

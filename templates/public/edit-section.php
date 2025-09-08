@@ -58,6 +58,7 @@ if (!defined('ABSPATH')) {
         <div class="edit-actions">
             <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary" id="edit-cancel">Annuler</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary" id="edit-save">Sauvegarder</button>
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-warning" id="request-grading">Demander notation</button>
         </div>
     </div>
 </div>

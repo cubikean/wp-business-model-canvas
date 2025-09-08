@@ -174,6 +174,11 @@ jQuery(document).ready(function($) {
             saveBrickContent();
         });
         
+        // Demander notation
+        $('#request-grading').on('click', function() {
+            requestGrading();
+        });
+        
         // Ajouter des fichiers
         $('#add-file-btn').on('click', function() {
             openFileUploader();
@@ -521,6 +526,53 @@ jQuery(document).ready(function($) {
          
          $('#documents-grid').html(documentsHtml);
      }
+    
+    // ========================================
+    // DEMANDE DE NOTATION
+    // ========================================
+    
+    function requestGrading() {
+        var sectionName = $('#wp-bmc-edit-view').attr('data-section');
+        var sectionTitle = getSectionTitle(sectionName);
+        var $btn = $('#request-grading');
+        var originalText = $btn.text();
+        
+        // Confirmation avant envoi
+        if (!confirm('Êtes-vous sûr de vouloir demander une notation pour cette section ? L\'administrateur sera notifié.')) {
+            return;
+        }
+        
+        // Désactiver le bouton
+        $btn.prop('disabled', true).text('Envoi en cours...');
+        
+        var formData = {
+            action: 'wp_bmc_request_grading',
+            nonce: wp_bmc_ajax.nonce,
+            section: sectionName,
+            section_title: sectionTitle
+        };
+        
+        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            if (response.success) {
+                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Demande de notation envoyée avec succès ! L\'administrateur a été notifié.</div>').show();
+                
+                // Changer le texte du bouton pour indiquer que la demande a été envoyée
+                $btn.text('Demande envoyée').addClass('wp-bmc-btn-success').removeClass('wp-bmc-btn-warning');
+                
+                // Fermer la vue d'édition après un délai
+                setTimeout(function() {
+                    closeEditView();
+                }, 2000);
+            } else {
+                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+            }
+        }).fail(function() {
+            $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de l\'envoi de la demande. Veuillez réessayer.</div>').show();
+        }).always(function() {
+            // Réactiver le bouton
+            $btn.prop('disabled', false);
+        });
+    }
     
     // ========================================
     // FONCTIONS UTILITAIRES

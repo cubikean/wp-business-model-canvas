@@ -22,13 +22,17 @@ $recent_users = $wpdb->get_results("
     LIMIT 10
 ");
 
-// Obtenir tous les utilisateurs (pour la liste complète)
+// Obtenir tous les utilisateurs (pour la liste complète) avec les demandes de notation
 $all_users = $wpdb->get_results("
     SELECT u.*, 
            COUNT(p.id) as project_count,
-           MAX(p.created_at) as last_project_date
+           MAX(p.created_at) as last_project_date,
+           COUNT(gr.id) as grading_requests_count,
+           MAX(gr.created_at) as last_grading_request_date,
+           GROUP_CONCAT(DISTINCT gr.status) as grading_statuses
     FROM {$wpdb->prefix}bmc_users u
     LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.user_id = p.user_id
+    LEFT JOIN {$wpdb->prefix}bmc_grading_requests gr ON p.id = gr.project_id
     GROUP BY u.user_id
     ORDER BY u.created_at DESC
 ");
@@ -41,6 +45,13 @@ $recent_projects = $wpdb->get_results("
     ORDER BY p.created_at DESC 
     LIMIT 10
 ");
+
+// Obtenir les notifications non lues pour l'admin actuel
+$current_admin_id = get_current_user_id();
+$unread_notifications = WP_BMC_Database::get_unread_notifications($current_admin_id);
+
+// Obtenir les demandes de notation en attente
+$pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 ?>
 
 <div class="wrap">
@@ -52,6 +63,78 @@ $recent_projects = $wpdb->get_results("
         </div>
     <?php endif; ?>
     
+    <!-- Section des notifications -->
+    <div class="wp-bmc-notifications-section">
+        <h2>Notifications</h2>
+        
+        <?php if (!empty($unread_notifications)): ?>
+            <div class="notifications-list">
+                <?php foreach ($unread_notifications as $notification): ?>
+                    <div class="notification-item" data-notification-id="<?php echo $notification->id; ?>">
+                        <div class="notification-content">
+                            <div class="notification-message">
+                                <?php echo esc_html($notification->message); ?>
+                            </div>
+                            <div class="notification-meta">
+                                <span class="notification-type"><?php echo esc_html($notification->type); ?></span>
+                                <span class="notification-date"><?php echo date('d/m/Y H:i', strtotime($notification->created_at)); ?></span>
+                            </div>
+                        </div>
+                        <div class="notification-actions">
+                            <button class="button button-small mark-read-btn" 
+                                    data-notification-id="<?php echo $notification->id; ?>">
+                                Marquer comme lu
+                            </button>
+                            <?php if ($notification->type === 'grading_request'): ?>
+                                <?php 
+                                $data = json_decode($notification->data, true);
+                                if ($data && isset($data['project_id'])): 
+                                ?>
+                                    <button class="button button-small button-primary grade-btn" 
+                                            data-project-id="<?php echo $data['project_id']; ?>"
+                                            data-section="<?php echo $data['section']; ?>">
+                                        Noter
+                                    </button>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p>Aucune notification non lue.</p>
+        <?php endif; ?>
+        
+        <!-- Demandes de notation en attente -->
+        <?php if (!empty($pending_grading_requests)): ?>
+            <div class="grading-requests-section">
+                <h3>Demandes de notation en attente</h3>
+                <div class="grading-requests-list">
+                    <?php foreach ($pending_grading_requests as $request): ?>
+                        <div class="grading-request-item">
+                            <div class="request-info">
+                                <strong><?php echo esc_html($request->user_name); ?></strong> 
+                                demande une notation pour la section 
+                                <strong><?php echo esc_html($request->section_title); ?></strong>
+                                du projet <strong><?php echo esc_html($request->project_title); ?></strong>
+                            </div>
+                            <div class="request-meta">
+                                Demandé le : <?php echo date('d/m/Y H:i', strtotime($request->created_at)); ?>
+                            </div>
+                            <div class="request-actions">
+                                <button class="button button-primary grade-section-btn" 
+                                        data-project-id="<?php echo $request->project_id; ?>"
+                                        data-section="<?php echo $request->section; ?>"
+                                        data-section-title="<?php echo esc_attr($request->section_title); ?>">
+                                    Noter cette section
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
     
     <!-- Liste complète des utilisateurs -->
     <div class="wp-bmc-all-users">
@@ -66,6 +149,12 @@ $recent_projects = $wpdb->get_results("
                     <option value="">Tous les statuts</option>
                     <option value="active">Actifs</option>
                     <option value="inactive">Inactifs</option>
+                </select>
+                <select id="users-filter-grading">
+                    <option value="">Toutes les demandes</option>
+                    <option value="no-requests">Aucune demande</option>
+                    <option value="pending">En attente</option>
+                    <option value="graded">Noté</option>
                 </select>
             </div>
         </div>
@@ -85,6 +174,9 @@ $recent_projects = $wpdb->get_results("
                     </th>
                     <th class="sortable" data-sort="last_project_date">
                         Dernier projet <span class="sort-indicator"></span>
+                    </th>
+                    <th class="sortable" data-sort="grading_status">
+                        Demande de notation <span class="sort-indicator"></span>
                     </th>
                     <th>Actions</th>
                 </tr>
@@ -109,6 +201,40 @@ $recent_projects = $wpdb->get_results("
                                 <?php echo date('d/m/Y H:i', strtotime($user->last_project_date)); ?>
                             <?php else: ?>
                                 <span class="no-project">Aucun projet</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="user-grading-status">
+                            <?php 
+                            $grading_statuses = $user->grading_statuses ? explode(',', $user->grading_statuses) : array();
+                            $grading_requests_count = intval($user->grading_requests_count);
+                            
+                            if ($grading_requests_count == 0): ?>
+                                <span class="grading-status no-requests">
+                                    <i class="fas fa-check-circle"></i> Aucune demande
+                                </span>
+                            <?php else: ?>
+                                <?php if (in_array('pending', $grading_statuses)): ?>
+                                    <span class="grading-status pending">
+                                        <i class="fas fa-clock"></i> En attente
+                                        <span class="request-count">(<?php echo $grading_requests_count; ?>)</span>
+                                    </span>
+                                <?php elseif (in_array('graded', $grading_statuses)): ?>
+                                    <span class="grading-status graded">
+                                        <i class="fas fa-check-circle"></i> Noté
+                                        <span class="request-count">(<?php echo $grading_requests_count; ?>)</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="grading-status other">
+                                        <i class="fas fa-info-circle"></i> Autre
+                                        <span class="request-count">(<?php echo $grading_requests_count; ?>)</span>
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <?php if ($user->last_grading_request_date): ?>
+                                    <div class="grading-date">
+                                        Dernière demande : <?php echo date('d/m/Y', strtotime($user->last_grading_request_date)); ?>
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                         <td class="user-actions">
