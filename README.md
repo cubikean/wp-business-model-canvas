@@ -1,166 +1,239 @@
-# WP Business Model Canvas
+# 🎯 WP Business Model Canvas v2.0
 
-Un plugin WordPress complet pour créer et gérer des Business Model Canvas avec un système d'authentification, d'édition collaborative et de notation par les administrateurs.
+> Plugin WordPress professionnel pour construire, suivre et enrichir un Business Model Canvas directement depuis le front-end
 
-## 🎯 Fonctionnalités
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/your-repo/wp-business-model-canvas)
+[![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
+[![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
+[![License](https://img.shields.io/badge/license-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-### 👥 Système d'authentification
-- Inscription et connexion utilisateurs
-- Gestion des profils utilisateurs
-- Système de déconnexion sécurisé
+## 🚀 Nouveautés v2.0
 
-### 📊 Business Model Canvas
-- **9 sections standard** du Business Model Canvas :
-  - Partenaires clés
-  - Activités clés
-  - Ressources clés
-  - Proposition de valeur
-  - Relations clients
-  - Canaux
-  - Segments clients
-  - Structure des coûts
-  - Sources de revenus
+### ✨ Structure complètement réorganisée
+- **Architecture MVC** : Séparation claire des responsabilités
+- **Autoloader intégré** : Chargement automatique des classes
+- **Code modulaire** : Facile à maintenir et étendre
+- **Standards WordPress** : Respect des meilleures pratiques
 
-### 🎨 Interface utilisateur
-- **Vue synthétique** : Affichage des 3 sections principales
-- **Vue globale** : Affichage complet des 9 sections
-- Interface responsive et moderne
-- Édition en temps réel avec sauvegarde automatique
+### 🎨 Interfaces séparées
+- **Admin** : Interface d'administration complète
+- **Public** : Interface utilisateur intuitive
+- **Responsive** : Design adaptatif mobile/desktop
 
 ### 🔧 Fonctionnalités avancées
-- **Éditeur WYSIWYG** pour chaque section
-- **Gestion des fichiers** : Upload d'images, vidéos, PDF
-- **Documents de référence** : Bibliothèque de documents gérée par les admins
-- **Système de notation** : Les admins peuvent noter chaque section (0-10) avec commentaires
-- **Export PDF** des canvas
+- **Sauvegarde automatique** : Aucune perte de données
+- **Export PDF** : Génération de documents professionnels
+- **Gestion des fichiers** : Upload et organisation des documents
+- **Authentification sécurisée** : Système d'accès robuste
 
-### 👨‍💼 Interface administrateur
-- Gestion des utilisateurs
-- Gestion des documents de référence
-- Vue d'édition des canvas utilisateurs
-- Système de notation et commentaires
-
-## 🚀 Installation
-
-1. Téléchargez le plugin
-2. Uploadez le dossier dans `/wp-content/plugins/`
-3. Activez le plugin dans l'administration WordPress
-4. Les tables de base de données seront créées automatiquement
-
-## 📋 Prérequis
-
-- WordPress 5.0+
-- PHP 7.4+
-- MySQL 5.7+
-
-## 🛠️ Structure du plugin
+## 📁 Structure du projet
 
 ```
 wp-business-model-canvas/
-├── admin/                 # Interface d'administration
-├── includes/              # Classes PHP principales
-├── public/               # Assets publics (CSS, JS)
-├── templates/            # Templates d'affichage
-│   ├── admin/           # Templates admin
-│   └── public/          # Templates utilisateur
-└── wp-business-model-canvas.php  # Fichier principal
+├── 📁 src/                           # 🎯 Code source principal
+│   ├── 📁 Admin/                     # 🛡️ Interface d'administration
+│   │   ├── Controllers/               # Contrôleurs admin
+│   │   │   ├── admin-dashboard.php   # Dashboard principal
+│   │   │   └── admin-page.php         # Page admin générale
+│   │   ├── Views/                    # Vues admin (templates)
+│   │   ├── Assets/                   # Ressources admin
+│   │   │   ├── css/                  # Styles admin
+│   │   │   │   ├── admin.css         # Styles généraux
+│   │   │   │   ├── admin-dashboard.css # Styles dashboard
+│   │   │   │   └── admin-users.css   # Styles gestion utilisateurs
+│   │   │   └── js/                   # Scripts admin
+│   │   │       ├── admin.js          # JavaScript général
+│   │   │       ├── admin-dashboard.js # JavaScript dashboard
+│   │   │       └── admin-users.js    # JavaScript gestion utilisateurs
+│   │   └── Services/                 # Services admin spécialisés
+│   ├── 📁 Public/                    # 👥 Interface utilisateur
+│   │   ├── Controllers/              # Contrôleurs public
+│   │   ├── Views/                    # Vues public (templates)
+│   │   ├── Assets/                   # Ressources public
+│   │   │   ├── css/                  # Styles public
+│   │   │   │   ├── public.css        # Styles généraux
+│   │   │   │   └── admin.css         # Styles admin pour public
+│   │   │   └── js/                   # Scripts public
+│   │   │       ├── public.js         # JavaScript général
+│   │   │       ├── auth.js           # Authentification
+│   │   │       └── dashboard.js      # Dashboard utilisateur
+│   │   └── Services/                 # Services public spécialisés
+│   ├── 📁 Core/                      # 🔧 Fonctionnalités centrales
+│   │   ├── Database/                 # Gestion base de données
+│   │   │   └── class-wp-bmc-database.php
+│   │   ├── Auth/                     # Authentification
+│   │   │   └── class-wp-bmc-auth.php
+│   │   ├── Ajax/                     # Requêtes AJAX
+│   │   │   └── class-wp-bmc-ajax.php
+│   │   ├── Shortcodes/               # Shortcodes WordPress
+│   │   │   └── class-wp-bmc-shortcodes.php
+│   │   ├── class-wp-bmc-loader.php   # Chargeur principal
+│   │   └── class-wp-bmc-template-loader.php # Chargeur templates
+│   └── 📁 Shared/                    # 🔄 Ressources partagées
+│       ├── Models/                   # Modèles de données
+│       ├── Utils/                    # Utilitaires communs
+│       └── Templates/                # Templates réutilisables
+│           ├── admin/                # Templates admin
+│           │   ├── canvas.php        # Canvas admin
+│           │   ├── dashboard.php     # Dashboard admin
+│           │   └── edit-section.php  # Édition section
+│           └── public/               # Templates public
+│               ├── canvas.php        # Canvas public
+│               ├── dashboard.php     # Dashboard public
+│               ├── edit-section.php  # Édition section
+│               ├── login-form.php    # Formulaire connexion
+│               └── register-form.php # Formulaire inscription
+├── 📁 assets/                        # 📦 Assets statiques compilés
+│   ├── css/                          # Styles compilés
+│   ├── js/                           # Scripts compilés
+│   └── images/                       # Images optimisées
+├── 📁 languages/                     # 🌍 Fichiers de traduction
+├── README.md                         # Documentation principale
+└── wp-business-model-canvas.php      # 🚀 Point d'entrée du plugin
 ```
 
-## 🗄️ Base de données
+## 🛠️ Installation
 
-Le plugin crée automatiquement les tables suivantes :
-- `bmc_users` : Utilisateurs du plugin
-- `bmc_projects` : Projets canvas
-- `bmc_canvas_data` : Données des sections canvas
-- `bmc_files` : Fichiers attachés aux sections
-- `bmc_documents` : Documents de référence
-- `bmc_ratings` : Notes et commentaires des admins
+### Prérequis
+- WordPress 5.0 ou supérieur
+- PHP 7.4 ou supérieur
+- MySQL 5.6 ou supérieur
 
-## 🎨 Shortcodes disponibles
+### Installation manuelle
+1. Téléchargez le plugin
+2. Décompressez dans `/wp-content/plugins/`
+3. Activez le plugin depuis l'admin WordPress
+4. Configurez les pages nécessaires
 
-- `[wp_bmc_login]` : Formulaire de connexion
-- `[wp_bmc_register]` : Formulaire d'inscription
-- `[wp_bmc_dashboard]` : Tableau de bord utilisateur
-- `[wp_bmc_canvas]` : Affichage du canvas
-
-## 🔧 Configuration
-
-### Pages requises
-Créez les pages suivantes dans WordPress :
-- `/login/` : Page de connexion
-- `/register/` : Page d'inscription
-- `/dashboard/` : Tableau de bord utilisateur
-- `/business-model-canvas/` : Page d'affichage canvas
-
-### Permissions
-- Les utilisateurs normaux peuvent créer et éditer leur propre canvas
-- Les administrateurs peuvent voir et éditer tous les canvas
-- Seuls les administrateurs peuvent ajouter des documents de référence
+### Installation via Composer
+```bash
+composer require your-vendor/wp-business-model-canvas
+```
 
 ## 🎯 Utilisation
 
-### Pour les utilisateurs
-1. Créez un compte via la page d'inscription
-2. Accédez à votre tableau de bord
-3. Créez votre premier Business Model Canvas
-4. Éditez chaque section avec l'éditeur WYSIWYG
-5. Ajoutez des fichiers et consultez les documents de référence
-6. Consultez les notes et commentaires de votre administrateur
-
 ### Pour les administrateurs
-1. Accédez à l'interface d'administration du plugin
-2. Gérez les documents de référence
-3. Consultez les canvas des utilisateurs
-4. Notez et commentez chaque section
-5. Suivez l'évolution des projets
+1. Connectez-vous à l'admin WordPress
+2. Accédez au menu "BMC" dans la barre latérale
+3. Gérez les utilisateurs et consultez les statistiques
 
-## 🔒 Sécurité
+### Pour les utilisateurs
+1. Inscrivez-vous via le formulaire d'inscription
+2. Connectez-vous à votre tableau de bord
+3. Créez et éditez votre Business Model Canvas
 
-- Authentification sécurisée avec nonces WordPress
-- Validation et échappement des données
-- Protection CSRF
-- Gestion des permissions utilisateur
-- Upload de fichiers sécurisé
+## 🔧 Configuration
+
+### Pages automatiques
+Le plugin crée automatiquement les pages suivantes :
+- `/business-model-canvas/` - Canvas principal
+- `/dashboard/` - Tableau de bord utilisateur
+- `/login/` - Connexion
+- `/register/` - Inscription
+
+### Shortcodes disponibles
+- `[wp_bmc_canvas]` - Affiche le canvas
+- `[wp_bmc_dashboard]` - Affiche le dashboard
+- `[wp_bmc_login]` - Formulaire de connexion
+- `[wp_bmc_register]` - Formulaire d'inscription
 
 ## 🎨 Personnalisation
 
-Le plugin utilise des variables CSS pour la personnalisation :
-```css
-:root {
-    --primary-color: #0073aa;
-    --secondary-color: #005177;
-    --success-color: #28a745;
-    --error-color: #dc3545;
-    --warning-color: #ffc107;
-}
+### Styles CSS
+Les styles sont organisés par contexte :
+- `src/Admin/Assets/css/` - Styles admin
+- `src/Public/Assets/css/` - Styles public
+- `assets/css/` - Styles compilés
+
+### Templates
+Les templates sont dans `src/Shared/Templates/` :
+- `admin/` - Templates admin
+- `public/` - Templates public
+
+### Hooks et filtres
+```php
+// Personnaliser le canvas
+add_filter('wp_bmc_canvas_sections', 'custom_canvas_sections');
+
+// Ajouter des champs personnalisés
+add_action('wp_bmc_user_profile_fields', 'add_custom_fields');
 ```
 
-## 📝 Changelog
+## 🧪 Tests
 
-### Version 1.0.0
-- Système d'authentification complet
-- Business Model Canvas avec 9 sections
-- Éditeur WYSIWYG intégré
-- Gestion des fichiers et documents
-- Système de notation administrateur
-- Interface responsive
-- Export PDF
+### Tests unitaires
+```bash
+composer test
+```
+
+### Tests d'intégration
+```bash
+composer test:integration
+```
+
+## 📚 Documentation
+
+- [Guide de développement](docs/DEVELOPMENT.md)
+- [Structure v2.0](docs/STRUCTURE-V2.md)
+- [API Reference](docs/API.md)
+- [Migration](docs/MIGRATION.md)
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
-- Signaler des bugs
-- Proposer des améliorations
-- Soumettre des pull requests
+### Développement
+1. Fork le projet
+2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
+
+### Standards de code
+- Respecter les [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/)
+- Utiliser PHP 7.4+ features
+- Documenter le code avec PHPDoc
+- Tests unitaires pour les nouvelles fonctionnalités
+
+## 📋 Changelog
+
+### v2.0.0 (2024-01-XX)
+- ✨ Structure complètement réorganisée
+- 🎨 Interfaces admin/public séparées
+- 🔧 Autoloader intégré
+- 📱 Design responsive amélioré
+- 🚀 Performance optimisée
+
+### v1.0.0 (2023-XX-XX)
+- 🎉 Version initiale
+- 📊 Business Model Canvas de base
+- 👥 Système d'authentification
+- 💾 Sauvegarde automatique
+
+## 🐛 Signaler un bug
+
+Si vous rencontrez un problème :
+1. Vérifiez les [issues existantes](https://github.com/your-repo/wp-business-model-canvas/issues)
+2. Créez une nouvelle issue avec :
+   - Description détaillée
+   - Étapes pour reproduire
+   - Version WordPress/PHP
+   - Logs d'erreur
 
 ## 📄 Licence
 
-Ce plugin est sous licence GPL v2 ou ultérieure.
+Ce projet est sous licence GPL v2 ou ultérieure. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-## 👨‍💻 Auteur
+## 👥 Équipe
 
-Développé avec ❤️ pour la communauté WordPress.
+- **Développeur principal** : [Votre Nom](https://github.com/your-username)
+- **Contributeurs** : Voir [CONTRIBUTORS.md](CONTRIBUTORS.md)
+
+## 🙏 Remerciements
+
+- [WordPress](https://wordpress.org/) - Plateforme CMS
+- [Business Model Canvas](https://www.strategyzer.com/canvas/business-model-canvas) - Méthodologie
+- [Font Awesome](https://fontawesome.com/) - Icônes
+- Tous les contributeurs et testeurs
 
 ---
 
-**Note** : Ce plugin est conçu pour les consultants, coachs et formateurs qui souhaitent offrir un outil de Business Model Canvas à leurs clients ou étudiants.
+**Développé avec ❤️ pour la communauté WordPress**

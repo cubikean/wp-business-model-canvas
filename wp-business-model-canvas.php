@@ -3,12 +3,15 @@
  * Plugin Name: WP Business Model Canvas
  * Plugin URI: https://example.com/wp-business-model-canvas
  * Description: Plugin WordPress pour construire, suivre et enrichir un Business Model Canvas directement depuis le front-end
- * Version: 1.0.0
+ * Version: 2.0.0
  * Author: Votre Nom
  * Author URI: https://example.com
  * License: GPL v2 or later
  * Text Domain: wp-business-model-canvas
  * Domain Path: /languages
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
  */
 
 // Empêcher l'accès direct
@@ -17,18 +20,29 @@ if (!defined('ABSPATH')) {
 }
 
 // Définir les constantes du plugin
-define('WP_BMC_VERSION', '1.0.0');
+define('WP_BMC_VERSION', '2.0.0');
 define('WP_BMC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_BMC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_BMC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
-// Inclure les fichiers nécessaires
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-loader.php';
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-auth.php';
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-shortcodes.php';
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-database.php';
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-ajax.php';
-require_once WP_BMC_PLUGIN_DIR . 'includes/class-wp-bmc-template-loader.php';
+// Définir les constantes pour les chemins
+define('WP_BMC_SRC_DIR', WP_BMC_PLUGIN_DIR . 'src/');
+define('WP_BMC_ADMIN_DIR', WP_BMC_SRC_DIR . 'Admin/');
+define('WP_BMC_PUBLIC_DIR', WP_BMC_SRC_DIR . 'Public/');
+define('WP_BMC_CORE_DIR', WP_BMC_SRC_DIR . 'Core/');
+define('WP_BMC_SHARED_DIR', WP_BMC_SRC_DIR . 'Shared/');
+define('WP_BMC_ASSETS_DIR', WP_BMC_PLUGIN_DIR . 'assets/');
+
+// Charger l'autoloader personnalisé
+require_once WP_BMC_CORE_DIR . 'autoloader.php';
+
+// Inclure directement les classes essentielles pour éviter les erreurs
+require_once WP_BMC_CORE_DIR . 'Database/class-wp-bmc-database.php';
+require_once WP_BMC_CORE_DIR . 'Auth/class-wp-bmc-auth.php';
+require_once WP_BMC_CORE_DIR . 'Shortcodes/class-wp-bmc-shortcodes.php';
+require_once WP_BMC_CORE_DIR . 'Ajax/class-wp-bmc-ajax.php';
+require_once WP_BMC_CORE_DIR . 'class-wp-bmc-loader.php';
+require_once WP_BMC_CORE_DIR . 'class-wp-bmc-template-loader.php';
 
 // Initialiser le plugin
 function wp_bmc_init() {
@@ -45,7 +59,14 @@ add_action('plugins_loaded', 'wp_bmc_init');
 function wp_bmc_admin_scripts($hook) {
     if (strpos($hook, 'wp-business-model-canvas') !== false) {
         wp_enqueue_script('jquery');
-        wp_enqueue_style('wp-bmc-admin', WP_BMC_PLUGIN_URL . 'admin/css/admin.css', array(), WP_BMC_VERSION);
+        wp_enqueue_style('wp-bmc-admin', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin.css', array(), WP_BMC_VERSION);
+        wp_enqueue_script('wp-bmc-admin-dashboard', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js', array('jquery'), WP_BMC_VERSION, true);
+        
+        // Localiser les variables AJAX
+        wp_localize_script('wp-bmc-admin-dashboard', 'wp_bmc_admin_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+        ));
     }
 }
 add_action('admin_enqueue_scripts', 'wp_bmc_admin_scripts');
@@ -88,13 +109,13 @@ function wp_bmc_deactivate() {
 
 // Fonction utilitaire pour inclure le template d'édition
 function wp_bmc_include_edit_section($context = 'public') {
-    $template_path = WP_BMC_PLUGIN_DIR . 'templates/' . $context . '/edit-section.php';
+    $template_path = WP_BMC_SHARED_DIR . 'Templates/' . $context . '/edit-section.php';
     
     if (file_exists($template_path)) {
         include $template_path;
     } else {
         // Fallback vers le template public si le template spécifique n'existe pas
-        $fallback_path = WP_BMC_PLUGIN_DIR . 'templates/public/edit-section.php';
+        $fallback_path = WP_BMC_SHARED_DIR . 'Templates/public/edit-section.php';
         if (file_exists($fallback_path)) {
             include $fallback_path;
         }
