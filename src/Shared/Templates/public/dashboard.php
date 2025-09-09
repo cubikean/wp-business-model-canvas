@@ -10,117 +10,20 @@ if (!defined('ABSPATH')) {
 
 $current_user = WP_BMC_Auth::get_current_user();
 
-// Vérifier que l'utilisateur est connecté et trouvé
 if (!$current_user) {
     wp_redirect(home_url('/login/'));
     exit;
 }
 
-// Pour les utilisateurs BMC normaux
-$user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+$view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
-// L'utilisateur ne peut avoir qu'un seul projet
 $project = !empty($user_projects) ? $user_projects[0] : null;
 $canvas_data = $project ? WP_BMC_Database::get_canvas_data($project->id) : array();
 
-// Vue par défaut (synthétique ou globale)
-$view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
-// Configuration des sections du canvas
-// Charger la configuration des sections du canvas
+$user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
 $canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
-
-// Fonction pour afficher une section de canvas
-function render_canvas_section($section_key, $section_config, $canvas_data, $project, $view_mode)
-{
-    $content = isset($canvas_data[$section_key]) ? esc_textarea($canvas_data[$section_key]) : '';
-    $section_class = $section_key;
-
-    // Classes CSS spécifiques pour certaines sections
-    if ($section_key === 'value_proposition') {
-        $section_class .= ' value-proposition';
-    }
-
-    // Déterminer si la section doit être affichée dans la vue synthétique
-    $show_in_synthetic = $section_config['synthetic'];
-    $show_in_global = true;
-
-    // Filtrer les sections selon la vue
-    if ($view_mode === 'synthetic' && !$show_in_synthetic) {
-        return '';
-    }
-
-    // Récupérer les notes de l'admin
-    $ratings = WP_BMC_Database::get_project_ratings($project->id);
-    $section_rating = null;
-    foreach ($ratings as $rating) {
-        if ($rating->section === $section_key) {
-            $section_rating = $rating;
-            break;
-        }
-    }
-
-    ob_start();
-?>
-    <div class="<?php echo $view_mode === 'synthetic' ? 'synthetic-section' : 'canvas-section'; ?> <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>">
-        <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>" title="Éditer cette brique">
-            <i class="fas fa-edit"></i>
-        </button>
-        <h3><?php echo esc_html($section_config['title']); ?></h3>
-
-        <div class="canvas-content wysiwyg-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" data-section="<?php echo $section_key; ?>">
-            <?php
-            $allowed_tags = array(
-                'span' => array(
-                    'style' => true,
-                    'class' => true,
-                ),
-                'p' => array(
-                    'style' => true,
-                    'class' => true,
-                ),
-                'ul' => array('class' => true, 'style' => true),
-                'ol' => array('class' => true, 'style' => true),
-                'li' => array('class' => true, 'style' => true),
-                'strong' => array(),
-                'em' => array(),
-                'u' => array(),
-                'br' => array(),
-                'div' => array(
-                    'class' => true,
-                    'style' => true,
-                ),
-                'i' => array('class' => true, 'style' => true),
-                'b' => array('class' => true, 'style' => true),
-            );
-
-            echo wp_kses(html_entity_decode($content), $allowed_tags);
-            ?>
-        </div>
-
-        <?php if ($section_rating): ?>
-            <!-- Affichage des notes de l'admin -->
-            <div class="admin-rating-display" id="rating-display-<?php echo $section_key; ?>">
-                <div class="rating-info">
-                    <div class="rating-score">
-                        <i class="fas fa-star"></i>
-                        Note admin : <?php echo esc_html($section_rating->rating); ?>/10
-                    </div>
-                    <?php if ($section_rating->comment): ?>
-                        <div class="rating-comment">
-                            <strong>Commentaire :</strong> <?php echo esc_html($section_rating->comment); ?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="rating-date">
-                        Noté le : <?php echo date('d/m/Y', strtotime($section_rating->created_at)); ?>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-<?php
-    return ob_get_clean();
-}
+$project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 ?>
 
 <div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project->id; ?>" <?php endif; ?>>
@@ -177,14 +80,14 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                     data-view="global">Vue globale</button>
             </div>
 
-            <div class="canvas-actions">
-                <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
+            <!-- <div class="canvas-actions">
+                <button id="wp-bmc-save-canvas" class="wp-bmc-btn">
                     Sauvegarder
                 </button>
-                <button id="wp-bmc-export-pdf" class="wp-bmc-btn wp-bmc-btn-secondary">
+                <button id="wp-bmc-export-pdf" class="wp-bmc-btn">
                     Exporter PDF
                 </button>
-            </div>
+            </div> -->
         </div>
 
         <div class="canvas-container">
@@ -197,7 +100,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                         $synthetic_order = array('customer_segments', 'value_proposition', 'revenue_streams');
                         foreach ($synthetic_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
-                                echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view_mode);
+                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project->id, $project_ratings);
                             }
                         }
                         ?>
@@ -224,7 +127,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 
                         foreach ($global_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
-                                echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view_mode);
+                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project->id, $project_ratings);
                             }
                         }
                         ?>
@@ -247,7 +150,4 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 
 <div id="wp-bmc-dashboard-message" class="wp-bmc-message" style="display: none;"></div>
 
-<?php
-// Inclure le template d'édition réutilisable
-wp_bmc_include_edit_section('public');
-?>
+<?php wp_bmc_include_edit_section('public'); ?>
