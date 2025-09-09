@@ -48,6 +48,20 @@ class WP_BMC_Paths {
     }
     
     /**
+     * Chemins des polices
+     */
+    public static function get_fonts() {
+        return array(
+            'css' => WP_BMC_PLUGIN_URL . 'src/Shared/utils/fonts/urbanist.css',
+            'path' => WP_BMC_SHARED_DIR . 'utils/fonts/',
+            'url' => WP_BMC_PLUGIN_URL . 'src/Shared/utils/fonts/',
+            'files' => array(
+                'variable' => WP_BMC_PLUGIN_URL . 'src/Shared/utils/fonts/Urbanist-var.woff2',
+            ),
+        );
+    }
+    
+    /**
      * Chemins des templates
      */
     public static function get_templates() {

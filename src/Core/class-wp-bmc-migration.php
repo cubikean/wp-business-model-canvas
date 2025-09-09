@@ -48,6 +48,11 @@ class WP_BMC_Migration {
         'public/js/public.js' => 'src/Public/Assets/js/public.js',
         'public/js/auth.js' => 'src/Public/Assets/js/auth.js',
         'public/js/dashboard.js' => 'src/Public/Assets/js/dashboard.js',
+        
+        // Polices
+        'shared/utils/fonts/urbanist.css' => 'src/Shared/utils/fonts/urbanist.css',
+        'shared/utils/fonts/class-wp-bmc-fonts.php' => 'src/Shared/utils/fonts/class-wp-bmc-fonts.php',
+        'shared/utils/fonts/Urbanist-var.woff2' => 'src/Shared/utils/fonts/Urbanist-var.woff2',
     );
     
     /**

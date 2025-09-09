@@ -129,13 +129,28 @@ class WP_BMC_Loader {
     }
     
     /**
+     * Charger les polices personnalisées
+     */
+    public function enqueue_fonts() {
+        wp_enqueue_style(
+            'wp-bmc-fonts',
+            WP_BMC_PLUGIN_URL . 'src/Shared/utils/fonts/urbanist.css',
+            array(),
+            WP_BMC_VERSION
+        );
+    }
+    
+    /**
      * Charger les scripts publics
      */
     public function enqueue_public_scripts() {
+        // Charger les polices en premier
+        $this->enqueue_fonts();
+        
         wp_enqueue_style(
             'wp-bmc-public',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/public.css',
-            array(),
+            array('wp-bmc-fonts'),
             WP_BMC_VERSION
         );
         
@@ -175,10 +190,13 @@ class WP_BMC_Loader {
         
         // Si c'est un admin, charger aussi les styles admin
         if (current_user_can('manage_options')) {
+            // Charger les polices pour l'admin
+            $this->enqueue_fonts();
+            
             wp_enqueue_style(
                 'wp-bmc-admin',
                 WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css',
-                array(),
+                array('wp-bmc-fonts'),
                 WP_BMC_VERSION
             );
             
