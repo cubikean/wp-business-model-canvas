@@ -139,7 +139,7 @@ Le plugin crée automatiquement les pages suivantes :
 
 ### Styles CSS
 Les styles sont organisés par contexte :
-- `src/Admin/Assets/css/` - Styles admin
+- `src/Public/Assets/css/admin.css` - Styles admin
 - `src/Public/Assets/css/` - Styles public
 - `assets/css/` - Styles compilés
 

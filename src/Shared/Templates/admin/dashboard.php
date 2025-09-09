@@ -64,7 +64,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 ?>
 
 <div class="wrap">
-    <h1>WP Business Model Canvas - Administration</h1>
+    <h1>Dashboard</h1>
 
     <?php if (isset($message)): ?>
         <div class="notice notice-success">
@@ -189,7 +189,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                 </div>
                             </div>
                             <div class="request-actions">
-                                <button class="button button-primary grade-section-btn"
+                                <button class="button btn-primary grade-section-btn"
                                     data-project-id="<?php echo $request->project_id; ?>"
                                     data-user-id="<?php echo $request->user_id; ?>"
                                     data-section="<?php echo $request->section; ?>"
@@ -207,7 +207,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 
     <!-- Liste complète des utilisateurs -->
     <div class="wp-bmc-all-users">
-        <h2>Tous les utilisateurs</h2>
+        <h2>Utilisateurs</h2>
 
         <div class="wp-bmc-users-controls">
             <div class="users-search">
@@ -232,31 +232,33 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
             <thead>
                 <tr>
                     <th class="sortable" data-sort="name">
-                        Prénom /Nom <span class="sort-indicator"></span>
+                        PRÉNOM - NOM <span class="sort-indicator"></span>
                     </th>
                     <th class="sortable" data-sort="email">
-                        Email <span class="sort-indicator"></span>
+                        EMAIL <span class="sort-indicator"></span>
                     </th>
-
-                    <!-- <th class="sortable" data-sort="created_at">
-                        Inscription <span class="sort-indicator"></span>
-                    </th> -->
                     <th class="sortable" data-sort="last_project_date">
-                        Nom du projet <span class="sort-indicator"></span>
+                        PROJET <span class="sort-indicator"></span>
                     </th>
                     <th class="sortable" data-sort="grading_status">
-                        Demande de notation <span class="sort-indicator"></span>
+                        STATUT <span class="sort-indicator"></span>
                     </th>
                     <th class="sortable" data-sort="project_advancement">
-                        Avancement<span class="sort-indicator"></span>
+                        AVANCEMENT <span class="sort-indicator"></span>
                     </th>
-                    <th>Actions</th>
+                    <th>ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($all_users as $user): ?>
                     <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
                         <td class="user-name">
+                            <div class="user-avatar">
+                                <?php 
+                                $initials = strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
+                                echo esc_html($initials);
+                                ?>
+                            </div>
                             <strong><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></strong>
                         </td>
                         <td class="user-email">
@@ -321,21 +323,22 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                             }
                             ?>
                             <div class="advancement-container">
-                                <div class="advancement-info">
-                                    <span class="rating-value"><?php echo $percentage; ?>%</span>
-                                </div>
                                 <div class="progress-bar <?php echo $rating_class; ?>">
                                     <div class="progress-fill" style="width: <?php echo $percentage; ?>%"></div>
                                 </div>
+                                <div class="advancement-info">
+                                    <span class="rating-value"><?php echo $percentage; ?>%</span>
+                                </div>
+                               
                             </div>
                         </td>
 
                         <td class="user-actions">
                             <div class="action-buttons">
-                                <button class="button button-small button-primary view-user-btn"
+                                <button class="button action-button button-small button-primary view-user-btn"
                                     data-user-id="<?php echo $user->user_id; ?>"
                                     title="Voir le profil">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="fas fa-arrow-right"></i>
                                 </button>
 
                                 <form method="post" action="" style="display: inline;">

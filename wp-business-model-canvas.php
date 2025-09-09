@@ -59,7 +59,7 @@ add_action('plugins_loaded', 'wp_bmc_init');
 function wp_bmc_admin_scripts($hook) {
     if (strpos($hook, 'wp-business-model-canvas') !== false) {
         wp_enqueue_script('jquery');
-        wp_enqueue_style('wp-bmc-admin', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin.css', array(), WP_BMC_VERSION);
+        wp_enqueue_style('wp-bmc-admin', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css', array(), WP_BMC_VERSION);
         wp_enqueue_script('wp-bmc-admin-dashboard', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js', array('jquery'), WP_BMC_VERSION, true);
         
         // Localiser les variables AJAX

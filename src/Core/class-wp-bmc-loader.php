@@ -119,8 +119,6 @@ class WP_BMC_Loader {
             return;
         }
         
-        
-        
         wp_enqueue_script(
             'wp-bmc-admin',
             WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin.js',
@@ -177,7 +175,12 @@ class WP_BMC_Loader {
         
         // Si c'est un admin, charger aussi les styles admin
         if (current_user_can('manage_options')) {
-            
+            wp_enqueue_style(
+                'wp-bmc-admin',
+                WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css',
+                array(),
+                WP_BMC_VERSION
+            );
             
             // Charger aussi le script admin-dashboard pour les admins
             wp_enqueue_script(

@@ -243,7 +243,7 @@ class WP_BMC_Config {
      */
     public static function get_asset_paths() {
         return array(
-            'admin_css' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/',
+            'admin_css' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css',
             'admin_js' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/',
             'public_css' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/',
             'public_js' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/',
