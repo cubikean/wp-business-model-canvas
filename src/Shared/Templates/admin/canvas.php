@@ -206,7 +206,7 @@ if ($admin_view && $is_admin) {
 }
 ?>
 
-<div class="wp-bmc-canvas-container">
+<div class="wp-bmc-canvas-container" data-project-id="<?php echo $project->id; ?>">
     <div class="canvas-header">
         <h1><?php echo esc_html($project->title); ?></h1>
 

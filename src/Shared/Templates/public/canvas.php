@@ -147,7 +147,7 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
 }
 ?>
 
-<div class="wp-bmc-canvas-container">
+<div class="wp-bmc-canvas-container" data-project-id="<?php echo $project->id; ?>">
     <div class="canvas-header">
         <h1><?php echo esc_html($project->title); ?></h1>
         <div class="canvas-actions">

@@ -137,7 +137,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 }
 ?>
 
-<div class="wp-bmc-dashboard">
+<div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project->id; ?>"<?php endif; ?>>
     <div class="dashboard-header">
         <h1>Mon Business Model Canvas</h1>
         <div class="user-info">

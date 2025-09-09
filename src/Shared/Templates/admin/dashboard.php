@@ -252,14 +252,17 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
             <tbody>
                 <?php foreach ($all_users as $user): ?>
                     <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
-                        <td class="user-name">
-                            <div class="user-avatar">
-                                <?php 
-                                $initials = strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
-                                echo esc_html($initials);
-                                ?>
+                        <td class="user-name-container">
+                            <div class="user-name">
+                                <div class="user-avatar">
+                                    <?php
+                                    $initials = strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
+                                    echo esc_html($initials);
+                                    ?>
+                                </div>
+                                <strong><?php echo esc_html($user->first_name . ' ' . strtoupper($user->last_name)); ?></strong>
                             </div>
-                            <strong><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></strong>
+
                         </td>
                         <td class="user-email">
                             <a href="mailto:<?php echo esc_attr($user->email); ?>">
@@ -281,22 +284,26 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 
                             if ($total_grading_requests_count == 0): ?>
                                 <span class="grading-status no-requests">
-                                    <i class="fas fa-check-circle"></i> Aucune demande
+                                    <i class="fas fa-check-circle"></i>
+                                    <p>Aucune demande</p>
                                 </span>
                             <?php else: ?>
                                 <?php if (in_array('pending', $grading_statuses)): ?>
                                     <span class="grading-status pending">
-                                        <i class="fas fa-clock"></i> En attente
+                                        <i class="fas fa-clock"></i>
+                                        <p>En attente</p>
                                         <span class="request-count">(<?php echo $pending_grading_requests_count; ?>)</span>
                                     </span>
                                 <?php elseif (in_array('graded', $grading_statuses)): ?>
                                     <span class="grading-status graded">
-                                        <i class="fas fa-check-circle"></i> Noté
+                                        <i class="fas fa-check-circle"></i>
+                                        <p>Noté</p>
                                         <span class="request-count">(<?php echo $total_grading_requests_count; ?>)</span>
                                     </span>
                                 <?php else: ?>
                                     <span class="grading-status other">
-                                        <i class="fas fa-info-circle"></i> Autre
+                                        <i class="fas fa-info-circle"></i>
+                                        <p>Autre</p>
                                         <span class="request-count">(<?php echo $total_grading_requests_count; ?>)</span>
                                     </span>
                                 <?php endif; ?>
@@ -329,7 +336,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                 <div class="advancement-info">
                                     <span class="rating-value"><?php echo $percentage; ?>%</span>
                                 </div>
-                               
+
                             </div>
                         </td>
 

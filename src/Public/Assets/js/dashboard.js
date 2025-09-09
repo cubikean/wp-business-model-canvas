@@ -308,6 +308,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_get_section_files',
             nonce: wp_bmc_ajax.nonce,
+            project_id: getProjectId(),
             section: sectionName
         };
         
@@ -323,6 +324,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_get_documents',
             nonce: wp_bmc_ajax.nonce,
+            project_id: getProjectId(),
             section: sectionName
         };
         
@@ -424,6 +426,7 @@ jQuery(document).ready(function($) {
         
         formData.append('action', 'wp_bmc_upload_file');
         formData.append('nonce', wp_bmc_ajax.nonce);
+        formData.append('project_id', getProjectId());
         formData.append('section', sectionName);
         
         for (var i = 0; i < files.length; i++) {
@@ -548,6 +551,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_request_grading',
             nonce: wp_bmc_ajax.nonce,
+            project_id: getProjectId(),
             section: sectionName,
             section_title: sectionTitle
         };
@@ -672,6 +676,13 @@ jQuery(document).ready(function($) {
     });
     
     function autoSaveCanvas() {
+        // Obtenir l'ID du projet
+        var projectId = getProjectId();
+        if (!projectId) {
+            console.error('ID du projet non trouvé');
+            return;
+        }
+        
         // Collecter toutes les données du canvas
         var canvasData = {};
         $('.canvas-content').each(function() {
@@ -682,6 +693,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_save_canvas',
             nonce: wp_bmc_ajax.nonce,
+            project_id: projectId,
             canvas_data: canvasData
         };
         
@@ -689,8 +701,29 @@ jQuery(document).ready(function($) {
             if (response.success) {
                 $('#auto-save-status').text('Sauvegarde automatique activée');
                 updateLastSavedTime();
+            } else {
+                console.error('Erreur de sauvegarde:', response.data);
             }
+        }).fail(function() {
+            console.error('Erreur de connexion lors de la sauvegarde');
         });
+    }
+    
+    // Fonction pour obtenir l'ID du projet depuis l'URL
+    function getProjectId() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var projectId = urlParams.get('project_id');
+        
+        // Si pas dans l'URL, essayer de le récupérer depuis les données de la page
+        if (!projectId) {
+            // Chercher dans les éléments de la page
+            var projectElement = $('[data-project-id]').first();
+            if (projectElement.length) {
+                projectId = projectElement.data('project-id');
+            }
+        }
+        
+        return projectId;
     }
     
     // ========================================
@@ -713,6 +746,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_export_pdf',
             nonce: wp_bmc_ajax.nonce,
+            project_id: getProjectId(),
             canvas_data: canvasData,
             view_mode: getCurrentViewMode()
         };
