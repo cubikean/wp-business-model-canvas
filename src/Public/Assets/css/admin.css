@@ -3,33 +3,7 @@
    ======================================== */
 
 /* Variables CSS pour les couleurs de notation */
-:root {
-    --admin-red_light-rating: #FF4B6B4c;
-    --admin-orange_light-rating: #f189494c;
-    --admin-blue_light-rating: #62aadd4c;
-    --admin-green_light-rating: #86c1714c;
 
-    --admin-red-rating: #FF4B6B;
-    --admin-orange-rating: #f18949;
-    --admin-blue-rating: #62aadd;
-    --admin-green-rating: #86c171;
-    
-    /* Couleurs du dashboard */
-    --dashboard-primary: #FF4B6B;
-    --dashboard-orange: #F18949;
-    --dashboard-dark-blue: #153CA8;
-    --dashboard-blue: #62AADD;
-    --dashboard-green: #86C171;
-    --dashboard-light-orange: #FDE0C2;
-    --dashboard-light-pink: #FFDDE2;
-    --dashboard-light-green: #E0F2D9;
-    --dashboard-light-blue: #E3F2FD;
-    --dashboard-light-grey: #F8F9FA;
-    --dashboard-border: #ECF0F1;
-    --dashboard-text: #2F52A0;
-    --dashboard-text-light: #666666;
-
-}
 
 /* ========================================
    CONTAINER PRINCIPAL

@@ -17,16 +17,17 @@ if (!$current_user) {
 
 $view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
-$project = !empty($user_projects) ? $user_projects[0] : null;
-$canvas_data = $project ? WP_BMC_Database::get_canvas_data($project->id) : array();
-
-
 $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+$project = !empty($user_projects) ? $user_projects[0] : null;
+$project_id = $project->id;
+$canvas_data = $project ? WP_BMC_Database::get_canvas_data($project_id) : array();
+
+
 $canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
 $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 ?>
 
-<div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project->id; ?>" <?php endif; ?>>
+<div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project_id; ?>" <?php endif; ?>>
     <div class="dashboard-header">
         <h1>Mon Business Model Canvas</h1>
         <div class="user-info">
@@ -100,7 +101,7 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
                         $synthetic_order = array('customer_segments', 'value_proposition', 'revenue_streams');
                         foreach ($synthetic_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
-                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project->id, $project_ratings);
+                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings);
                             }
                         }
                         ?>
@@ -127,7 +128,7 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 
                         foreach ($global_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
-                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project->id, $project_ratings);
+                                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings);
                             }
                         }
                         ?>
