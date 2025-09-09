@@ -514,6 +514,11 @@ class WP_BMC_Database {
                 array('%d', '%s', '%d')
             );
             
+            // Marquer les demandes de notation comme notées
+            if ($result !== false) {
+                self::mark_grading_request_as_graded($project_id, $section);
+            }
+            
             return $result !== false;
         } else {
             // Créer une nouvelle note
@@ -528,6 +533,11 @@ class WP_BMC_Database {
                 ),
                 array('%d', '%s', '%d', '%d', '%s')
             );
+            
+            // Marquer les demandes de notation comme notées
+            if ($result) {
+                self::mark_grading_request_as_graded($project_id, $section);
+            }
             
             return $result ? $wpdb->insert_id : false;
         }
@@ -599,6 +609,33 @@ class WP_BMC_Database {
             
             return $result ? $wpdb->insert_id : false;
         }
+    }
+    
+    /**
+     * Marquer une demande de notation comme notée
+     */
+    public static function mark_grading_request_as_graded($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_grading_requests';
+        
+        // Mettre à jour le statut de toutes les demandes en attente pour cette section
+        $result = $wpdb->update(
+            $table,
+            array(
+                'status' => 'graded',
+                'updated_at' => current_time('mysql')
+            ),
+            array(
+                'project_id' => $project_id,
+                'section' => $section,
+                'status' => 'pending'
+            ),
+            array('%s', '%s'),
+            array('%d', '%s', '%s')
+        );
+        
+        return $result !== false;
     }
     
     /**

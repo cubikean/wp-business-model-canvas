@@ -46,6 +46,10 @@ function wp_bmc_save_canvas_handler() {
         wp_send_json_error('Vous devez être connecté pour sauvegarder le canvas.');
     }
     
+    if (!isset($_POST['canvas_data'])) {
+        wp_send_json_error('Données du canvas manquantes.');
+    }
+    
     $canvas_data = $_POST['canvas_data'];
     
     // Récupérer le project_id depuis l'URL ou les paramètres
@@ -601,6 +605,10 @@ function wp_bmc_get_section_rating_handler() {
         wp_send_json_error('Accès réservé aux administrateurs.');
     }
     
+    if (!isset($_POST['section']) || !isset($_POST['project_id'])) {
+        wp_send_json_error('Paramètres manquants pour récupérer la note.');
+    }
+    
     $section = sanitize_text_field($_POST['section']);
     $project_id = intval($_POST['project_id']);
     $admin_id = get_current_user_id();
@@ -625,10 +633,14 @@ function wp_bmc_save_section_rating_handler() {
         wp_send_json_error('Accès réservé aux administrateurs.');
     }
     
+    if (!isset($_POST['section']) || !isset($_POST['project_id']) || !isset($_POST['rating'])) {
+        wp_send_json_error('Paramètres manquants pour la notation.');
+    }
+    
     $section = sanitize_text_field($_POST['section']);
     $project_id = intval($_POST['project_id']);
     $rating = intval($_POST['rating']);
-    $comment = sanitize_textarea_field($_POST['comment']);
+    $comment = isset($_POST['comment']) ? sanitize_textarea_field($_POST['comment']) : '';
     $admin_id = get_current_user_id();
     
     if (empty($section) || !$project_id || $rating < 0 || $rating > 10) {
@@ -639,10 +651,59 @@ function wp_bmc_save_section_rating_handler() {
     
     if ($result) {
         wp_send_json_success(array(
-            'message' => 'Note sauvegardée avec succès !'
+            'message' => 'Note sauvegardée avec succès !',
+            'project_id' => $project_id,
+            'section' => $section
         ));
     } else {
         wp_send_json_error('Erreur lors de la sauvegarde de la note.');
+    }
+}
+
+// Handler pour obtenir le compteur de demandes de notation d'un utilisateur
+add_action('wp_ajax_wp_bmc_get_user_grading_count', 'wp_bmc_get_user_grading_count_handler');
+function wp_bmc_get_user_grading_count_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès réservé aux administrateurs.');
+    }
+    
+    $user_id = intval($_POST['user_id']);
+    
+    if (!$user_id) {
+        wp_send_json_error('ID utilisateur invalide.');
+    }
+    
+    global $wpdb;
+    
+    // Récupérer les données de notation pour cet utilisateur
+    $grading_data = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT COUNT(gr.id) as total_grading_requests_count,
+                    SUM(CASE WHEN gr.status = 'pending' THEN 1 ELSE 0 END) as pending_grading_requests_count,
+                    GROUP_CONCAT(DISTINCT gr.status) as grading_statuses
+             FROM {$wpdb->prefix}bmc_users u
+             LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.user_id = p.user_id
+             LEFT JOIN {$wpdb->prefix}bmc_grading_requests gr ON p.id = gr.project_id
+             WHERE u.user_id = %d
+             GROUP BY u.user_id",
+            $user_id
+        )
+    );
+    
+    if ($grading_data) {
+        wp_send_json_success(array(
+            'total_grading_requests_count' => intval($grading_data->total_grading_requests_count),
+            'pending_grading_requests_count' => intval($grading_data->pending_grading_requests_count),
+            'grading_statuses' => $grading_data->grading_statuses ? explode(',', $grading_data->grading_statuses) : array()
+        ));
+    } else {
+        wp_send_json_success(array(
+            'total_grading_requests_count' => 0,
+            'pending_grading_requests_count' => 0,
+            'grading_statuses' => array()
+        ));
     }
 }
 
@@ -655,8 +716,12 @@ function wp_bmc_request_grading_handler() {
         wp_send_json_error('Vous devez être connecté pour demander une notation.');
     }
     
+    if (!isset($_POST['section'])) {
+        wp_send_json_error('Section manquante pour la demande de notation.');
+    }
+    
     $section = sanitize_text_field($_POST['section']);
-    $section_title = sanitize_text_field($_POST['section_title']);
+    $section_title = isset($_POST['section_title']) ? sanitize_text_field($_POST['section_title']) : $section;
     
     if (empty($section)) {
         wp_send_json_error('Section invalide.');

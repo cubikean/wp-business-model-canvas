@@ -488,6 +488,130 @@ jQuery(document).ready(function($) {
         }
     }
     
+    // Fonction pour supprimer les demandes de notation du dashboard
+    function removeGradingRequestsFromDashboard(projectId, section) {
+        // Supprimer les demandes correspondantes dans la section des demandes en attente
+        $('.grading-request-item').each(function() {
+            var $item = $(this);
+            var itemProjectId = $item.find('.grade-section-btn').data('project-id');
+            var itemSection = $item.find('.grade-section-btn').data('section');
+            
+            if (itemProjectId == projectId && itemSection == section) {
+                $item.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }
+        });
+        
+        // Supprimer les notifications correspondantes
+        $('.notification-item').each(function() {
+            var $notification = $(this);
+            var $gradeBtn = $notification.find('.grade-btn');
+            
+            if ($gradeBtn.length > 0) {
+                var notificationProjectId = $gradeBtn.data('project-id');
+                var notificationSection = $gradeBtn.data('section');
+                
+                if (notificationProjectId == projectId && notificationSection == section) {
+                    $notification.fadeOut(300, function() {
+                        $(this).remove();
+                        updateNotificationCount();
+                    });
+                }
+            }
+        });
+        
+        // Mettre à jour le compteur dans le tableau des utilisateurs
+        updateUserGradingCount(projectId, section);
+    }
+    
+    // Fonction pour mettre à jour le compteur de demandes de notation
+    function updateGradingRequestsCount() {
+        var remainingRequests = $('.grading-request-item').length;
+        var $countBadge = $('.grading-count');
+        var $gradingSection = $('.grading-requests-section');
+        
+        if (remainingRequests === 0) {
+            // Masquer toute la section des demandes de notation
+            $gradingSection.fadeOut(300, function() {
+                $(this).remove();
+            });
+        } else {
+            $countBadge.text(remainingRequests);
+        }
+    }
+    
+    // Fonction pour mettre à jour le compteur de demandes dans le tableau des utilisateurs
+    function updateUserGradingCount(projectId, section) {
+        // Trouver l'utilisateur correspondant au projet noté
+        $('.grading-request-item').each(function() {
+            var $item = $(this);
+            var itemProjectId = $item.find('.grade-section-btn').data('project-id');
+            var itemUserId = $item.find('.grade-section-btn').data('user-id');
+            
+            if (itemProjectId == projectId) {
+                // Trouver la ligne utilisateur correspondante
+                var $userRow = $('.user-row[data-user-id="' + itemUserId + '"]');
+                
+                if ($userRow.length > 0) {
+                    // Faire une requête AJAX pour obtenir les données mises à jour
+                    $.post(wp_bmc_admin_ajax.ajax_url, {
+                        action: 'wp_bmc_get_user_grading_count',
+                        user_id: itemUserId,
+                        nonce: wp_bmc_admin_ajax.nonce
+                    }, function(response) {
+                        if (response.success) {
+                            var $gradingStatus = $userRow.find('.user-grading-status');
+                            var totalGradingCount = response.data.total_grading_requests_count;
+                            var pendingGradingCount = response.data.pending_grading_requests_count;
+                            var gradingStatuses = response.data.grading_statuses;
+                            
+                            // Mettre à jour l'affichage du statut de notation
+                            if (totalGradingCount == 0) {
+                                $gradingStatus.html(
+                                    '<span class="grading-status no-requests">' +
+                                        '<i class="fas fa-check-circle"></i> Aucune demande' +
+                                    '</span>'
+                                );
+                            } else {
+                                var statusHtml = '';
+                                var statusClass = '';
+                                var statusIcon = '';
+                                var statusText = '';
+                                var displayCount = 0;
+                                
+                                if (gradingStatuses.includes('pending')) {
+                                    statusClass = 'pending';
+                                    statusIcon = 'fas fa-clock';
+                                    statusText = 'En attente';
+                                    displayCount = pendingGradingCount;
+                                } else if (gradingStatuses.includes('graded')) {
+                                    statusClass = 'graded';
+                                    statusIcon = 'fas fa-check-circle';
+                                    statusText = 'Noté';
+                                    displayCount = totalGradingCount;
+                                } else {
+                                    statusClass = 'other';
+                                    statusIcon = 'fas fa-info-circle';
+                                    statusText = 'Autre';
+                                    displayCount = totalGradingCount;
+                                }
+                                
+                                statusHtml = '<span class="grading-status ' + statusClass + '">' +
+                                    '<i class="' + statusIcon + '"></i> ' + statusText +
+                                    '<span class="request-count">(' + displayCount + ')</span>' +
+                                '</span>';
+                                
+                                $gradingStatus.html(statusHtml);
+                            }
+                        }
+                    });
+                }
+                return false; // Sortir de la boucle une fois trouvé
+            }
+        });
+    }
+    
     // Fonction pour ouvrir la modal de notation
     function openGradingModal(projectId, section, sectionTitle) {
         var modal = $('<div class="wp-bmc-popup grading-modal">' +
@@ -556,10 +680,12 @@ jQuery(document).ready(function($) {
                     modal.fadeOut(300, function() {
                         modal.remove();
                     });
-                    // Recharger la page pour voir les changements
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1000);
+                    
+                    // Supprimer les demandes de notation correspondantes du dashboard
+                    removeGradingRequestsFromDashboard(projectId, section);
+                    
+                    // Mettre à jour le compteur de demandes
+                    updateGradingRequestsCount();
                 } else {
                     showMessage('Erreur lors de la sauvegarde : ' + response.data, 'error');
                 }

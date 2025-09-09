@@ -1,20 +1,18 @@
 /* ========================================
-   STYLES ADMIN - WP BUSINESS MODEL CANVAS
+   NOTIFICATIONS ET SLIDER - STYLES SPÉCIFIQUES
    ======================================== */
 
-/* Variables CSS pour l'admin */
+/* Variables CSS pour les couleurs de notation */
 :root {
-    --admin-primary: #0073aa;
-    --admin-secondary: #005177;
-    --admin-success: #28a745;
-    --admin-error: #dc3545;
-    --admin-warning: #ffc107;
-    --admin-info: #17a2b8;
-    --admin-light: #f8f9fa;
-    --admin-dark: #343a40;
-    --admin-border: #dee2e6;
-    --admin-text: #333;
-    --admin-text-muted: #6c757d;
+    --admin-red_light-rating: #FF4B6B4c;
+    --admin-orange_light-rating: #f189494c;
+    --admin-blue_light-rating: #62aadd4c;
+    --admin-green_light-rating: #86c1714c;
+
+    --admin-red-rating: #FF4B6B;
+    --admin-orange-rating: #f18949;
+    --admin-blue-rating: #62aadd;
+    --admin-green-rating: #86c171;
 }
 
 /* ========================================
@@ -58,7 +56,6 @@
     justify-content: center;
     font-size: 12px;
     font-weight: bold;
-    animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
@@ -366,627 +363,89 @@
 }
 
 /* ========================================
-   TABLEAU ADMIN - STYLES AMÉLIORÉS
+   SLIDER D'AVANCEMENT
    ======================================== */
 
-.wp-bmc-all-users {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
-    overflow: hidden;
-}
 
-.wp-bmc-all-users h2 {
-    background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
-    color: white;
-    margin: 0;
-    padding: 20px 25px;
-    font-size: 1.5em;
-    font-weight: 600;
-}
-
-.wp-bmc-users-controls {
-    padding: 20px 25px;
-    background: var(--admin-light);
-    border-bottom: 1px solid var(--admin-border);
+.advancement-container {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-}
-
-.users-search input {
-    padding: 10px 15px;
-    border: 1px solid var(--admin-border);
-    border-radius: 6px;
-    font-size: 14px;
-    width: 300px;
-    transition: border-color 0.3s ease;
-}
-
-.users-search input:focus {
-    outline: none;
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
-}
-
-.users-filters {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.users-filters select {
-    padding: 10px 15px;
-    border: 1px solid var(--admin-border);
-    border-radius: 6px;
-    background: white;
-    font-size: 14px;
-    min-width: 150px;
-}
-
-.users-filters select:focus {
-    outline: none;
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
-}
-
-/* Tableau des utilisateurs */
-#users-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-}
-
-#users-table thead th {
-    background: var(--admin-light);
-    padding: 15px 20px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--admin-text);
-    border-bottom: 2px solid var(--admin-border);
-    position: relative;
-}
-
-#users-table thead th.sortable {
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.3s ease;
-}
-
-#users-table thead th.sortable:hover {
-    background: #e9ecef;
-}
-
-#users-table thead th.sortable.asc::after {
-    content: ' ↑';
-    color: var(--admin-primary);
-    font-weight: bold;
-}
-
-#users-table thead th.sortable.desc::after {
-    content: ' ↓';
-    color: var(--admin-primary);
-    font-weight: bold;
-}
-
-#users-table tbody td {
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--admin-border);
-    vertical-align: middle;
-}
-
-#users-table tbody tr:hover {
-    background: #f8f9fa;
-}
-
-/* Styles pour les statuts de demande de notation */
-.grading-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.grading-status.no-requests {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.grading-status.pending {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-    animation: pulse 2s infinite;
-}
-
-.grading-status.graded {
-    background: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-}
-
-.grading-status.other {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.grading-status i {
-    font-size: 14px;
-}
-
-.request-count {
-    font-size: 10px;
-    opacity: 0.8;
-    margin-left: 4px;
-}
-
-.grading-date {
-    font-size: 11px;
-    color: var(--admin-text-muted);
-    margin-top: 4px;
-    font-style: italic;
-}
-
-/* Boutons d'action */
-.action-buttons {
-    display: flex;
+    flex-direction: column;
     gap: 8px;
+    min-width: 200px;
 }
 
-.action-buttons .button {
-    padding: 8px 12px;
-    border-radius: 6px;
+.advancement-info {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
     font-size: 12px;
     font-weight: 600;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
 }
 
-.action-buttons .view-user-btn {
-    background: var(--admin-primary);
-    color: white;
-}
-
-.action-buttons .view-user-btn:hover {
-    background: var(--admin-secondary);
-    transform: translateY(-1px);
-}
-
-/* Pagination */
-.wp-bmc-users-pagination {
-    padding: 20px 25px;
-    background: var(--admin-light);
-    border-top: 1px solid var(--admin-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.pagination-info {
-    color: var(--admin-text-muted);
-    font-size: 14px;
-}
-
-/* Messages de notification */
-.wp-bmc-message {
-    margin: 20px 0;
-    padding: 15px 20px;
-    border-radius: 8px;
-    border-left: 4px solid;
-    animation: slideInDown 0.3s ease-out;
-}
-
-.wp-bmc-message.notice-success {
-    background: #d4edda;
-    color: #155724;
-    border-left-color: var(--admin-success);
-}
-
-.wp-bmc-message.notice-error {
-    background: #f8d7da;
-    color: #721c24;
-    border-left-color: var(--admin-error);
-}
-
-@keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ========================================
-   MODAL DE NOTATION
-   ======================================== */
-
-.grading-modal .popup-content {
-    width: 600px;
-    max-width: 90%;
-}
-
-.grading-field {
-    margin-bottom: 20px;
-}
-
-.grading-field label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--admin-text);
-}
-
-.grading-field input,
-.grading-field textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--admin-border);
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.3s ease;
-}
-
-.grading-field input:focus,
-.grading-field textarea:focus {
-    outline: none;
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
-}
-
-.grading-field textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
-.grading-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: flex-end;
-    margin-top: 30px;
-}
-
-.grading-actions .button {
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.grading-actions .button-primary {
-    background: var(--admin-primary);
-    color: white;
-}
-
-.grading-actions .button-primary:hover {
-    background: var(--admin-secondary);
-    transform: translateY(-1px);
-}
-
-.grading-actions .button-secondary {
-    background: var(--admin-text-muted);
-    color: white;
-}
-
-.grading-actions .button-secondary:hover {
-    background: #5a6268;
-}
-
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
-
-@media (max-width: 768px) {
-    .wp-bmc-users-controls {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch;
-    }
-    
-    .users-search input {
-        width: 100%;
-    }
-    
-    .users-filters {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .users-filters select {
-        width: 100%;
-        min-width: auto;
-    }
-    
-    #users-table {
-        font-size: 14px;
-    }
-    
-    #users-table thead th,
-    #users-table tbody td {
-        padding: 10px 8px;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .notifications-header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-    }
-    
-    .notification-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .notification-icon {
-        margin-right: 0;
-    }
-    
-    .notification-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
-    
-    .grading-request-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .request-icon {
-        margin-right: 0;
-    }
-    
-    .request-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
-    
-    .grading-modal .popup-content {
-        width: 95%;
-        margin: 20px;
-    }
-    
-    .grading-actions {
-        flex-direction: column;
-    }
-    
-    .grading-actions .button {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .wp-bmc-all-users h2,
-    .notifications-header h2,
-    .grading-requests-header h3 {
-        font-size: 1.2em;
-    }
-    
-    .notification-item,
-    .grading-request-item {
-        padding: 15px 20px;
-    }
-    
-    .notification-icon,
-    .request-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-    }
-    
-    .notification-message {
-        font-size: 14px;
-    }
-    
-    .request-user {
-        font-size: 14px;
-    }
-    
-    .request-details {
-        font-size: 13px;
-    }
-}
-
-/* ========================================
-   ANIMATIONS ET TRANSITIONS
-   ======================================== */
-
-.notification-item,
-.grading-request-item {
-    animation: fadeInUp 0.3s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Animation pour les boutons */
-.button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Animation pour les cartes */
-.wp-bmc-notifications-section,
-.grading-requests-section,
-.wp-bmc-all-users {
-    animation: slideInUp 0.4s ease-out;
-}
-
-/* ========================================
-   STYLES POUR LA MODAL DE NOTATION
-   ======================================== */
-
-.rating-slider-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 10px;
-}
-
-.rating-slider-container input[type="range"] {
-    flex: 1;
-    height: 8px;
-    border-radius: 4px;
-    background: #ddd;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.rating-slider-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--admin-primary);
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-.rating-slider-container input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.rating-slider-container input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--admin-primary);
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-.rating-slider-container input[type="range"]::-moz-range-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.rating-display {
-    min-width: 50px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 18px;
-    color: var(--admin-primary);
-    background: rgba(0, 115, 170, 0.1);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 2px solid var(--admin-primary);
-}
-
-.grading-field {
-    margin-bottom: 20px;
-}
-
-.grading-field label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--admin-text);
-}
-
-.grading-field textarea {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--admin-border);
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 14px;
-    resize: vertical;
-    transition: border-color 0.3s ease;
-}
-
-.grading-field textarea:focus {
-    outline: none;
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
-}
-
-.grading-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid var(--admin-border);
-}
-
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ========================================
-   ACCESSIBILITÉ
-   ======================================== */
-
-/* Focus visible pour les éléments interactifs */
-.button:focus,
-input:focus,
-select:focus,
-textarea:focus {
-    outline: 2px solid var(--admin-primary);
-    outline-offset: 2px;
-}
-
-/* Contraste amélioré pour les textes */
-.grading-status,
-.notification-type {
+.rating-value {
+    color: var(--admin-text-primary);
     font-weight: 700;
 }
 
-/* Indicateurs de chargement */
-.button[disabled] {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
+.progress-bar {
+    width: 100%;
+    height: 16px;
+    border-radius: 99px;
+    overflow: hidden;
+    border: none;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.3s ease-in-out;
+    position: relative;
+}
+
+/* Effet de brillance pour les barres */
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+
+
+/* Couleurs selon le niveau */
+
+.progress-bar.red-rating {
+    background: var(--admin-red_light-rating);
+}
+.progress-bar.orange-rating {
+    background: var(--admin-orange_light-rating);
+}
+
+.progress-bar.blue-rating {
+    background: var(--admin-blue_light-rating);
+}
+.progress-bar.green-rating {
+    background: var(--admin-green_light-rating);
+}   
+
+
+.progress-bar.red-rating .progress-fill {
+    background: var(--admin-red-rating);
+}
+
+.progress-bar.orange-rating .progress-fill {
+    background: var(--admin-orange-rating);
+}
+
+.progress-bar.blue-rating .progress-fill {
+    background: var(--admin-blue-rating);
+}
+
+.progress-bar.green-rating .progress-fill {
+    background: var(--admin-green-rating);
 }
 
 .button .fa-spinner {

@@ -1,0 +1,281 @@
+/* ========================================
+   GESTION UTILISATEURS - STYLES SPÉCIFIQUES
+   ======================================== */
+
+/* ========================================
+   POPUPS ET MODALES UTILISATEURS
+   ======================================== */
+
+.wp-bmc-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+}
+
+.popup-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.popup-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    max-height: 90%;
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 1px solid var(--admin-border);
+    background: var(--admin-light);
+}
+
+.popup-header h3 {
+    margin: 0;
+    color: var(--admin-primary);
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.popup-close:hover {
+    background: var(--admin-error);
+    color: white;
+}
+
+.popup-body {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.popup-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding: 20px 30px;
+    border-top: 1px solid var(--admin-border);
+    background: var(--admin-light);
+}
+
+/* ========================================
+   PROFILS UTILISATEURS
+   ======================================== */
+
+.user-profile-section {
+    margin-bottom: 30px;
+}
+
+.user-profile-section h4 {
+    color: var(--admin-primary);
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    font-weight: 600;
+    border-bottom: 2px solid var(--admin-border);
+    padding-bottom: 8px;
+}
+
+.user-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.user-info-item {
+    background: var(--admin-light);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--admin-primary);
+}
+
+.user-info-label {
+    font-weight: 600;
+    color: var(--admin-text);
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.user-info-value {
+    color: var(--admin-text-muted);
+    font-size: 16px;
+}
+
+/* ========================================
+   PROJETS UTILISATEUR
+   ======================================== */
+
+.user-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.user-project-card {
+    background: white;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.user-project-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.user-project-card h5 {
+    margin: 0 0 10px 0;
+    color: var(--admin-primary);
+    font-size: 1.1em;
+}
+
+.user-project-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 12px;
+}
+
+.user-project-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.user-project-status.draft {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.user-project-status.published {
+    background: #d4edda;
+    color: #155724;
+}
+
+.user-project-date {
+    color: var(--admin-text-muted);
+}
+
+/* ========================================
+   ÉTATS DE CHARGEMENT
+   ======================================== */
+
+.user-profile-loading,
+.user-projects-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--admin-text-muted);
+}
+
+.user-profile-loading::before,
+.user-projects-loading::before {
+    content: '';
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--admin-border);
+    border-top: 4px solid var(--admin-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+/* ========================================
+   MESSAGES ET NOTIFICATIONS
+   ======================================== */
+
+.wp-bmc-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 4px solid var(--admin-error);
+}
+
+.wp-bmc-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 15px 20px;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 4px solid var(--admin-success);
+}
+
+/* ========================================
+   RESPONSIVE UTILISATEURS
+   ======================================== */
+
+@media (max-width: 768px) {
+    .popup-content {
+        width: 95%;
+        max-height: 95%;
+        margin: 20px;
+    }
+    
+    .popup-header, .popup-body, .popup-footer {
+        padding: 15px;
+    }
+    
+    .popup-body {
+        max-height: 50vh;
+    }
+    
+    .user-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-projects-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-project-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}

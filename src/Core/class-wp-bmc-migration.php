@@ -37,14 +37,12 @@ class WP_BMC_Migration {
         'includes/class-wp-bmc-template-loader.php' => 'src/Core/class-wp-bmc-template-loader.php',
         
         // Assets admin
-        'admin/css/admin.css' => 'src/Admin/Assets/css/admin.css',
-        'admin/css/admin-dashboard.css' => 'src/Admin/Assets/css/admin-dashboard.css',
-        'admin/css/admin-users.css' => 'src/Admin/Assets/css/admin-users.css',
         'admin/js/admin.js' => 'src/Admin/Assets/js/admin.js',
         'admin/js/admin-dashboard.js' => 'src/Admin/Assets/js/admin-dashboard.js',
         'admin/js/admin-users.js' => 'src/Admin/Assets/js/admin-users.js',
         
         // Assets public
+        'public/css/users.css' => 'src/Public/Assets/css/users.css',
         'public/css/public.css' => 'src/Public/Assets/css/public.css',
         'public/css/admin.css' => 'src/Public/Assets/css/admin.css',
         'public/js/public.js' => 'src/Public/Assets/js/public.js',

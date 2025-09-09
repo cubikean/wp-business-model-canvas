@@ -20,11 +20,7 @@ class WP_BMC_Paths {
      */
     public static function get_admin_assets() {
         return array(
-            'css' => array(
-                'admin' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin.css',
-                'admin_dashboard' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-dashboard.css',
-                'admin_users' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-users.css',
-            ),
+           
             'js' => array(
                 'admin' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin.js',
                 'admin_dashboard' => WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js',
@@ -39,6 +35,7 @@ class WP_BMC_Paths {
     public static function get_public_assets() {
         return array(
             'css' => array(
+                'users' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/users.css',
                 'public' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/public.css',
                 'admin' => WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css',
             ),

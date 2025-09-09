@@ -397,12 +397,10 @@ class WP_BMC_Complete_Check {
      */
     private static function check_assets() {
         $assets = array(
-            'Admin CSS' => WP_BMC_ADMIN_DIR . 'Assets/css/admin.css',
-            'Admin Dashboard CSS' => WP_BMC_ADMIN_DIR . 'Assets/css/admin-dashboard.css',
-            'Admin Users CSS' => WP_BMC_ADMIN_DIR . 'Assets/css/admin-users.css',
             'Admin JS' => WP_BMC_ADMIN_DIR . 'Assets/js/admin.js',
             'Admin Dashboard JS' => WP_BMC_ADMIN_DIR . 'Assets/js/admin-dashboard.js',
             'Admin Users JS' => WP_BMC_ADMIN_DIR . 'Assets/js/admin-users.js',
+            'Public Users CSS' => WP_BMC_PUBLIC_DIR . 'Assets/css/users.css',
             'Public CSS' => WP_BMC_PUBLIC_DIR . 'Assets/css/public.css',
             'Public Admin CSS' => WP_BMC_PUBLIC_DIR . 'Assets/css/admin.css',
             'Public JS' => WP_BMC_PUBLIC_DIR . 'Assets/js/public.js',

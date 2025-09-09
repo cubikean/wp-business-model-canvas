@@ -38,9 +38,6 @@ wp-business-model-canvas/
 │   │   ├── Views/                    # Vues admin (templates)
 │   │   ├── Assets/                   # Ressources admin
 │   │   │   ├── css/                  # Styles admin
-│   │   │   │   ├── admin.css         # Styles généraux
-│   │   │   │   ├── admin-dashboard.css # Styles dashboard
-│   │   │   │   └── admin-users.css   # Styles gestion utilisateurs
 │   │   │   └── js/                   # Scripts admin
 │   │   │       ├── admin.js          # JavaScript général
 │   │   │       ├── admin-dashboard.js # JavaScript dashboard
@@ -51,6 +48,7 @@ wp-business-model-canvas/
 │   │   ├── Views/                    # Vues public (templates)
 │   │   ├── Assets/                   # Ressources public
 │   │   │   ├── css/                  # Styles public
+│   │   │   │   └── users.css         # Styles gestion utilisateurs
 │   │   │   │   ├── public.css        # Styles généraux
 │   │   │   │   └── admin.css         # Styles admin pour public
 │   │   │   └── js/                   # Scripts public
