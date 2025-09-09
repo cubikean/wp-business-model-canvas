@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template pour le tableau de bord utilisateur
  */
@@ -75,24 +76,25 @@ $canvas_sections = array(
 );
 
 // Fonction pour afficher une section de canvas
-function render_canvas_section($section_key, $section_config, $canvas_data, $project, $view_mode) {
+function render_canvas_section($section_key, $section_config, $canvas_data, $project, $view_mode)
+{
     $content = isset($canvas_data[$section_key]) ? esc_textarea($canvas_data[$section_key]) : '';
     $section_class = $section_key;
-    
+
     // Classes CSS spécifiques pour certaines sections
     if ($section_key === 'value_proposition') {
         $section_class .= ' value-proposition';
     }
-    
+
     // Déterminer si la section doit être affichée dans la vue synthétique
     $show_in_synthetic = $section_config['synthetic'];
     $show_in_global = true;
-    
+
     // Filtrer les sections selon la vue
     if ($view_mode === 'synthetic' && !$show_in_synthetic) {
         return '';
     }
-    
+
     // Récupérer les notes de l'admin
     $ratings = WP_BMC_Database::get_project_ratings($project->id);
     $section_rating = null;
@@ -102,16 +104,45 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
             break;
         }
     }
-    
+
     ob_start();
-    ?>
+?>
     <div class="<?php echo $view_mode === 'synthetic' ? 'synthetic-section' : 'canvas-section'; ?> <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>">
         <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>" title="Éditer cette brique">
             <i class="fas fa-edit"></i>
         </button>
         <h3><?php echo esc_html($section_config['title']); ?></h3>
-        <div class="canvas-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>"><?php echo $content; ?></div>
-        
+
+        <div class="canvas-content wysiwyg-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" data-section="<?php echo $section_key; ?>">
+            <?php
+            $allowed_tags = array(
+                'span' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'p' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'ul' => array('class' => true, 'style' => true),
+                'ol' => array('class' => true, 'style' => true),
+                'li' => array('class' => true, 'style' => true),
+                'strong' => array(),
+                'em' => array(),
+                'u' => array(),
+                'br' => array(),
+                'div' => array(
+                    'class' => true,
+                    'style' => true,
+                ),
+                'i' => array('class' => true, 'style' => true),
+                'b' => array('class' => true, 'style' => true),
+            );
+
+            echo wp_kses(html_entity_decode($content), $allowed_tags);
+            ?>
+        </div>
+
         <?php if ($section_rating): ?>
             <!-- Affichage des notes de l'admin -->
             <div class="admin-rating-display" id="rating-display-<?php echo $section_key; ?>">
@@ -132,12 +163,12 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
             </div>
         <?php endif; ?>
     </div>
-    <?php
+<?php
     return ob_get_clean();
 }
 ?>
 
-<div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project->id; ?>"<?php endif; ?>>
+<div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project->id; ?>" <?php endif; ?>>
     <div class="dashboard-header">
         <h1>Mon Business Model Canvas</h1>
         <div class="user-info">
@@ -146,7 +177,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
             <a href="#" id="wp-bmc-logout" class="wp-bmc-btn wp-bmc-btn-secondary">Déconnexion</a>
         </div>
     </div>
-    
+
     <?php if (!$project): ?>
         <!-- Aucun projet créé - Créer le premier canvas -->
         <div class="no-project-section">
@@ -154,24 +185,24 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 <h2>Bienvenue dans votre espace Business Model Canvas !</h2>
                 <p>Vous n'avez pas encore créé votre canvas. Commencez dès maintenant à structurer votre modèle économique.</p>
             </div>
-            
+
             <div class="create-first-canvas">
                 <h3>Créer mon premier Business Model Canvas</h3>
                 <form id="wp-bmc-create-first-canvas-form">
                     <?php wp_nonce_field('wp_bmc_project_nonce', 'wp_bmc_project_nonce'); ?>
-                    
+
                     <div class="form-group">
                         <label for="project_title">Nom de votre projet/entreprise</label>
-                        <input type="text" id="project_title" name="project_title" required 
-                               placeholder="Ex: Mon Startup, Mon Entreprise, Mon Projet">
+                        <input type="text" id="project_title" name="project_title" required
+                            placeholder="Ex: Mon Startup, Mon Entreprise, Mon Projet">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="project_description">Description (optionnel)</label>
-                        <textarea id="project_description" name="project_description" rows="3" 
-                                  placeholder="Décrivez brièvement votre projet..."></textarea>
+                        <textarea id="project_description" name="project_description" rows="3"
+                            placeholder="Décrivez brièvement votre projet..."></textarea>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="submit" class="wp-bmc-btn wp-bmc-btn-primary">
                             Créer mon canvas
@@ -180,17 +211,17 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 </form>
             </div>
         </div>
-        
+
     <?php else: ?>
         <!-- Canvas existant - Affichage avec options de vue -->
         <div class="canvas-controls">
             <div class="view-toggle">
-                <button class="wp-bmc-btn <?php echo $view_mode === 'synthetic' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>" 
-                        data-view="synthetic">Vue synthétique</button>
-                <button class="wp-bmc-btn <?php echo $view_mode === 'global' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>" 
-                        data-view="global">Vue globale</button>
+                <button class="wp-bmc-btn <?php echo $view_mode === 'synthetic' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
+                    data-view="synthetic">Vue synthétique</button>
+                <button class="wp-bmc-btn <?php echo $view_mode === 'global' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
+                    data-view="global">Vue globale</button>
             </div>
-            
+
             <div class="canvas-actions">
                 <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
                     Sauvegarder
@@ -200,7 +231,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 </button>
             </div>
         </div>
-        
+
         <div class="canvas-container">
             <?php if ($view_mode === 'synthetic'): ?>
                 <!-- Vue synthétique - 3 briques principales -->
@@ -217,7 +248,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                         ?>
                     </div>
                 </div>
-                
+
             <?php else: ?>
                 <!-- Vue globale - Toutes les briques -->
                 <div class="canvas-global">
@@ -225,11 +256,17 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                         <?php
                         // Afficher toutes les sections dans l'ordre du canvas
                         $global_order = array(
-                            'key_partners', 'key_activities', 'key_resources',
-                            'value_proposition', 'customer_relationships', 'channels',
-                            'customer_segments', 'cost_structure', 'revenue_streams'
+                            'key_partners',
+                            'key_activities',
+                            'key_resources',
+                            'value_proposition',
+                            'customer_relationships',
+                            'channels',
+                            'customer_segments',
+                            'cost_structure',
+                            'revenue_streams'
                         );
-                        
+
                         foreach ($global_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
                                 echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view_mode);
@@ -240,7 +277,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 </div>
             <?php endif; ?>
         </div>
-        
+
         <div class="canvas-footer">
             <div class="auto-save-status">
                 <span id="auto-save-status">Sauvegarde automatique activée</span>
@@ -249,7 +286,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 <span id="last-saved-time">Dernière sauvegarde : <?php echo date('d/m/Y H:i'); ?></span>
             </div>
         </div>
-        
+
     <?php endif; ?>
 </div>
 

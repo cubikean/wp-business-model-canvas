@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template pour le Business Model Canvas - Vue Utilisateur
  * Interface complète du canvas pour les utilisateurs BMC
@@ -56,28 +57,58 @@ $canvas_sections = array(
 );
 
 // Fonction pour afficher une section de canvas
-function render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings) {
+function render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings)
+{
     $content = isset($canvas_data[$section_key]) ? wp_kses_post($canvas_data[$section_key]) : '';
     $section_class = $section_key;
-    
+
     // Classes CSS spécifiques pour certaines sections
     if ($section_key === 'value_proposition') {
         $section_class .= ' value-proposition';
     }
-    
+
     ob_start();
-    ?>
+?>
     <div class="canvas-section <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>">
         <h3><?php echo esc_html($section_config['title']); ?></h3>
-        <div class="canvas-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>"><?php echo $content; ?></div>
+        <div class="canvas-content wysiwyg-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" data-section="<?php echo $section_key; ?>">
+            <?php
+            $allowed_tags = array(
+                'span' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'p' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'ul' => array('class' => true, 'style' => true),
+                'ol' => array('class' => true, 'style' => true),
+                'li' => array('class' => true, 'style' => true),
+                'strong' => array(),
+                'em' => array(),
+                'u' => array(),
+                'br' => array(),
+                'div' => array(
+                    'class' => true,
+                    'style' => true,
+                ),
+                'i' => array('class' => true, 'style' => true),
+                'b' => array('class' => true, 'style' => true),
+            );
+
+            echo wp_kses(html_entity_decode($content), $allowed_tags);
+            ?>
+
+        </div>
         <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>">
             <i class="fas fa-edit"></i>
         </button>
-        
+
         <!-- Fichiers attachés -->
         <div class="canvas-files">
             <h4>Fichiers attachés</h4>
-            <?php 
+            <?php
             $section_files = WP_BMC_Database::get_section_files($project_id, $section_key);
             if (!empty($section_files)): ?>
                 <div class="files-list">
@@ -95,7 +126,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 <p class="no-files">Aucun fichier attaché</p>
             <?php endif; ?>
         </div>
-        
+
         <!-- Affichage des notes de l'admin -->
         <?php display_section_rating($project_ratings, $section_key); ?>
     </div>
@@ -104,7 +135,8 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 }
 
 // Fonction pour afficher les notes d'une section
-function display_section_rating($project_ratings, $section_name) {
+function display_section_rating($project_ratings, $section_name)
+{
     $section_rating = null;
     foreach ($project_ratings as $rating) {
         if ($rating->section === $section_name) {
@@ -112,7 +144,7 @@ function display_section_rating($project_ratings, $section_name) {
             break;
         }
     }
-    
+
     if ($section_rating): ?>
         <div class="admin-rating-display" id="rating-display-<?php echo $section_name; ?>">
             <div class="rating-info">
@@ -130,7 +162,7 @@ function display_section_rating($project_ratings, $section_name) {
                 </div>
             </div>
         </div>
-    <?php endif;
+<?php endif;
 }
 
 // Vérifier si le projet existe
@@ -147,7 +179,7 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
 }
 ?>
 
-<div class="wp-bmc-canvas-container" data-project-id="<?php echo $project->id; ?>">
+<div class="wp-bmc-canvas-container">
     <div class="canvas-header">
         <h1><?php echo esc_html($project->title); ?></h1>
         <div class="canvas-actions">
@@ -167,11 +199,17 @@ if (!$current_user || $current_user->user_id != $project->user_id) {
         <?php
         // Afficher toutes les sections dans l'ordre du canvas
         $canvas_order = array(
-            'key_partners', 'key_activities', 'key_resources',
-            'value_proposition', 'customer_relationships', 'channels',
-            'customer_segments', 'cost_structure', 'revenue_streams'
+            'key_partners',
+            'key_activities',
+            'key_resources',
+            'value_proposition',
+            'customer_relationships',
+            'channels',
+            'customer_segments',
+            'cost_structure',
+            'revenue_streams'
         );
-        
+
         foreach ($canvas_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
                 echo render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings);

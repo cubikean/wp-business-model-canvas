@@ -112,7 +112,35 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
                 </span>
             <?php endif; ?>
         </h3>
-        <textarea class="canvas-textarea" placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" disabled><?php echo $content; ?></textarea>
+        <div class="canvas-content wysiwyg-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" data-section="<?php echo $section_key; ?>">
+            <?php
+            $allowed_tags = array(
+                'span' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'p' => array(
+                    'style' => true,
+                    'class' => true,
+                ),
+                'ul' => array('class' => true, 'style' => true),
+                'ol' => array('class' => true, 'style' => true),
+                'li' => array('class' => true, 'style' => true),
+                'strong' => array(),
+                'em' => array(),
+                'u' => array(),
+                'br' => array(),
+                'div' => array(
+                    'class' => true,
+                    'style' => true,
+                ),
+                'i' => array('class' => true, 'style' => true),
+                'b' => array('class' => true, 'style' => true),
+            );
+
+            echo wp_kses(html_entity_decode($content), $allowed_tags);
+            ?>
+        </div>
         <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>">
             <i class="fas fa-edit"></i>
         </button>
@@ -206,7 +234,7 @@ if ($admin_view && $is_admin) {
 }
 ?>
 
-<div class="wp-bmc-canvas-container" data-project-id="<?php echo $project->id; ?>">
+<div class="wp-bmc-canvas-container">
     <div class="canvas-header">
         <h1><?php echo esc_html($project->title); ?></h1>
 
