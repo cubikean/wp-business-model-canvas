@@ -43,6 +43,7 @@ require_once WP_BMC_CORE_DIR . 'Shortcodes/class-wp-bmc-shortcodes.php';
 require_once WP_BMC_CORE_DIR . 'Ajax/class-wp-bmc-ajax.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-loader.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-template-loader.php';
+require_once WP_BMC_SHARED_DIR . 'Config/class-wp-bmc-canvas-config.php';
 
 // Initialiser le plugin
 function wp_bmc_init() {

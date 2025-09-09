@@ -17,44 +17,7 @@ $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
 $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 
 // Configuration des sections du canvas
-$canvas_sections = array(
-    'key_partners' => array(
-        'title' => 'Partenaires clés',
-        'placeholder' => 'Qui sont vos partenaires clés ?'
-    ),
-    'key_activities' => array(
-        'title' => 'Activités clés',
-        'placeholder' => 'Quelles sont vos activités clés ?'
-    ),
-    'key_resources' => array(
-        'title' => 'Ressources clés',
-        'placeholder' => 'Quelles sont vos ressources clés ?'
-    ),
-    'value_proposition' => array(
-        'title' => 'Proposition de valeur',
-        'placeholder' => 'Quelle est votre proposition de valeur ?'
-    ),
-    'customer_relationships' => array(
-        'title' => 'Relations clients',
-        'placeholder' => 'Quel type de relation établissez-vous avec vos clients ?'
-    ),
-    'channels' => array(
-        'title' => 'Canaux',
-        'placeholder' => 'Quels canaux utilisez-vous pour atteindre vos clients ?'
-    ),
-    'customer_segments' => array(
-        'title' => 'Segments clients',
-        'placeholder' => 'Quels sont vos segments clients ?'
-    ),
-    'cost_structure' => array(
-        'title' => 'Structure des coûts',
-        'placeholder' => 'Quels sont vos coûts principaux ?'
-    ),
-    'revenue_streams' => array(
-        'title' => 'Sources de revenus',
-        'placeholder' => 'Quelles sont vos sources de revenus ?'
-    )
-);
+$canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
 
 // Fonction pour afficher une section de canvas
 function render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings)
@@ -69,7 +32,7 @@ function render_canvas_section($section_key, $section_config, $canvas_data, $pro
 
     ob_start();
 ?>
-    <div class="canvas-section <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>">
+    <div class="canvas-section <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>" data-color="<?php echo $section_config['color']; ?>">
         <h3><?php echo esc_html($section_config['title']); ?></h3>
         <div class="canvas-content wysiwyg-content" data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>" data-section="<?php echo $section_key; ?>">
             <?php

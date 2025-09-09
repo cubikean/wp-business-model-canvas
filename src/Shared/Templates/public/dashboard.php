@@ -27,53 +27,8 @@ $canvas_data = $project ? WP_BMC_Database::get_canvas_data($project->id) : array
 $view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
 // Configuration des sections du canvas
-$canvas_sections = array(
-    'key_partners' => array(
-        'title' => 'Partenaires clés',
-        'placeholder' => 'Qui sont vos partenaires clés ?',
-        'synthetic' => false
-    ),
-    'key_activities' => array(
-        'title' => 'Activités clés',
-        'placeholder' => 'Quelles sont vos activités clés ?',
-        'synthetic' => false
-    ),
-    'key_resources' => array(
-        'title' => 'Ressources clés',
-        'placeholder' => 'Quelles sont vos ressources clés ?',
-        'synthetic' => false
-    ),
-    'value_proposition' => array(
-        'title' => 'Proposition de valeur',
-        'placeholder' => 'Quelle est votre proposition de valeur ?',
-        'synthetic' => true
-    ),
-    'customer_relationships' => array(
-        'title' => 'Relations clients',
-        'placeholder' => 'Quel type de relation établissez-vous avec vos clients ?',
-        'synthetic' => false
-    ),
-    'channels' => array(
-        'title' => 'Canaux',
-        'placeholder' => 'Quels canaux utilisez-vous pour atteindre vos clients ?',
-        'synthetic' => false
-    ),
-    'customer_segments' => array(
-        'title' => 'Segments clients',
-        'placeholder' => 'Quels sont vos segments clients ?',
-        'synthetic' => true
-    ),
-    'cost_structure' => array(
-        'title' => 'Structure des coûts',
-        'placeholder' => 'Quels sont vos coûts principaux ?',
-        'synthetic' => false
-    ),
-    'revenue_streams' => array(
-        'title' => 'Sources de revenus',
-        'placeholder' => 'Quelles sont vos sources de revenus ?',
-        'synthetic' => true
-    )
-);
+// Charger la configuration des sections du canvas
+$canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
 
 // Fonction pour afficher une section de canvas
 function render_canvas_section($section_key, $section_config, $canvas_data, $project, $view_mode)
