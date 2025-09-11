@@ -49,9 +49,9 @@ if (!defined('ABSPATH')) {
                     <i class="fas fa-eye"></i> Consulter les documents
                 </button>
             </div>
-            <div class="documents-list" id="documents-list">
+            <!-- <div class="documents-list" id="documents-list">
                 <div class="no-documents">Aucun document disponible</div>
-            </div>
+            </div> -->
         </div>
         
         <!-- Actions d'édition -->

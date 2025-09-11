@@ -329,10 +329,25 @@ jQuery(document).ready(function($) {
             section: sectionName
         };
         
+        // Afficher le loader pour la liste de fichiers
+        $('#files-list').addClass('loading');
+        
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            // Retirer le loader
+            $('#files-list').removeClass('loading');
+            
             if (response.success) {
                 displayFiles(response.data.files);
+            } else {
+                // Afficher un message d'erreur
+                $('#files-list').html('<div class="no-files">Erreur lors du chargement des fichiers</div>');
             }
+        }).fail(function() {
+            // Retirer le loader en cas d'erreur
+            $('#files-list').removeClass('loading');
+            
+            // Afficher un message d'erreur
+            $('#files-list').html('<div class="no-files">Erreur de connexion</div>');
         });
     }
     
@@ -343,11 +358,33 @@ jQuery(document).ready(function($) {
             nonce: wp_bmc_ajax.nonce,
             section: sectionName
         };
+
+        // Afficher le loader pour la liste de documents
+        $('#documents-list').addClass('loading');
         
+        // Afficher le loader pour la grille de documents dans la popup
+        $('#documents-grid').addClass('loading');
+
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            // Retirer les loaders
+            $('#documents-list').removeClass('loading');
+            $('#documents-grid').removeClass('loading');
+            
             if (response.success) {
                 displayReferenceDocuments(response.data.documents, sectionName);
+            } else {
+                // Afficher un message d'erreur
+                $('#documents-list').html('<div class="no-documents">Erreur lors du chargement des documents</div>');
+                $('#documents-grid').html('<div class="no-documents">Erreur lors du chargement des documents</div>');
             }
+        }).fail(function() {
+            // Retirer les loaders en cas d'erreur
+            $('#documents-list').removeClass('loading');
+            $('#documents-grid').removeClass('loading');
+            
+            // Afficher un message d'erreur
+            $('#documents-list').html('<div class="no-documents">Erreur de connexion</div>');
+            $('#documents-grid').html('<div class="no-documents">Erreur de connexion</div>');
         });
     }
     
@@ -470,6 +507,14 @@ jQuery(document).ready(function($) {
     
     // Ouvrir le viewer de documents
     function openDocumentsViewer() {
+        var $btn = $('#view-documents-btn');
+        var sectionName = $('#edit-section-title').text().toLowerCase().replace(/\s+/g, '-');
+        
+        // Ajouter l'état de chargement au bouton
+        $btn.addClass('btn-loading').prop('disabled', true);
+        var originalText = $btn.html();
+        $btn.html('<span class="btn-text">' + originalText + '</span>');
+        
         var documentsHtml = `
             <div id="wp-bmc-documents-popup" class="wp-bmc-popup">
                 <div class="popup-overlay"></div>
@@ -488,17 +533,21 @@ jQuery(document).ready(function($) {
             </div>
         `;
         
-        $('body').append(documentsHtml);
+        // Ajouter la popup au DOM si elle n'existe pas
+        if (!$('#wp-bmc-documents-popup').length) {
+            $('body').append(documentsHtml);
+        }
+        
+        // Ouvrir la popup
+        $('#wp-bmc-documents-popup').fadeIn(300);
         
         // Charger les documents
         loadDocuments();
         
-        // Gérer la fermeture
-        $('#wp-bmc-documents-popup .popup-close, #wp-bmc-documents-popup .popup-overlay').on('click', function() {
-            $('#wp-bmc-documents-popup').remove();
-        });
-        
-        $('#wp-bmc-documents-popup').fadeIn(300);
+        // Retirer l'état de chargement après un délai
+        setTimeout(function() {
+            $btn.removeClass('btn-loading').prop('disabled', false).html(originalText);
+        }, 1000);
     }
     
     // Charger les documents
@@ -508,10 +557,25 @@ jQuery(document).ready(function($) {
             nonce: wp_bmc_ajax.nonce
         };
         
+        // Afficher le loader pour la grille de documents
+        $('#documents-grid').addClass('loading');
+        
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            // Retirer le loader
+            $('#documents-grid').removeClass('loading');
+            
             if (response.success) {
                 displayDocuments(response.data.documents);
+            } else {
+                // Afficher un message d'erreur
+                $('#documents-grid').html('<div class="no-documents">Erreur lors du chargement des documents</div>');
             }
+        }).fail(function() {
+            // Retirer le loader en cas d'erreur
+            $('#documents-grid').removeClass('loading');
+            
+            // Afficher un message d'erreur
+            $('#documents-grid').html('<div class="no-documents">Erreur de connexion</div>');
         });
     }
     

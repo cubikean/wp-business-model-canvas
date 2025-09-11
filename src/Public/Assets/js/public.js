@@ -26,6 +26,14 @@ jQuery(document).ready(function($) {
                 autoSaveCanvas();
             }, 2000); // Sauvegarde automatique après 2 secondes d'inactivité
         });
+        
+        // Initialiser la grille du canvas
+        updateCanvasGrid();
+        
+        // Réinitialiser la grille après un délai pour s'assurer que le DOM est prêt
+        setTimeout(function() {
+            updateCanvasGrid();
+        }, 500);
     }
     
     // Fonction pour redimensionner automatiquement les textareas
@@ -60,12 +68,28 @@ jQuery(document).ready(function($) {
         });
     }
     
+    function updateCanvasGrid() {
+        const canvasSections = $('.canvas-section');
+
+        canvasSections.each(function() {
+            const $section = $(this);
+            const column = $section.attr('data-column');
+            const row = $section.attr('data-row');
+
+            $section.css({
+                'grid-column': column,
+                'grid-row': row
+            });
+            
+        });
+    }
+
     // Fonction pour obtenir l'ID du projet depuis l'URL
     function getProjectId() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('project_id');
     }
-    
+   
     // Fonction pour afficher les notifications
     function showNotification(message, type = 'info') {
         const notification = $('<div>')
@@ -337,4 +361,22 @@ jQuery(document).ready(function($) {
     `;
     
     $('head').append(additionalStyles);
+    
+    // ========================================
+    // INITIALISATION DE LA GRILLE
+    // ========================================
+    
+    // Appeler updateCanvasGrid au chargement de la page
+    updateCanvasGrid();
+    
+    // Réappeler quand le contenu AJAX est chargé
+    $(document).on('wp-bmc-content-loaded', function() {
+        updateCanvasGrid();
+    });
+    
+    // Réappeler après un délai pour s'assurer que le DOM est prêt
+    setTimeout(function() {
+        updateCanvasGrid();
+    }, 100);
+    
 });

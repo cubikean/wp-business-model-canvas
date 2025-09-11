@@ -25,6 +25,195 @@
     --dashboard-text: #2F52A0;
     --dashboard-text-light: #666666;
 }
+
+/* ========================================
+   LOADERS POUR DOCUMENTS
+   ======================================== */
+
+/* Loader principal pour les documents */
+.documents-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.documents-loader .loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+.documents-loader .loader-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.documents-loader .loader-subtext {
+    font-size: 12px;
+    color: #999;
+}
+
+/* Loader pour la grille de documents */
+.documents-grid.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.documents-grid.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.documents-grid.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 11;
+}
+
+/* Loader pour la liste de documents */
+.documents-list.loading {
+    position: relative;
+    min-height: 100px;
+}
+
+.documents-list.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.documents-list.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 25px;
+    height: 25px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 11;
+}
+
+/* Loader pour les fichiers */
+.files-list.loading {
+    position: relative;
+    min-height: 80px;
+}
+
+.files-list.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.files-list.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 11;
+}
+
+/* Loader avec texte personnalisé */
+.loader-with-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #666;
+}
+
+.loader-with-text .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+.loader-with-text .text {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Animation de pulsation pour les boutons de chargement */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.btn-loading .btn-text {
+    opacity: 0;
+}
+
 /* Variables CSS */
 
 
@@ -77,12 +266,12 @@
 }
 
 .wp-bmc-canvas-container, .wp-bmc-dashboard{
-    max-width: 1600px;
+    max-width: 1400px;
 }
 
 /* Styles généraux */
 .wp-bmc-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -472,9 +661,11 @@
 }
 
 .canvas-section-footer{
+    background-color: white;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    border-radius: 0 0 20px 20px;
 }
 
 /* Responsive */
@@ -800,7 +991,10 @@
     min-height: 150px;
     display: flex;
     flex-direction: column;
+    grid-column: 1/4;
+    grid-row: 1;
 }
+
 .canvas-section-header{
     border-radius: 20px 20px 0 0;
 }
@@ -817,17 +1011,26 @@
     letter-spacing: 0.5px;
 }
 
+.canvas-section h4, .synthetic-section h4 {
+    margin: 0;
+    color: var(--dashboard-text);
+    padding: 24px;
+    padding-bottom: 0;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+
 /* Contenu des sections */
 .canvas-textarea, .canvas-content {
-    flex: 1;
-    min-height: 120px;
     padding: 24px;
     background: white;
-    font-family: var(--font-family);
-    font-size: 24px;
+    font-family: var(--font-primary);
+    font-size: 18px;
     font-weight: 400;
     line-height: 1.2;
-    color: var(--dashboard-text);
+    color: black;
     overflow-wrap: break-word;
     word-wrap: break-word;
     resize: none;
@@ -836,6 +1039,7 @@
 
 .canvas-section-footer{
     padding: 24px;
+    margin-top: auto;
 }
 
 .canvas-textarea:focus, .canvas-content:focus {
@@ -929,13 +1133,17 @@
 }
 
 /* Boutons d'édition - Style harmonisé */
+.edit-brick-btn-container{
+    display: flex;
+    gap: 10px;
+}
 .edit-brick-btn {
     position: relative;
     width: 46px;
     height: 46px;
     border: none;
     border-radius: 50%;
-    background: var(--primary-color);
+    background: currentColor;
     color: white;
     cursor: pointer;
     display: flex;
@@ -946,20 +1154,29 @@
     z-index: 10;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+[data-color="red"] .edit-brick-btn{
+    background: var(--admin-red-rating);
+}
+[data-color="orange"] .edit-brick-btn{
+    background: var(--admin-orange-rating);
+}
+[data-color="blue"] .edit-brick-btn{
+    background: var(--admin-blue-rating);
+}
+[data-color="green"] .edit-brick-btn{
+    background: var(--admin-green-rating);
+}
 
 .edit-brick-btn:hover {
-    background: var(--secondary-color);
-    transform: scale(1.1);
+    transform: scale(1.01);
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 /* Bouton de notation pour les admins */
 .rate-brick-btn {
-    position: absolute;
-    top: 15px;
-    right: 60px;
-    width: 36px;
-    height: 36px;
+    position: relative;
+    width: 46px;
+    height: 46px;
     border: none;
     border-radius: 50%;
     background: var(--warning-color);
@@ -975,13 +1192,13 @@
 }
 
 .rate-brick-btn:hover {
-    background: #e0a800;
+    background: currentColor;
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .rate-brick-btn.rated {
-    background: #ffc107;
+    background: currentColor;
     color: #333;
 }
 
@@ -989,13 +1206,13 @@
 .canvas-grid, .synthetic-grid {
     display: grid;
     gap: 20px;
-    max-width: 1600px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
 .canvas-grid {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(4, auto);
 }
 
 .synthetic-grid {

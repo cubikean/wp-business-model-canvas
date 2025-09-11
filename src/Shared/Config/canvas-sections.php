@@ -13,56 +13,74 @@ if (!defined('ABSPATH')) {
 return array(
     'key_partners' => array(
         'title' => 'Partenaires clés',
-        'placeholder' => 'Qui sont vos partenaires clés ?',
+        'placeholder' => 'Quelles sont mes principales dépenses ?',
         'synthetic' => false,   
-        'color' => 'red'
+        'color' => 'red',
+        'grid-column' => '1/4',
+        'grid-row' => '1'
     ),
     'key_activities' => array(
         'title' => 'Activités clés',
-        'placeholder' => 'Quelles sont vos activités clés ?',
+        'placeholder' => 'Quels sont les caractéristiques de ton client idéal ?',
         'synthetic' => false,
-        'color' => 'red'
+        'color' => 'red',
+        'grid-column' => '1/3',
+        'grid-row' => '2'
     ),
     'key_resources' => array(
         'title' => 'Ressources clés',
-        'placeholder' => 'Quelles sont vos ressources clés ?',
+        'placeholder' => 'Quels sont les caractéristiques de ton client idéal ?',
         'synthetic' => false,
-        'color' => 'red'
+        'color' => 'red',
+        'grid-column' => '1/3',
+        'grid-row' => '3'
     ),
     'value_proposition' => array(
         'title' => 'Proposition de valeur',
-        'placeholder' => 'Quelle est votre proposition de valeur ?',
+        'placeholder' => 'Pourquoi un client choisirait-il ton offre plutôt qu’une autre ?',
         'synthetic' => true,
-        'color' => 'green'
-    ),
-    'customer_relationships' => array(
-        'title' => 'Relations clients',
-        'placeholder' => 'Quel type de relation établissez-vous avec vos clients ?',
-        'synthetic' => false,
-        'color' => 'orange'
-    ),
-    'channels' => array(
-        'title' => 'Canaux',
-        'placeholder' => 'Quels canaux utilisez-vous pour atteindre vos clients ?',
-        'synthetic' => false,
-        'color' => 'orange'
+        'color' => 'green',
+        'grid-column' => '3/5',
+        'grid-row' => '2/4'
     ),
     'customer_segments' => array(
         'title' => 'Segments clients',
-        'placeholder' => 'Quels sont vos segments clients ?',
+        'placeholder' => 'Comment mon projet génère-t-il de l’argent ?',
         'synthetic' => true,
-        'color' => 'orange'
+        'color' => 'orange',
+        'grid-column' => '4/7',
+        'grid-row' => '1'
+    ),
+    'customer_relationships' => array(
+        'title' => 'Relations clients',
+        'placeholder' => 'Quels sont les caractéristiques de ton client idéal ?',
+        'synthetic' => false,
+        'color' => 'orange',
+        'grid-column' => '5/7',
+        'grid-row' => '2'
+    ),
+    'channels' => array(
+        'title' => 'Canaux',
+        'placeholder' => 'Quels sont les caractéristiques de ton client idéal ?',
+        'synthetic' => false,
+        'color' => 'orange',
+        'grid-column' => '5/7',
+        'grid-row' => '3'
     ),
     'cost_structure' => array(
         'title' => 'Structure des coûts',
-        'placeholder' => 'Quels sont vos coûts principaux ?',
+        'placeholder' => 'Quelles sont mes principales dépenses ?',
         'synthetic' => false,
-        'color' => 'blue'
+        'color' => 'blue',
+        'grid-column' => '1/4',
+        'grid-row' => '4'
     ),
     'revenue_streams' => array(
         'title' => 'Sources de revenus',
-        'placeholder' => 'Quelles sont vos sources de revenus ?',
+        'placeholder' => 'Comment mon projet génère-t-il de l’argent ?',
         'synthetic' => true,
-        'color' => 'blue'
+        'color' => 'blue',
+        'grid-column' => '4/7',
+        'grid-row' => '4'
     )
 );

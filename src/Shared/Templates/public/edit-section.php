@@ -49,9 +49,9 @@ if (!defined('ABSPATH')) {
                     <i class="fas fa-eye"></i> Consulter les documents
                 </button>
             </div>
-            <div class="documents-list" id="documents-list">
+            <!-- <div class="documents-list" id="documents-list">
                 <div class="no-documents">Aucun document disponible</div>
-            </div>
+            </div> -->
         </div>
         
         <!-- Actions d'édition -->
@@ -66,6 +66,7 @@ if (!defined('ABSPATH')) {
 <!-- Popup des documents de référence -->
 <div id="wp-bmc-documents-popup" class="wp-bmc-popup">
     <div class="popup-overlay"></div>
+    
     <div class="popup-content">
         <div class="popup-header">
             <h3>Documents de référence</h3>
@@ -75,6 +76,7 @@ if (!defined('ABSPATH')) {
         </div>
         
         <div class="popup-body">
+            
             <div class="documents-grid" id="documents-grid">
                 <!-- Les documents seront chargés dynamiquement -->
             </div>

@@ -35,7 +35,12 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
 
     ob_start();
 ?>
-    <div class="canvas-section <?php echo $section_class; ?>" data-section="<?php echo $section_key; ?>" data-color="<?php echo $section_config['color']; ?>">
+    <div
+        class="canvas-section <?php echo $section_class; ?>"
+        data-column="<?php echo $section_config['grid-column']; ?>"
+        data-row="<?php echo $section_config['grid-row']; ?>"
+        data-section="<?php echo $section_key; ?>"
+        data-color="<?php echo $section_config['color']; ?>">
         <div class="canvas-section-header">
             <h3>
                 <?php echo esc_html($section_config['title']); ?>
@@ -46,9 +51,11 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
                 <?php endif; ?>
             </h3>
         </div>
+        <h4>
+            <?php echo esc_html($section_config['placeholder']); ?>
+        </h4>
         <div
             class="canvas-content wysiwyg-content"
-            data-placeholder="<?php echo esc_attr($section_config['placeholder']); ?>"
             data-section="<?php echo $section_key; ?>"
             data-color="<?php echo $section_config['color']; ?>">
             <?php
@@ -82,26 +89,31 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         <div class="canvas-section-footer">
 
             <?php wp_bmc_display_section_rating($project_ratings, $section_key); ?>
-            
-            <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>">
-                <i class="fa fa-pen"></i>
-            </button>
 
-            <?php if ($is_admin): ?>
-                <button
-                    class="rate-brick-btn"
-                    data-project-id="<?php echo $project_id; ?>"
-                    data-section-title="<?php echo esc_attr($section_config['title']); ?>"
-                    data-section="<?php echo $section_key; ?>"
-                    title="Noter cette brique"
-                    data-color="<?php echo $section_config['color']; ?>">
-                    <i class="fas fa-star"></i>
+
+            <div class="edit-brick-btn-container">
+                <?php if ($is_admin): ?>
+                    <button
+                        class="rate-brick-btn"
+                        data-project-id="<?php echo $project_id; ?>"
+                        data-section-title="<?php echo esc_attr($section_config['title']); ?>"
+                        data-section="<?php echo $section_key; ?>"
+                        title="Noter cette brique"
+                        data-color="<?php echo $section_config['color']; ?>">
+                        <i class="fas fa-star"></i>
+                    </button>
+                <?php endif; ?>
+
+                <button class="edit-brick-btn" data-section="<?php echo $section_key; ?>">
+                    <i class="fa fa-pen"></i>
                 </button>
-            <?php endif; ?>
+            </div>
+
+
 
         </div>
     </div>
-    <?php
+<?php
     return ob_get_clean();
 }
 
@@ -120,13 +132,13 @@ function wp_bmc_display_section_rating($project_ratings, $section_name)
             $section_rating = $rating;
             break;
         }
-    }?>
-        <div class="admin-rating-display" id="rating-display-<?php echo $section_name; ?>">
-            <div class="rating-score">
-                <span class="rating-score-number"><?php echo esc_html($section_rating->rating); ?></span>
-                <span class="rating-score-total">10</span>
-            </div>
+    } ?>
+    <div class="admin-rating-display" id="rating-display-<?php echo $section_name; ?>">
+        <div class="rating-score">
+            <span class="rating-score-number"><?php echo esc_html($section_rating->rating); ?></span>
+            <span class="rating-score-total">10</span>
         </div>
+    </div>
 <?php }
 
 /**
