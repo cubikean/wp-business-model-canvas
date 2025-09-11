@@ -89,12 +89,12 @@ if ($admin_view && $is_admin) {
         <?php endif; ?>
 
         <div class="canvas-actions">
-            <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
+            <!-- <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
                 Sauvegarder
             </button>
             <button id="wp-bmc-export-pdf" class="wp-bmc-btn wp-bmc-btn-secondary">
                 Exporter PDF
-            </button>
+            </button> -->
             <a href="/dashboard" class="wp-bmc-btn wp-bmc-btn-secondary">
                 Retour au tableau de bord
             </a>
@@ -124,7 +124,7 @@ if ($admin_view && $is_admin) {
         ?>
     </div>
 
-    <div class="canvas-footer">
+    <!-- <div class="canvas-footer">
         <div class="auto-save-status">
             <span id="auto-save-status">Sauvegarde automatique activée</span>
         </div>
@@ -132,7 +132,7 @@ if ($admin_view && $is_admin) {
             <span id="last-saved-time">Dernière sauvegarde : <?php echo date('d/m/Y H:i'); ?></span>
         </div>
     </div>
-</div>
+</div> -->
 
 <?php
 // Inclure le template d'édition réutilisable pour l'admin

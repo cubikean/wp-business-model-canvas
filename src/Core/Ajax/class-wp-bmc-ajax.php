@@ -329,10 +329,25 @@ function wp_bmc_get_section_files_handler() {
         $projects = WP_BMC_Database::get_user_projects($user->user_id);
         
         if (empty($projects)) {
-            wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            // Si l'utilisateur est admin, permettre l'accès même sans projet personnel
+            if (current_user_can('manage_options')) {
+                // Pour les admins, utiliser un projet par défaut
+                // Récupérer le premier projet disponible pour l'admin
+                global $wpdb;
+                $projects_table = $wpdb->prefix . 'bmc_projects';
+                $first_project = $wpdb->get_row("SELECT id FROM $projects_table ORDER BY id ASC LIMIT 1");
+                
+                if ($first_project) {
+                    $project_id = $first_project->id;
+                } else {
+                    wp_send_json_error('Aucun projet disponible pour consulter les fichiers.');
+                }
+            } else {
+                wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            }
+        } else {
+            $project_id = $projects[0]->id;
         }
-        
-        $project_id = $projects[0]->id;
     }
     
     // Vérifier que l'utilisateur a le droit d'accéder à ce projet
@@ -400,10 +415,25 @@ function wp_bmc_upload_file_handler() {
         $projects = WP_BMC_Database::get_user_projects($user->user_id);
         
         if (empty($projects)) {
-            wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            // Si l'utilisateur est admin, permettre l'upload même sans projet personnel
+            if (current_user_can('manage_options')) {
+                // Pour les admins, utiliser un projet par défaut
+                // Récupérer le premier projet disponible pour l'admin
+                global $wpdb;
+                $projects_table = $wpdb->prefix . 'bmc_projects';
+                $first_project = $wpdb->get_row("SELECT id FROM $projects_table ORDER BY id ASC LIMIT 1");
+                
+                if ($first_project) {
+                    $project_id = $first_project->id;
+                } else {
+                    wp_send_json_error('Aucun projet disponible pour l\'upload.');
+                }
+            } else {
+                wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            }
+        } else {
+            $project_id = $projects[0]->id;
         }
-        
-        $project_id = $projects[0]->id;
     }
     
     // Vérifier que l'utilisateur a le droit d'accéder à ce projet
@@ -584,6 +614,10 @@ function wp_bmc_get_documents_handler() {
     
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Vous devez être connecté pour accéder aux documents.');
+    }
+    
+    if (!isset($_POST['section'])) {
+        wp_send_json_error('Section manquante pour récupérer les documents.');
     }
     
     $section = sanitize_text_field($_POST['section']);

@@ -132,6 +132,12 @@
 }
 
 /* Loader pour les fichiers */
+
+.files-list{
+  margin-top: 14px;
+
+}
+
 .files-list.loading {
   position: relative;
   min-height: 80px;

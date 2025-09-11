@@ -379,4 +379,14 @@ jQuery(document).ready(function($) {
         updateCanvasGrid();
     }, 100);
     
+    // ========================================
+    // EXPOSER LES FONCTIONS GLOBALEMENT
+    // ========================================
+    window.WP_BMC_Public = {
+        updateCanvasGrid: updateCanvasGrid,
+        autoResize: autoResize,
+        autoSaveCanvas: autoSaveCanvas,
+        showNotification: showNotification
+    };
+    
 });

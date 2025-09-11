@@ -80,6 +80,10 @@ jQuery(document).ready(function($) {
                 $canvasContainer.html(response.data.html);
                 // Réinitialiser les événements pour les nouveaux éléments
                 initCanvasEvents();
+                // Appeler la fonction updateCanvasGrid depuis public.js
+                if (typeof window.WP_BMC_Public !== 'undefined' && window.WP_BMC_Public.updateCanvasGrid) {
+                    window.WP_BMC_Public.updateCanvasGrid();
+                }
             } else {
                 $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
             }
@@ -129,7 +133,10 @@ jQuery(document).ready(function($) {
         $('#edit-section-title').text(sectionTitle);
         $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
-        console.log(content);
+        // Debug: vérifier que l'attribut est bien défini
+        console.log('Vue d\'édition ouverte pour la section:', sectionName);
+        console.log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
+        
         // Initialiser l'éditeur WYSIWYG
         let decodedContent = cleanContent(content);
 
@@ -323,24 +330,36 @@ jQuery(document).ready(function($) {
     
     // Charger les fichiers de la section
     function loadSectionFiles(sectionName) {
+        console.log('Chargement des fichiers pour la section:', sectionName);
+        
         var formData = {
             action: 'wp_bmc_get_section_files',
             nonce: wp_bmc_ajax.nonce,
             section: sectionName
         };
         
+        // Ajouter le project_id si disponible (pour les admins)
+        var projectId = getProjectIdFromUrl();
+        if (projectId) {
+            formData.project_id = projectId;
+        }
+        
         // Afficher le loader pour la liste de fichiers
         $('#files-list').addClass('loading');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            console.log('Réponse chargement fichiers:', response);
+            
             // Retirer le loader
             $('#files-list').removeClass('loading');
             
             if (response.success) {
+                console.log('Fichiers chargés:', response.data.files);
                 displayFiles(response.data.files);
             } else {
+                console.log('Aucun fichier trouvé ou erreur');
                 // Afficher un message d'erreur
-                $('#files-list').html('<div class="no-files">Erreur lors du chargement des fichiers</div>');
+                $('#files-list').html('<div class="no-files">Aucun fichier attaché</div>');
             }
         }).fail(function() {
             // Retirer le loader en cas d'erreur
@@ -457,8 +476,23 @@ jQuery(document).ready(function($) {
          $('#files-list').html(filesHtml);
      }
     
+    // Récupérer l'ID du projet depuis l'URL
+    function getProjectIdFromUrl() {
+        var urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('project_id');
+    }
+    
     // Ouvrir l'uploader de fichiers
     function openFileUploader() {
+        console.log('openFileUploader appelée');
+        
+        // Vérifier que la vue d'édition est ouverte
+        if (!$('#wp-bmc-edit-view').is(':visible')) {
+            console.error('Vue d\'édition non ouverte');
+            alert('Veuillez d\'abord ouvrir une section pour éditer');
+            return;
+        }
+        
         // Créer un input file caché
         var $input = $('<input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" style="display: none;">');
         $('body').append($input);
@@ -475,15 +509,35 @@ jQuery(document).ready(function($) {
     // Uploader les fichiers
     function uploadFiles(files) {
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
+        
+        // Debug: vérifier si la section est définie
+        if (!sectionName) {
+            console.error('Section non définie pour l\'upload de fichiers');
+            alert('Erreur: Impossible de déterminer la section pour l\'upload');
+            return;
+        }
+        
+        console.log('Upload de fichiers pour la section:', sectionName);
         var formData = new FormData();
         
         formData.append('action', 'wp_bmc_upload_file');
         formData.append('nonce', wp_bmc_ajax.nonce);
         formData.append('section', sectionName);
         
+        // Ajouter le project_id si disponible (pour les admins)
+        var projectId = getProjectIdFromUrl();
+        if (projectId) {
+            formData.append('project_id', projectId);
+        }
+        
         for (var i = 0; i < files.length; i++) {
             formData.append('files[]', files[i]);
         }
+        
+        // Ajouter un indicateur de chargement
+        var $addBtn = $('#add-file-btn');
+        var originalText = $addBtn.html();
+        $addBtn.html('<i class="fas fa-spinner fa-spin"></i> Upload en cours...').prop('disabled', true);
         
         $.ajax({
             url: wp_bmc_ajax.ajax_url,
@@ -492,23 +546,52 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
+                console.log('Réponse upload:', response);
+                
                 if (response.success) {
+                    console.log('Upload réussi, rechargement des fichiers...');
                     loadSectionFiles(sectionName);
-                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Fichiers uploadés avec succès !</div>').show();
+                    
+                    // Afficher le message de succès
+                    var $message = $('#wp-bmc-canvas-message');
+                    if ($message.length > 0) {
+                        $message.html('<div class="wp-bmc-message success">Fichiers uploadés avec succès !</div>').show();
+                        setTimeout(function() { $message.fadeOut(); }, 3000);
+                    } else {
+                        alert('Fichiers uploadés avec succès !');
+                    }
                 } else {
-                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                    console.error('Erreur upload:', response.data);
+                    alert('Erreur lors de l\'upload : ' + response.data);
                 }
             },
-            error: function() {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de l\'upload des fichiers.</div>').show();
+            error: function(xhr, status, error) {
+                console.error('Erreur AJAX upload:', error);
+                alert('Erreur lors de l\'upload des fichiers.');
+            },
+            complete: function() {
+                // Restaurer le bouton
+                $addBtn.html(originalText).prop('disabled', false);
             }
         });
     }
     
     // Ouvrir le viewer de documents
     function openDocumentsViewer() {
+        console.log('openDocumentsViewer appelée');
+        
         var $btn = $('#view-documents-btn');
-        var sectionName = $('#edit-section-title').text().toLowerCase().replace(/\s+/g, '-');
+        
+        // Récupérer la section depuis l'attribut data-section de la vue d'édition
+        var sectionName = $('#wp-bmc-edit-view').attr('data-section');
+        
+        if (!sectionName) {
+            console.error('Section non définie pour charger les documents');
+            alert('Erreur: Impossible de déterminer la section pour charger les documents');
+            return;
+        }
+        
+        console.log('Chargement des documents pour la section:', sectionName);
         
         // Ajouter l'état de chargement au bouton
         $btn.addClass('btn-loading').prop('disabled', true);
@@ -541,8 +624,8 @@ jQuery(document).ready(function($) {
         // Ouvrir la popup
         $('#wp-bmc-documents-popup').fadeIn(300);
         
-        // Charger les documents
-        loadDocuments();
+        // Charger les documents avec la section
+        loadDocuments(sectionName);
         
         // Retirer l'état de chargement après un délai
         setTimeout(function() {
@@ -551,20 +634,26 @@ jQuery(document).ready(function($) {
     }
     
     // Charger les documents
-    function loadDocuments() {
+    function loadDocuments(sectionName) {
+        console.log('loadDocuments appelée avec la section:', sectionName);
+        
         var formData = {
             action: 'wp_bmc_get_documents',
-            nonce: wp_bmc_ajax.nonce
+            nonce: wp_bmc_ajax.nonce,
+            section: sectionName
         };
         
         // Afficher le loader pour la grille de documents
         $('#documents-grid').addClass('loading');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            console.log('Réponse chargement documents:', response);
+            
             // Retirer le loader
             $('#documents-grid').removeClass('loading');
             
             if (response.success) {
+                console.log('Documents chargés:', response.data.documents);
                 displayDocuments(response.data.documents);
             } else {
                 // Afficher un message d'erreur
@@ -581,9 +670,12 @@ jQuery(document).ready(function($) {
     
          // Afficher les documents
      function displayDocuments(documents) {
+         console.log('displayDocuments appelée avec:', documents);
+         
          var documentsHtml = '';
          
          if (documents && documents.length > 0) {
+             console.log('Affichage de', documents.length, 'documents');
              documents.forEach(function(doc) {
                  documentsHtml += `
                      <div class="document-item" data-doc-id="${doc.id}">
@@ -603,6 +695,7 @@ jQuery(document).ready(function($) {
                  `;
              });
          } else {
+             console.log('Aucun document à afficher');
              documentsHtml = '<div class="no-documents">Aucun document disponible</div>';
          }
          
