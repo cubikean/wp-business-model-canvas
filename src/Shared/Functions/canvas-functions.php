@@ -135,7 +135,11 @@ function wp_bmc_display_section_rating($project_ratings, $section_name)
     } ?>
     <div class="admin-rating-display" id="rating-display-<?php echo $section_name; ?>">
         <div class="rating-score">
+            <?php if ($section_rating && isset($section_rating->rating)): ?>
             <span class="rating-score-number"><?php echo esc_html($section_rating->rating); ?></span>
+            <?php else: ?>
+                <span class="rating-score-number">-</span>
+            <?php endif; ?>
             <span class="rating-score-total">10</span>
         </div>
     </div>

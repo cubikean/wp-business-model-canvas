@@ -126,7 +126,7 @@ jQuery(document).ready(function($) {
         $('.wp-bmc-canvas-container > *:not(#wp-bmc-edit-view)').hide();
         
         // Mettre à jour le contenu de la vue d'édition
-        $('#edit-section-title').text('Éditer : ' + sectionTitle);
+        $('#edit-section-title').text(sectionTitle);
         $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
         console.log(content);
