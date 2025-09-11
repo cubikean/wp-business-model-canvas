@@ -154,10 +154,10 @@ class WP_BMC_Loader {
             WP_BMC_VERSION
         );
         
-        // Charger Font Awesome pour les icônes
+        // Charger Font Awesome pour les icônes (fichiers locaux)
         wp_enqueue_style(
             'font-awesome',
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
+            WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css',
             array(),
             '6.0.0'
         );
@@ -196,7 +196,7 @@ class WP_BMC_Loader {
             wp_enqueue_style(
                 'wp-bmc-admin',
                 WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css',
-                array('wp-bmc-fonts'),
+                array('wp-bmc-fonts', 'font-awesome'),
                 WP_BMC_VERSION
             );
             
