@@ -771,6 +771,16 @@ function wp_bmc_request_grading_handler() {
     
     $project = $projects[0];
     
+    // Sauvegarder une révision avant la demande de notation
+    $current_content = '';
+    $canvas_data = WP_BMC_Database::get_canvas_data($project->id);
+    if (isset($canvas_data[$section])) {
+        $current_content = $canvas_data[$section];
+    }
+    
+    // Créer une révision avec la raison "grading_request"
+    WP_BMC_Database::create_section_revision($project->id, $section, $current_content, 'grading_request');
+    
     // Enregistrer la demande de notation
     $result = WP_BMC_Database::save_grading_request($project->id, $section, $section_title, $user->user_id);
     
@@ -784,6 +794,89 @@ function wp_bmc_request_grading_handler() {
     } else {
         wp_send_json_error('Erreur lors de l\'envoi de la demande de notation.');
     }
+}
+
+// Handler pour obtenir les révisions d'une section
+add_action('wp_ajax_wp_bmc_get_section_revisions', 'wp_bmc_get_section_revisions_handler');
+function wp_bmc_get_section_revisions_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour accéder aux révisions.');
+    }
+    
+    $section = sanitize_text_field($_POST['section']);
+    $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
+    
+    if (empty($section)) {
+        wp_send_json_error('Section manquante.');
+    }
+    
+    // Si pas de project_id, utiliser le projet de l'utilisateur connecté
+    if (!$project_id) {
+        $user = WP_BMC_Auth::get_current_user();
+        $projects = WP_BMC_Database::get_user_projects($user->user_id);
+        if (empty($projects)) {
+            wp_send_json_error('Aucun projet trouvé.');
+        }
+        $project_id = $projects[0]->id;
+    }
+    
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé à ce projet.');
+    }
+    
+    $revisions = WP_BMC_Database::get_section_revisions($project_id, $section);
+    
+    wp_send_json_success(array(
+        'revisions' => $revisions,
+        'section' => $section,
+        'project_id' => $project_id
+    ));
+}
+
+// Handler pour obtenir une révision spécifique
+add_action('wp_ajax_wp_bmc_get_section_revision', 'wp_bmc_get_section_revision_handler');
+function wp_bmc_get_section_revision_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour accéder aux révisions.');
+    }
+    
+    $revision_id = intval($_POST['revision_id']);
+    
+    if (!$revision_id) {
+        wp_send_json_error('ID de révision invalide.');
+    }
+    
+    $revision = WP_BMC_Database::get_section_revision($revision_id);
+    
+    if (!$revision) {
+        wp_send_json_error('Révision non trouvée.');
+    }
+    
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($revision->project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé à cette révision.');
+    }
+    
+    wp_send_json_success(array(
+        'revision' => $revision
+    ));
 }
 
 // Handler pour charger une vue du canvas via AJAX
@@ -801,24 +894,36 @@ function wp_bmc_load_canvas_view_handler() {
         wp_send_json_error('Vue invalide.');
     }
     
-    // Récupérer les données de l'utilisateur
-    $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
-    $project = !empty($user_projects) ? $user_projects[0] : null;
+    // Récupérer les données du projet
+    $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
     
-    if (!$project) {
-        wp_send_json_error('Aucun projet trouvé.');
+    if ($project_id) {
+        // Mode canvas spécifique - vérifier les permissions
+        $project = WP_BMC_Database::get_project($project_id);
+        if (!$project || $current_user->user_id != $project->user_id) {
+            wp_send_json_error('Accès non autorisé à ce projet.');
+        }
+    } else {
+        // Mode dashboard - utiliser le premier projet de l'utilisateur
+        $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+        $project = !empty($user_projects) ? $user_projects[0] : null;
+        
+        if (!$project) {
+            wp_send_json_error('Aucun projet trouvé.');
+        }
+        $project_id = $project->id;
     }
     
-    $canvas_data = WP_BMC_Database::get_canvas_data($project->id);
-    $project_ratings = WP_BMC_Database::get_project_ratings($project->id);
+    $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
+    $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
     
     // Configuration des sections du canvas (externalisée)
     $canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
     
     // Fonction pour afficher une section de canvas (utilise les fonctions externalisées)
-    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project, $view_mode, $project_ratings) {
+    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project_id, $view_mode, $project_ratings) {
         // Utiliser la fonction externalisée
-        return wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project->id, $project_ratings, false, array());
+        return wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, false, array());
     }
     
     // Générer le HTML selon la vue
@@ -832,7 +937,7 @@ function wp_bmc_load_canvas_view_handler() {
         $synthetic_order = wp_bmc_get_synthetic_order();
         foreach ($synthetic_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view, $project_ratings);
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings);
             }
         }
         
@@ -848,7 +953,7 @@ function wp_bmc_load_canvas_view_handler() {
         
         foreach ($global_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project, $view, $project_ratings);
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings);
             }
         }
         

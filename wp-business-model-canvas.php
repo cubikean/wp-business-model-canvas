@@ -119,7 +119,7 @@ function wp_bmc_deactivate() {
 }
 
 // Fonction utilitaire pour inclure le template d'édition
-function wp_bmc_include_edit_section($context = 'public') {
+function wp_bmc_include_edit_section($context = 'public', $section = '') {
     $template_path = WP_BMC_SHARED_DIR . 'Templates/' . $context . '/edit-section.php';
     
     if (file_exists($template_path)) {

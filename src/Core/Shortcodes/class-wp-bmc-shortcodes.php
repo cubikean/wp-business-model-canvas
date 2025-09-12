@@ -69,7 +69,21 @@ class WP_BMC_Shortcodes {
             return WP_BMC_Template_Loader::get_template_content('admin/canvas');
         }
         
-        return WP_BMC_Template_Loader::get_template_content('public/canvas');
+        // Sinon, rediriger vers le dashboard avec les paramètres appropriés
+        $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+        $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'global';
+        
+        if ($project_id) {
+            $redirect_url = add_query_arg(array(
+                'project_id' => $project_id,
+                'view' => $view
+            ), home_url('/dashboard/'));
+        } else {
+            $redirect_url = add_query_arg('view', $view, home_url('/dashboard/'));
+        }
+        
+        wp_redirect($redirect_url);
+        exit;
     }
 }
 

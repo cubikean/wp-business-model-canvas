@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Template pour le tableau de bord utilisateur
+ * Template unifié pour le tableau de bord et canvas utilisateur
+ * Gère à la fois la création de projet et l'affichage du canvas
  */
 
 if (!defined('ABSPATH')) {
@@ -15,28 +16,31 @@ if (!$current_user) {
     exit;
 }
 
+// Gestion des paramètres d'URL
+$project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
 $view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
-$user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
-$project = !empty($user_projects) ? $user_projects[0] : null;
-$project_id = $project->id;
-$canvas_data = $project ? WP_BMC_Database::get_canvas_data($project_id) : array();
+// Récupération des données du projet
+if ($project_id) {
+    // Mode canvas spécifique - vérifier les permissions
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project || $current_user->user_id != $project->user_id) {
+        wp_redirect(home_url('/login/'));
+        exit;
+    }
+} else {
+    // Mode dashboard - utiliser le premier projet de l'utilisateur
+    $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+    $project = !empty($user_projects) ? $user_projects[0] : null;
+    $project_id = $project ? $project->id : null;
+}
 
-
+$canvas_data = $project_id ? WP_BMC_Database::get_canvas_data($project_id) : array();
 $canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
-$project_ratings = WP_BMC_Database::get_project_ratings($project_id);
+$project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_id) : array();
 ?>
 
 <div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project_id; ?>" <?php endif; ?>>
-    <div class="dashboard-header">
-        <h1>Mon Business Model Canvas</h1>
-        <div class="user-info">
-            <span>Bienvenue, <?php echo esc_html($current_user->first_name . ' ' . $current_user->last_name); ?></span>
-            <span class="company-info"><?php echo esc_html($current_user->company); ?></span>
-            <a href="#" id="wp-bmc-logout" class="wp-bmc-btn wp-bmc-btn-secondary">Déconnexion</a>
-        </div>
-    </div>
-
     <?php if (!$project): ?>
         <!-- Aucun projet créé - Créer le premier canvas -->
         <div class="no-project-section">
@@ -73,23 +77,24 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 
     <?php else: ?>
         <!-- Canvas existant - Affichage avec options de vue -->
-        <div class="canvas-controls">
-            <div class="view-toggle">
-                <button class="wp-bmc-btn <?php echo $view_mode === 'synthetic' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
-                    data-view="synthetic">Vue synthétique</button>
-                <button class="wp-bmc-btn <?php echo $view_mode === 'global' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
-                    data-view="global">Vue globale</button>
-            </div>
+        <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
+            <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
 
-            <!-- <div class="canvas-actions">
-                <button id="wp-bmc-save-canvas" class="wp-bmc-btn">
-                    Sauvegarder
-                </button>
-                <button id="wp-bmc-export-pdf" class="wp-bmc-btn">
-                    Exporter PDF
-                </button>
+            
+           <!-- // TODO: Ajouter le bouton de déconnexion -->
+                        <!-- <div class="user-info">
+                <a href="#" id="wp-bmc-logout" class="wp-bmc-btn wp-bmc-btn-secondary">Déconnexion</a>
             </div> -->
+            <div class="canvas-controls">
+                <div class="view-toggle">
+                    <button class="wp-bmc-btn <?php echo $view_mode === 'synthetic' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
+                        data-view="synthetic">Vue synthétique</button>
+                    <button class="wp-bmc-btn <?php echo $view_mode === 'global' ? 'wp-bmc-btn-primary' : 'wp-bmc-btn-secondary'; ?>"
+                        data-view="global">Vue globale</button>
+                </div>
+            </div>
         </div>
+
 
         <div class="canvas-container">
             <?php if ($view_mode === 'synthetic'): ?>
@@ -98,7 +103,7 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
                     <div class="synthetic-grid">
                         <?php
                         // Afficher les sections synthétiques dans l'ordre spécifique
-                        $synthetic_order = array('customer_segments', 'value_proposition', 'revenue_streams');
+                        $synthetic_order = wp_bmc_get_synthetic_order();
                         foreach ($synthetic_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
                                 echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings);
@@ -114,17 +119,7 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
                     <div class="canvas-grid">
                         <?php
                         // Afficher toutes les sections dans l'ordre du canvas
-                        $global_order = array(
-                            'key_partners',
-                            'key_activities',
-                            'key_resources',
-                            'value_proposition',
-                            'customer_relationships',
-                            'channels',
-                            'customer_segments',
-                            'cost_structure',
-                            'revenue_streams'
-                        );
+                        $global_order = wp_bmc_get_canvas_order();
 
                         foreach ($global_order as $section_key) {
                             if (isset($canvas_sections[$section_key])) {
@@ -136,16 +131,6 @@ $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
                 </div>
             <?php endif; ?>
         </div>
-
-        <div class="canvas-footer">
-            <div class="auto-save-status">
-                <span id="auto-save-status">Sauvegarde automatique activée</span>
-            </div>
-            <div class="last-saved">
-                <span id="last-saved-time">Dernière sauvegarde : <?php echo date('d/m/Y H:i'); ?></span>
-            </div>
-        </div>
-
     <?php endif; ?>
 </div>
 

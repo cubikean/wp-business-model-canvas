@@ -57,6 +57,7 @@ jQuery(document).ready(function($) {
         // Mettre à jour les boutons actifs
         $('.view-toggle button').removeClass('wp-bmc-btn-primary').addClass('wp-bmc-btn-secondary');
         $button.removeClass('wp-bmc-btn-secondary').addClass('wp-bmc-btn-primary');
+        $('.dashboard-header-title').text($button.text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
         
         // Recharger le contenu du canvas via AJAX
         loadCanvasView(view);
@@ -70,10 +71,14 @@ jQuery(document).ready(function($) {
         // Afficher l'indicateur de chargement
         $canvasContainer.html($loadingIndicator);
         
+        // Récupérer le project_id depuis l'attribut data du container
+        var projectId = $('.wp-bmc-dashboard').data('project-id');
+        
         // Charger le contenu via AJAX
         $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_load_canvas_view',
             view: view,
+            project_id: projectId,
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success) {
@@ -125,16 +130,24 @@ jQuery(document).ready(function($) {
     
     // Ouvrir la vue d'édition
     function openEditView(sectionName, sectionTitle, content) {
-        // Masquer le contenu principal (gérer les deux cas : dashboard et canvas)
-        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view)').hide();
-        $('.wp-bmc-canvas-container > *:not(#wp-bmc-edit-view)').hide();
+        // Définir la section actuellement éditée (priorité à la variable globale)
+        currentEditingSection = sectionName;
+        
+        // Masquer le contenu principal
+        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view, .dashboard-header)').hide();
+        $('.dashboard-header .canvas-controls').hide();
+        $('.dashboard-header-title').text('Bloc projet : ' + $('.dashboard-header').data('project-name'));
         
         // Mettre à jour le contenu de la vue d'édition
         $('#edit-section-title').text(sectionTitle);
         $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
+        // Mettre à jour le titre des révisions pour cette brique spécifique
+        $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
+        
         // Debug: vérifier que l'attribut est bien défini
         console.log('Vue d\'édition ouverte pour la section:', sectionName);
+        console.log('Variable globale définie:', currentEditingSection);
         console.log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
         
         // Initialiser l'éditeur WYSIWYG
@@ -148,17 +161,30 @@ jQuery(document).ready(function($) {
         // Charger les documents de référence
         loadReferenceDocuments(sectionName);
         
+        // Réinitialiser la liste des révisions pour cette brique
+        $('#revisions-list').html(`
+            <div class="no-revisions">
+                <i class="fas fa-history"></i>
+                <p>Aucune révision disponible pour cette brique</p>
+                <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
+            </div>
+        `);
+        
         // Afficher la vue d'édition
         $('#wp-bmc-edit-view').fadeIn(300);
     }
     
     // Fermer la vue d'édition
     function closeEditView() {
+        // Réinitialiser la section actuellement éditée
+        currentEditingSection = '';
+        
         $('#wp-bmc-edit-view').fadeOut(300);
         
-        // Réafficher le contenu principal (gérer les deux cas : dashboard et canvas)
+        // Réafficher le contenu principal
         $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view)').show();
-        $('.wp-bmc-canvas-container > *:not(#wp-bmc-edit-view)').show();
+        $('.dashboard-header .canvas-controls').show();
+        $('.dashboard-header-title').text($('.view-toggle button.wp-bmc-btn-primary').text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
         
         // Détruire l'éditeur WYSIWYG
         if (window.wysiwygEditor) {
@@ -305,7 +331,7 @@ jQuery(document).ready(function($) {
      }
      
      // Sauvegarder le contenu de la brique
-    function saveBrickContent() {
+    function saveBrickContent(callback) {
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         var content = '';
         
@@ -318,14 +344,40 @@ jQuery(document).ready(function($) {
         // Mettre à jour le contenu dans le canvas
         $('[data-section="' + sectionName + '"] .canvas-content').html(content);
         
-        // Sauvegarder automatiquement
-        autoSaveCanvas();
-        
-        // Fermer la vue d'édition
-        closeEditView();
-        
-        // Afficher un message de succès
-        $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Contenu sauvegardé avec succès !</div>').show();
+        // Si un callback est fourni, sauvegarder via AJAX et appeler le callback
+        if (callback) {
+            var canvasData = {};
+            $('.canvas-content').each(function() {
+                var section = $(this).closest('[data-section]').data('section');
+                canvasData[section] = $(this).html();
+            });
+            
+            var formData = {
+                action: 'wp_bmc_save_canvas',
+                nonce: wp_bmc_ajax.nonce,
+                canvas_data: canvasData
+            };
+            
+            $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+                if (response.success) {
+                    updateLastSavedTime();
+                    callback(true); // Indiquer que la sauvegarde a réussi
+                } else {
+                    callback(false); // Indiquer que la sauvegarde a échoué
+                }
+            }).fail(function() {
+                callback(false); // Indiquer que la sauvegarde a échoué
+            });
+        } else {
+            // Sauvegarder automatiquement (comportement par défaut)
+            autoSaveCanvas();
+            
+            // Fermer la vue d'édition
+            closeEditView();
+            
+            // Afficher un message de succès
+            $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Contenu sauvegardé avec succès !</div>').show();
+        }
     }
     
     // Charger les fichiers de la section
@@ -718,34 +770,46 @@ jQuery(document).ready(function($) {
         }
         
         // Désactiver le bouton
-        $btn.prop('disabled', true).text('Envoi en cours...');
+        $btn.prop('disabled', true).text('Sauvegarde en cours...');
         
-        var formData = {
-            action: 'wp_bmc_request_grading',
-            nonce: wp_bmc_ajax.nonce,
-            section: sectionName,
-            section_title: sectionTitle
-        };
-        
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            if (response.success) {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Demande de notation envoyée avec succès ! L\'administrateur a été notifié.</div>').show();
-                
-                // Changer le texte du bouton pour indiquer que la demande a été envoyée
-                $btn.text('Demande envoyée').addClass('wp-bmc-btn-success').removeClass('wp-bmc-btn-warning');
-                
-                // Fermer la vue d'édition après un délai
-                setTimeout(function() {
-                    closeEditView();
-                }, 2000);
-            } else {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+        // Sauvegarder d'abord le contenu actuel
+        saveBrickContent(function(saveSuccess) {
+            if (!saveSuccess) {
+                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de la sauvegarde. Impossible de demander la notation.</div>').show();
+                $btn.prop('disabled', false).text(originalText);
+                return;
             }
-        }).fail(function() {
-            $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de l\'envoi de la demande. Veuillez réessayer.</div>').show();
-        }).always(function() {
-            // Réactiver le bouton
-            $btn.prop('disabled', false);
+            
+            // Mettre à jour le texte du bouton
+            $btn.text('Envoi de la demande...');
+            
+            var formData = {
+                action: 'wp_bmc_request_grading',
+                nonce: wp_bmc_ajax.nonce,
+                section: sectionName,
+                section_title: sectionTitle
+            };
+            
+            $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+                if (response.success) {
+                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Demande de notation envoyée avec succès ! L\'administrateur a été notifié.</div>').show();
+                    
+                    // Changer le texte du bouton pour indiquer que la demande a été envoyée
+                    $btn.text('Demande envoyée').addClass('wp-bmc-btn-success').removeClass('wp-bmc-btn-warning');
+                    
+                    // Fermer la vue d'édition après un délai
+                    setTimeout(function() {
+                        closeEditView();
+                    }, 2000);
+                } else {
+                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                }
+            }).fail(function() {
+                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de l\'envoi de la demande. Veuillez réessayer.</div>').show();
+            }).always(function() {
+                // Réactiver le bouton
+                $btn.prop('disabled', false);
+            });
         });
     }
     
@@ -1045,6 +1109,174 @@ jQuery(document).ready(function($) {
     });
     
     // ========================================
+    // GESTION DES RÉVISIONS
+    // ========================================
+    
+    // Charger les révisions d'une section
+    function loadSectionRevisions(section) {
+        console.log('Chargement des révisions pour la section:', section);
+        var projectId = $('.wp-bmc-dashboard').data('project-id');
+        
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_get_section_revisions',
+            section: section,
+            project_id: projectId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                displayRevisions(response.data.revisions, section);
+            } else {
+                console.error('Erreur lors du chargement des révisions:', response.data);
+            }
+        }).fail(function() {
+            console.error('Erreur de connexion lors du chargement des révisions');
+        });
+    }
+    
+    // Afficher les révisions dans la liste
+    function displayRevisions(revisions, section) {
+        var $revisionsList = $('#revisions-list');
+        
+        if (revisions.length === 0) {
+            $revisionsList.html(`
+                <div class="no-revisions">
+                    <i class="fas fa-history"></i>
+                    <p>Aucune révision disponible pour cette brique</p>
+                    <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
+                </div>
+            `);
+            return;
+        }
+        
+        var html = '<div class="revisions-items">';
+        
+        revisions.forEach(function(revision, index) {
+            var date = new Date(revision.created_at);
+            var formattedDate = date.toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            var reasonLabel = getRevisionReasonLabel(revision.revision_reason);
+            
+            html += `
+                <div class="revision-item" data-revision-id="${revision.id}">
+                    <div class="revision-header">
+                        <div class="revision-info">
+                            <span class="revision-number">Révision ${revisions.length - index}</span>
+                            <span class="revision-date">${formattedDate}</span>
+                        </div>
+                        <div class="revision-reason">
+                            <span class="reason-badge reason-${revision.revision_reason}">${reasonLabel}</span>
+                        </div>
+                    </div>
+                    <div class="revision-actions">
+                        <button class="btn-outline --small view-revision-btn" data-revision-id="${revision.id}">
+                            <i class="fas fa-eye"></i> Voir
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        $revisionsList.html(html);
+        
+        // Attacher les événements aux boutons
+        $('.view-revision-btn').on('click', function() {
+            var revisionId = $(this).data('revision-id');
+            viewRevision(revisionId);
+        });
+    }
+    
+    // Obtenir le label de la raison de révision
+    function getRevisionReasonLabel(reason) {
+        var labels = {
+            'grading_request': 'Demande de notation',
+            'manual': 'Modification manuelle',
+            'auto_save': 'Sauvegarde automatique'
+        };
+        return labels[reason] || reason;
+    }
+    
+    // Visualiser une révision dans un popup
+    function viewRevision(revisionId) {
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_get_section_revision',
+            revision_id: revisionId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                showRevisionPopup(response.data.revision);
+            } else {
+                console.error('Erreur lors du chargement de la révision:', response.data);
+            }
+        }).fail(function() {
+            console.error('Erreur de connexion lors du chargement de la révision');
+        });
+    }
+    
+    // Afficher le popup de révision
+    function showRevisionPopup(revision) {
+        var date = new Date(revision.created_at);
+        var formattedDate = date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        var reasonLabel = getRevisionReasonLabel(revision.revision_reason);
+        
+        $('#revision-popup-title').text(`Révision du ${formattedDate}`);
+        $('#revision-date').text(formattedDate);
+        $('#revision-reason').text(reasonLabel);
+        $('#revision-content').html(revision.content || '<p class="empty-content">Aucun contenu dans cette révision</p>');
+        
+        $('#wp-bmc-revision-popup').fadeIn(300);
+    }
+    
+    // Fermer le popup de révision
+    function closeRevisionPopup() {
+        $('#wp-bmc-revision-popup').fadeOut(300);
+    }
+    
+    // Variable globale pour stocker la section actuellement éditée
+    var currentEditingSection = '';
+    
+    // Événements pour les révisions
+    $(document).on('click', '#load-revisions-btn', function() {
+        console.log('Section actuelle (variable):', currentEditingSection);
+        console.log('Section actuelle (attribut):', $('#wp-bmc-edit-view').data('section'));
+        
+        var section = currentEditingSection || $('#wp-bmc-edit-view').data('section');
+        
+        if (section) {
+            loadSectionRevisions(section);
+        } else {
+            console.error('Aucune section trouvée pour charger les révisions');
+            $('#revisions-list').html(`
+                <div class="no-revisions">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur : Impossible de déterminer la section actuelle</p>
+                </div>
+            `);
+        }
+    });
+    
+    $(document).on('click', '#revision-popup-close', function() {
+        closeRevisionPopup();
+    });
+    
+    $(document).on('click', '.popup-overlay', function() {
+        closeRevisionPopup();
+    });
+    
+    // ========================================
     // EXPOSER LES FONCTIONS GLOBALEMENT
     // ========================================
     window.WP_BMC_Dashboard = {
@@ -1054,7 +1286,9 @@ jQuery(document).ready(function($) {
         openEditView: openEditView,
         closeEditView: closeEditView,
         loadCanvasView: loadCanvasView,
-        initCanvasEvents: initCanvasEvents
+        initCanvasEvents: initCanvasEvents,
+        loadSectionRevisions: loadSectionRevisions,
+        viewRevision: viewRevision
     };
     
     // Initialiser les événements du canvas au chargement

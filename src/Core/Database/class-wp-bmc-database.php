@@ -87,6 +87,21 @@ class WP_BMC_Database {
             KEY status (status)
         ) $charset_collate;";
         
+        // Table des révisions de sections
+        $table_section_revisions = $wpdb->prefix . 'bmc_section_revisions';
+        $sql_section_revisions = "CREATE TABLE $table_section_revisions (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            section varchar(50) NOT NULL,
+            content text,
+            revision_reason varchar(100) DEFAULT 'manual',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY project_id (project_id),
+            KEY section (section),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        
         // Table des notifications admin
         $table_admin_notifications = $wpdb->prefix . 'bmc_admin_notifications';
         $sql_admin_notifications = "CREATE TABLE $table_admin_notifications (
@@ -108,6 +123,7 @@ class WP_BMC_Database {
         dbDelta($sql_projects);
         dbDelta($sql_canvas_data);
         dbDelta($sql_grading_requests);
+        dbDelta($sql_section_revisions);
         dbDelta($sql_admin_notifications);
     }
     
@@ -769,6 +785,85 @@ class WP_BMC_Database {
              FROM $table n
              JOIN {$wpdb->users} u ON n.admin_id = u.ID
              ORDER BY n.created_at DESC"
+        );
+    }
+    
+    // ========================================
+    // FONCTIONS DE GESTION DES RÉVISIONS
+    // ========================================
+    
+    /**
+     * Créer une révision d'une section
+     */
+    public static function create_section_revision($project_id, $section, $content, $revision_reason = 'manual') {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_section_revisions';
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'section' => $section,
+                'content' => $content,
+                'revision_reason' => $revision_reason
+            ),
+            array('%d', '%s', '%s', '%s')
+        );
+        
+        return $result ? $wpdb->insert_id : false;
+    }
+    
+    /**
+     * Obtenir les révisions d'une section
+     */
+    public static function get_section_revisions($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_section_revisions';
+        
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table 
+                 WHERE project_id = %d AND section = %s 
+                 ORDER BY created_at DESC",
+                $project_id,
+                $section
+            )
+        );
+    }
+    
+    /**
+     * Obtenir une révision spécifique
+     */
+    public static function get_section_revision($revision_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_section_revisions';
+        
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE id = %d",
+                $revision_id
+            )
+        );
+    }
+    
+    /**
+     * Compter le nombre de révisions d'une section
+     */
+    public static function count_section_revisions($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_section_revisions';
+        
+        return $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table 
+                 WHERE project_id = %d AND section = %s",
+                $project_id,
+                $section
+            )
         );
     }
 }

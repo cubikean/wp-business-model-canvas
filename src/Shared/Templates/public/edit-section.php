@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 ?>
 
 <!-- Vue d'édition des briques (remplace le contenu principal) -->
-<div id="wp-bmc-edit-view" class="wp-bmc-edit-view" style="display: none;">
+<div id="wp-bmc-edit-view" class="wp-bmc-edit-view" style="display: none;" data-section="">
     <div class="edit-view-container">
         <div class="edit-header">
             <button class="back-to-dashboard-btn" id="back-to-dashboard">
@@ -52,18 +52,24 @@ if (!defined('ABSPATH')) {
         <div class="edit-actions">
             <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="request-grading">Demander une notation</button>
         </div>
     </div>
 
     <div class="history-section">
         <header>
-            <h4>Historique score de maturité</h4>
+            <h4 id="revisions-section-title">Révisions de cette brique</h4>
+            <button type="button" class="btn-outline --icon --small" id="load-revisions-btn">
+                <i class="fas fa-history"></i> Charger les révisions
+            </button>
         </header>
-        <ul id="history-list">
-            <li>Version 1</li>
-            <li>Version 2</li>
-            <li>Version 3</li>
-        </ul>
+        <div class="revisions-list" id="revisions-list">
+            <div class="no-revisions">
+                <i class="fas fa-history"></i>
+                <p>Aucune révision disponible pour cette brique</p>
+                <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
+            </div>
+        </div>
     </div>
 
     <div class="todo-section">
@@ -97,6 +103,35 @@ if (!defined('ABSPATH')) {
 
         <div class="popup-footer">
             <button type="button" class="popup-btn popup-btn-secondary" id="documents-popup-close">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Popup de visualisation des révisions -->
+<div id="wp-bmc-revision-popup" class="wp-bmc-popup">
+    <div class="popup-overlay"></div>
+    <div class="popup-content revision-popup">
+        <div class="popup-header">
+            <h3 id="revision-popup-title">Révision de la section</h3>
+            <button class="popup-close" id="revision-popup-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="popup-body">
+            <div class="revision-info">
+                <div class="revision-meta">
+                    <span class="revision-date" id="revision-date"></span>
+                    <span class="revision-reason" id="revision-reason"></span>
+                </div>
+            </div>
+            <div class="revision-content" id="revision-content">
+                <!-- Le contenu de la révision sera chargé ici -->
+            </div>
+        </div>
+
+        <div class="popup-footer">
+            <button type="button" class="popup-btn popup-btn-secondary" id="revision-popup-close">Fermer</button>
         </div>
     </div>
 </div>
