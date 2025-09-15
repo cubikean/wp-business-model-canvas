@@ -36,8 +36,19 @@ if ($project_id) {
 }
 
 $canvas_data = $project_id ? WP_BMC_Database::get_canvas_data($project_id) : array();
-$canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
+$canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
 $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_id) : array();
+
+// Calculer le pourcentage d'avancement du projet
+$progress_percentage = 0;
+if ($project_id && !empty($project_ratings)) {
+    $total_rating = 0;
+    foreach ($project_ratings as $rating) {
+        $total_rating += intval($rating->rating);
+    }
+    // Maximum possible : 9 sections × 10 points = 90 points
+    $progress_percentage = round(($total_rating / 90) * 100, 0);
+}
 ?>
 
 <div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project_id; ?>" <?php endif; ?>>
@@ -80,9 +91,9 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
         <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
             <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
 
-            
-           <!-- // TODO: Ajouter le bouton de déconnexion -->
-                        <!-- <div class="user-info">
+
+            <!-- // TODO: Ajouter le bouton de déconnexion -->
+            <!-- <div class="user-info">
                 <a href="#" id="wp-bmc-logout" class="wp-bmc-btn wp-bmc-btn-secondary">Déconnexion</a>
             </div> -->
             <div class="canvas-controls">
@@ -110,6 +121,38 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
                             }
                         }
                         ?>
+                        <div class="canvas-section overview-status" data-column="5/7" data-row="1/3">
+                            <h3>Status d'avancement du projet</h3>
+                            <div class="chart">
+                                <svg class="progress-svg" viewBox="0 0 200 100" width="200" height="100">
+                                    <!-- Cercle de fond -->
+                                    <circle cx="100" cy="100" r="80" 
+                                            fill="none" 
+                                            stroke="#FFC1D3" 
+                                            stroke-width="40"
+                                            stroke-linecap="round"
+                                            transform="rotate(-90 100 100)" />
+                                    
+                                    <!-- Cercle de progression -->
+                                    <circle cx="100" cy="100" r="80" 
+                                            fill="none" 
+                                            stroke="#FF4081" 
+                                            stroke-width="40" 
+                                            stroke-dasharray="251.33" 
+                                            stroke-dashoffset="<?php echo -251 + (1 - $progress_percentage / 100) * 251.33; ?>"
+                                            class="progress-circle" />
+                                    
+                                    <!-- Texte du pourcentage -->
+                                    <text x="100" y="85" text-anchor="middle" class="progress-text">
+                                        <?php echo $progress_percentage; ?>%
+                                    </text>
+                                </svg>
+                            </div>
+                            <h4>Plan d'action</h4>
+                            <ul class="action-plan">
+                                <!-- TO DO LIST -->
+                            </ul>
+                        </div>
                     </div>
                 </div>
 

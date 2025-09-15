@@ -10,7 +10,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-return array(
+/**
+ * Récupère la configuration des sections du canvas selon le mode de vue
+ * 
+ * @param string $view_mode Mode de vue ('synthetic' ou 'global')
+ * @return array Configuration des sections
+ */
+function wp_bmc_get_canvas_sections($view_mode = 'global') {
+    return array(
     'key_partners' => array(
         'title' => 'Partenaires clés',
         'placeholder' => 'Quelles sont mes principales dépenses ?',
@@ -40,16 +47,16 @@ return array(
         'placeholder' => 'Pourquoi un client choisirait-il ton offre plutôt qu’une autre ?',
         'synthetic' => true,
         'color' => 'green',
-        'grid-column' => '3/5',
-        'grid-row' => '2/4'
+        'grid-column' => $view_mode === 'synthetic' ? '1/3' : '3/5',
+        'grid-row' => $view_mode === 'synthetic' ? '1' : '2/4'
     ),
     'customer_segments' => array(
         'title' => 'Segments clients',
         'placeholder' => 'Comment mon projet génère-t-il de l’argent ?',
         'synthetic' => true,
         'color' => 'orange',
-        'grid-column' => '4/7',
-        'grid-row' => '1'
+        'grid-column' => $view_mode === 'synthetic' ? '3/5' : '4/7',
+        'grid-row' => $view_mode === 'synthetic' ? '1' : '1'
     ),
     'customer_relationships' => array(
         'title' => 'Relations clients',
@@ -77,10 +84,11 @@ return array(
     ),
     'revenue_streams' => array(
         'title' => 'Sources de revenus',
-        'placeholder' => 'Comment mon projet génère-t-il de l’argent ?',
-        'synthetic' => true,
+        'placeholder' => 'Comment mon projet génère-t-il de l\'argent ?',
+        'synthetic' => true,    
         'color' => 'blue',
-        'grid-column' => '4/7',
-        'grid-row' => '4'
+        'grid-column' => ($view_mode === 'synthetic') ? '1/5' : '1/4',
+        'grid-row' => ($view_mode === 'synthetic') ? '2' : '1'
     )
-);
+    );
+}

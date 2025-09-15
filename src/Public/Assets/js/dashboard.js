@@ -1294,4 +1294,20 @@ jQuery(document).ready(function($) {
     // Initialiser les événements du canvas au chargement
     initCanvasEvents();
     
+    // Initialiser le graphique de progression du projet
+    initProgressChart();
+    
 });
+
+// Fonction pour initialiser le graphique de progression du projet
+function initProgressChart() {
+    const progressCircle = document.querySelector('.progress-circle');
+    if (!progressCircle) return;
+    
+    // Calculer l'offset basé sur le stroke-dashoffset actuel
+    const currentOffset = progressCircle.getAttribute('stroke-dashoffset');
+    if (currentOffset) {
+        // Définir la variable CSS pour l'animation
+        progressCircle.style.setProperty('--progress-offset', currentOffset);
+    }
+}

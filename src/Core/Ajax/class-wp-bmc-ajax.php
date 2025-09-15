@@ -918,7 +918,7 @@ function wp_bmc_load_canvas_view_handler() {
     $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
     
     // Configuration des sections du canvas (externalisée)
-    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
+    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view);
     
     // Fonction pour afficher une section de canvas (utilise les fonctions externalisées)
     function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project_id, $view_mode, $project_ratings) {

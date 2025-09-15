@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : 0;
 $admin_view = isset($_GET['admin_view']) && $_GET['admin_view'] === 'true';
 $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+$view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
 // Si c'est une vue admin avec un user_id spécifique, récupérer le projet de cet utilisateur
 if ($admin_view && $user_id > 0) {
@@ -30,7 +31,7 @@ $is_admin = current_user_can('manage_options');
 
 $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
 $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
-$canvas_sections = WP_BMC_Canvas_Config::get_sections_config();
+$canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
 
 // Récupérer les demandes de notation en attente pour ce projet
 $pending_grading_requests = array();
@@ -104,21 +105,18 @@ if ($admin_view && $is_admin) {
     <div class="canvas-grid">
         <?php
         // Afficher toutes les sections dans l'ordre du canvas
-        $canvas_order = array(
-            'key_partners',
-            'key_activities',
-            'key_resources',
-            'value_proposition',
-            'customer_relationships',
-            'channels',
-            'customer_segments',
-            'cost_structure',
-            'revenue_streams'
-        );
-
-        foreach ($canvas_order as $section_key) {
+        $global_order = wp_bmc_get_canvas_order();
+        foreach ($global_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo wp_bmc_render_canvas_section($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $project_ratings, $is_admin, $pending_grading_requests);
+                echo wp_bmc_render_canvas_section(
+                    $section_key,
+                    $canvas_sections[$section_key],
+                    $canvas_data,
+                    $project_id,
+                    $project_ratings,
+                    $is_admin,
+                    $pending_grading_requests
+                );
             }
         }
         ?>
@@ -134,14 +132,14 @@ if ($admin_view && $is_admin) {
     </div>
 </div> -->
 
-<?php
-// Inclure le template d'édition réutilisable pour l'admin
-wp_bmc_include_edit_section('admin');
-?>
+    <?php
+    // Inclure le template d'édition réutilisable pour l'admin
+    wp_bmc_include_edit_section('admin');
+    ?>
 
-<!-- Indicateur admin -->
-<div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-    <i class="fas fa-user-shield"></i> Mode Administrateur
-</div>
+    <!-- Indicateur admin -->
+    <div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+        <i class="fas fa-user-shield"></i> Mode Administrateur
+    </div>
 
-<div id="wp-bmc-canvas-message" class="wp-bmc-message" style="display: none;"></div>
+    <div id="wp-bmc-canvas-message" class="wp-bmc-message" style="display: none;"></div>
