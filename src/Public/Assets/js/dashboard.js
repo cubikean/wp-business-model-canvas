@@ -255,7 +255,7 @@ jQuery(document).ready(function($) {
         $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
         // Mettre à jour le titre des révisions pour cette brique spécifique
-        $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
+        // $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
         
         // Debug: vérifier que l'attribut est bien défini
         console.log('Vue d\'édition ouverte pour la section:', sectionName);

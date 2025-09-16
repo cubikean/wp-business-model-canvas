@@ -1000,7 +1000,7 @@ function wp_bmc_notify_admins_grading_request($project, $section, $section_title
     $email_message .= "Connectez-vous au dashboard admin pour noter cette section.";
     
     foreach ($admins as $admin) {
-        wp_mail($admin->user_email, $subject, $email_message);
+        // wp_mail($admin->user_email, $subject, $email_message);
     }
 }
 

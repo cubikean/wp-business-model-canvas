@@ -58,7 +58,7 @@ if (!defined('ABSPATH')) {
 
     <div class="history-section">
         <header>
-            <h4 id="revisions-section-title">Révisions de cette brique</h4>
+            <h4 id="revisions-section-title">Historique score de maturité</h4>
             <button type="button" class="btn-outline --icon --small" id="load-revisions-btn">
                 <i class="fas fa-history"></i> Charger les révisions
             </button>
