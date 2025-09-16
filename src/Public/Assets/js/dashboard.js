@@ -6,6 +6,107 @@
 jQuery(document).ready(function($) {
     
     // ========================================
+    // SYSTÈME D'OPTIMISATION DES TODOS
+    // ========================================
+    
+    // Variables globales pour les todos
+    var currentSectionTodos = [];
+    var currentSectionStats = { total: 0, completed: 0, pending: 0 };
+    
+    // Système de cache et opérations différées
+    var todoCache = {};
+    var pendingOperations = {
+        add: [],
+        update: [],
+        delete: [],
+        toggle: []
+    };
+    var isDirty = false; // Indique si des changements non sauvegardés existent
+    var saveTimeout = null; // Timeout pour la sauvegarde automatique
+    
+    // Fonction pour marquer les données comme modifiées
+    function markAsDirty() {
+        isDirty = true;
+        updateSaveIndicator();
+        
+        // Sauvegarde automatique après 2 secondes d'inactivité
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+        }
+        saveTimeout = setTimeout(function() {
+            savePendingOperations();
+        }, 2000);
+    }
+    
+    // Fonction pour mettre à jour l'indicateur de sauvegarde
+    function updateSaveIndicator() {
+        var $indicator = $('#todo-save-indicator');
+        if (isDirty) {
+            $indicator.show().text('Modifications non sauvegardées');
+        } else {
+            $indicator.hide();
+        }
+    }
+    
+    // Fonction pour sauvegarder toutes les opérations en attente
+    function savePendingOperations() {
+        if (!isDirty) return;
+        
+        var hasOperations = pendingOperations.add.length > 0 || 
+                          pendingOperations.update.length > 0 || 
+                          pendingOperations.delete.length > 0 || 
+                          pendingOperations.toggle.length > 0;
+        
+        if (!hasOperations) {
+            isDirty = false;
+            updateSaveIndicator();
+            return;
+        }
+        
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        console.log('Project ID récupéré:', projectId);
+        
+        var formData = {
+            action: 'wp_bmc_batch_todo_operations',
+            nonce: wp_bmc_ajax.nonce,
+            project_id: projectId,
+            operations: pendingOperations
+        };
+        
+        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            if (response.success) {
+                // Vider les opérations en attente
+                pendingOperations = { add: [], update: [], delete: [], toggle: [] };
+                isDirty = false;
+                updateSaveIndicator();
+                
+                // Mettre à jour les IDs temporaires avec les vrais IDs
+                if (response.data.results && response.data.results.add) {
+                    response.data.results.add.forEach(function(result) {
+                        if (result.temp_id && result.real_id) {
+                            $('.todo-item[data-todo-id="' + result.temp_id + '"]').attr('data-todo-id', result.real_id);
+                        }
+                    });
+                }
+                
+                console.log('Opérations sauvegardées avec succès');
+            } else {
+                console.error('Erreur lors de la sauvegarde:', response.data);
+            }
+        }).fail(function() {
+            console.error('Erreur AJAX lors de la sauvegarde');
+        });
+    }
+    
+    // Fonction pour forcer la sauvegarde immédiate
+    function forceSave() {
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+        }
+        savePendingOperations();
+    }
+    
+    // ========================================
     // CRÉATION DU PREMIER CANVAS
     // ========================================
     $('#wp-bmc-create-first-canvas-form').on('submit', function(e) {
@@ -138,6 +239,9 @@ jQuery(document).ready(function($) {
     
     // Ouvrir la vue d'édition
     function openEditView(sectionName, sectionTitle, content) {
+        // Sauvegarder les todos de la section actuelle avant de changer
+        forceSave();
+        
         // Définir la section actuellement éditée (priorité à la variable globale)
         currentEditingSection = sectionName;
         
@@ -169,6 +273,12 @@ jQuery(document).ready(function($) {
         // Charger les documents de référence
         loadReferenceDocuments(sectionName);
         
+        // Charger les todos de la section
+        loadSectionTodos(sectionName);
+
+        // Charger les révisions de la section
+        loadSectionRevisions(sectionName);
+        
         // Réinitialiser la liste des révisions pour cette brique
         $('#revisions-list').html(`
             <div class="no-revisions">
@@ -184,6 +294,9 @@ jQuery(document).ready(function($) {
     
     // Fermer la vue d'édition
     function closeEditView() {
+        // Sauvegarder les todos avant de fermer
+        forceSave();
+        
         // Réinitialiser la section actuellement éditée
         currentEditingSection = '';
         
@@ -1123,7 +1236,8 @@ jQuery(document).ready(function($) {
     // Charger les révisions d'une section
     function loadSectionRevisions(section) {
         console.log('Chargement des révisions pour la section:', section);
-        var projectId = $('.wp-bmc-dashboard').data('project-id');
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        console.log('Project ID récupéré:', projectId);
         
         $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_revisions',
@@ -1285,6 +1399,324 @@ jQuery(document).ready(function($) {
     });
     
     // ========================================
+    // GESTION DES TODOS
+    // ========================================
+    
+    // Charger les todos d'une section (avec cache)
+    function loadSectionTodos(sectionName) {
+        // Vérifier le cache d'abord
+        if (todoCache[sectionName]) {
+            displayTodos(todoCache[sectionName].todos, todoCache[sectionName].stats);
+            return;
+        }
+        
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        console.log('Project ID récupéré:', projectId);
+        
+        var formData = {
+            action: 'wp_bmc_get_section_todos',
+            nonce: wp_bmc_ajax.nonce,
+            section: sectionName,
+            project_id: projectId
+        };
+
+        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            if (response.success) {
+                // Mettre en cache
+                todoCache[sectionName] = {
+                    todos: response.data.todos,
+                    stats: response.data.stats
+                };
+                currentSectionTodos = response.data.todos;
+                currentSectionStats = response.data.stats;
+                displayTodos(response.data.todos, response.data.stats);
+            } else {
+                console.error('Erreur lors du chargement des todos:', response.data);
+                displayTodos([], { total: 0, completed: 0, pending: 0 });
+            }
+        }).fail(function() {
+            console.error('Erreur AJAX lors du chargement des todos');
+            displayTodos([], { total: 0, completed: 0, pending: 0 });
+        });
+    }
+    
+    // Afficher les todos
+    function displayTodos(todos, stats) {
+        var $todoList = $('#todo-list');
+        var $noTodos = $('#no-todos');
+        var $completedCount = $('#todo-completed-count');
+        var $totalCount = $('#todo-total-count');
+        
+        // Mettre à jour les statistiques
+        $completedCount.text(stats.completed || 0);
+        $totalCount.text(stats.total || 0);
+        
+        // Vider la liste
+        $todoList.empty();
+        
+        if (todos && todos.length > 0) {
+            $noTodos.hide();
+            todos.forEach(function(todo) {
+                var todoHtml = createTodoHtml(todo);
+                $todoList.append(todoHtml);
+            });
+        } else {
+            $noTodos.show();
+        }
+        
+        // Réattacher les événements
+        attachTodoEvents();
+    }
+    
+    // Créer le HTML pour une tâche
+    function createTodoHtml(todo) {
+        // Convertir en entier pour éviter les problèmes de type
+        var isCompleted = parseInt(todo.is_completed) === 1;
+        var completedClass = isCompleted ? 'completed' : '';
+        var checkedAttr = isCompleted ? 'checked' : '';
+        
+        return `
+            <li class="todo-item ${completedClass}" data-todo-id="${todo.id}">
+                <div class="todo-content">
+                    <input type="checkbox" class="todo-checkbox" ${checkedAttr}>
+                    <span class="todo-text">${escapeHtml(todo.task_text)}</span>
+                </div>
+                <div class="todo-actions">
+                    <button type="button" class="todo-edit-btn" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="todo-delete-btn" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </li>
+        `;
+    }
+    
+    // Attacher les événements aux todos
+    function attachTodoEvents() {
+        // Ajouter une nouvelle tâche
+        $('#add-todo-btn').off('click').on('click', function() {
+            addNewTodo();
+        });
+        
+        // Entrée dans le champ de saisie
+        $('#todo-input').off('keypress').on('keypress', function(e) {
+            if (e.which === 13) { // Entrée
+                addNewTodo();
+            }
+        });
+        
+        // Cocher/décocher une tâche
+        $('.todo-checkbox').off('change').on('change', function() {
+            var $todoItem = $(this).closest('.todo-item');
+            var todoId = $todoItem.data('todo-id');
+            toggleTodo(todoId);
+        });
+        
+        // Modifier une tâche
+        $('.todo-edit-btn').off('click').on('click', function() {
+            var $todoItem = $(this).closest('.todo-item');
+            var todoId = $todoItem.data('todo-id');
+            var currentText = $todoItem.find('.todo-text').text();
+            editTodo(todoId, currentText);
+        });
+        
+        // Supprimer une tâche
+        $('.todo-delete-btn').off('click').on('click', function() {
+            var $todoItem = $(this).closest('.todo-item');
+            var todoId = $todoItem.data('todo-id');
+            deleteTodo(todoId);
+        });
+    }
+    
+    // Ajouter une nouvelle tâche (avec opération différée)
+    function addNewTodo() {
+        var taskText = $('#todo-input').val().trim();
+        
+        if (!taskText) {
+            return;
+        }
+        
+        var sectionName = $('#wp-bmc-edit-view').attr('data-section');
+        if (!sectionName) {
+            console.error('Section non définie');
+            return;
+        }
+        
+        // Générer un ID temporaire pour l'interface
+        var tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // Créer la tâche localement
+        var newTodo = {
+            id: tempId,
+            task_text: taskText,
+            is_completed: 0,
+            project_id: null,
+            section: sectionName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        // Ajouter à l'interface immédiatement
+        $('#todo-input').val('');
+        addTodoToInterface(newTodo);
+        updateTodoStats();
+        
+        // Ajouter à la liste des opérations en attente
+        pendingOperations.add.push({
+            section: sectionName,
+            task_text: taskText,
+            temp_id: tempId
+        });
+        
+        // Marquer comme modifié
+        markAsDirty();
+    }
+    
+    // Ajouter une tâche à l'interface sans recharger
+    function addTodoToInterface(todo) {
+        var $todoList = $('#todo-list');
+        var $noTodos = $('#no-todos');
+        
+        // Masquer le message "aucune tâche"
+        $noTodos.hide();
+        
+        // Créer et ajouter le HTML de la tâche
+        var todoHtml = createTodoHtml(todo);
+        $todoList.append(todoHtml);
+        
+        // Réattacher les événements seulement pour cette nouvelle tâche
+        attachTodoEventsForItem(todo.id);
+    }
+    
+    // Attacher les événements pour une tâche spécifique
+    function attachTodoEventsForItem(todoId) {
+        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        // Cocher/décocher une tâche
+        $todoItem.find('.todo-checkbox').off('change').on('change', function() {
+            toggleTodo(todoId);
+        });
+        
+        // Modifier une tâche
+        $todoItem.find('.todo-edit-btn').off('click').on('click', function() {
+            var currentText = $todoItem.find('.todo-text').text();
+            editTodo(todoId, currentText);
+        });
+        
+        // Supprimer une tâche
+        $todoItem.find('.todo-delete-btn').off('click').on('click', function() {
+            deleteTodo(todoId);
+        });
+    }
+    
+    // Mettre à jour les statistiques sans recharger
+    function updateTodoStats() {
+        var $todoList = $('#todo-list');
+        var totalCount = $todoList.find('.todo-item').length;
+        var completedCount = $todoList.find('.todo-item.completed').length;
+        
+        $('#todo-completed-count').text(completedCount);
+        $('#todo-total-count').text(totalCount);
+    }
+    
+    // Basculer l'état d'une tâche (avec opération différée)
+    function toggleTodo(todoId) {
+        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        var $checkbox = $todoItem.find('.todo-checkbox');
+        var isChecked = $checkbox.is(':checked');
+        
+        // Mettre à jour l'interface immédiatement
+        if (isChecked) {
+            $todoItem.addClass('completed');
+        } else {
+            $todoItem.removeClass('completed');
+        }
+        
+        // Mettre à jour les statistiques immédiatement
+        updateTodoStats();
+        
+        // Ajouter à la liste des opérations en attente
+        pendingOperations.toggle.push({
+            todo_id: todoId,
+            is_completed: isChecked ? 1 : 0
+        });
+        
+        // Marquer comme modifié
+        markAsDirty();
+    }
+    
+    // Modifier le texte d'une tâche (avec opération différée)
+    function editTodo(todoId, currentText) {
+        var newText = prompt('Modifier la tâche:', currentText);
+        
+        if (newText === null || newText.trim() === currentText) {
+            return; // Annulé ou pas de changement
+        }
+        
+        newText = newText.trim();
+        if (!newText) {
+            alert('Le texte de la tâche ne peut pas être vide');
+            return;
+        }
+        
+        // Mettre à jour l'interface immédiatement
+        $('.todo-item[data-todo-id="' + todoId + '"] .todo-text').text(newText);
+        
+        // Ajouter à la liste des opérations en attente
+        pendingOperations.update.push({
+            todo_id: todoId,
+            new_text: newText
+        });
+        
+        // Marquer comme modifié
+        markAsDirty();
+    }
+    
+    // Supprimer une tâche
+    function deleteTodo(todoId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+            return;
+        }
+        
+        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        // Supprimer l'élément de l'interface immédiatement
+        $todoItem.fadeOut(300, function() {
+            $(this).remove();
+            
+            // Vérifier s'il reste des tâches
+            if ($('#todo-list .todo-item').length === 0) {
+                $('#no-todos').show();
+            }
+            
+            // Mettre à jour les statistiques
+            updateTodoStats();
+        });
+        
+        // Ajouter à la liste des opérations en attente
+        pendingOperations.delete.push({
+            todo_id: todoId
+        });
+        
+        // Marquer comme modifié
+        markAsDirty();
+    }
+    
+    // Fonction utilitaire pour échapper le HTML
+    function escapeHtml(text) {
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
+    // ========================================
     // EXPOSER LES FONCTIONS GLOBALEMENT
     // ========================================
     window.WP_BMC_Dashboard = {
@@ -1296,7 +1728,12 @@ jQuery(document).ready(function($) {
         loadCanvasView: loadCanvasView,
         initCanvasEvents: initCanvasEvents,
         loadSectionRevisions: loadSectionRevisions,
-        viewRevision: viewRevision
+        viewRevision: viewRevision,
+        loadSectionTodos: loadSectionTodos,
+        addNewTodo: addNewTodo,
+        toggleTodo: toggleTodo,
+        editTodo: editTodo,
+        deleteTodo: deleteTodo
     };
     
     // Initialiser les événements du canvas au chargement
@@ -1304,6 +1741,84 @@ jQuery(document).ready(function($) {
     
     // Initialiser le graphique de progression du projet
     initProgressChart();
+    
+    // Initialiser les événements pour la vue globale des todos
+    initGlobalTodoEvents();
+    
+    // ========================================
+    // GESTION DES TODOS DANS LA VUE GLOBALE
+    // ========================================
+    
+    // Initialiser les événements pour les todos de la vue globale
+    function initGlobalTodoEvents() {
+        // Cocher/décocher une tâche dans la vue globale
+        $(document).on('change', '.action-plan .todo-checkbox', function() {
+            var todoId = $(this).data('todo-id');
+            var $todoItem = $(this).closest('.todo-item');
+            var isChecked = $(this).is(':checked');
+            
+            // Mettre à jour l'interface immédiatement
+            if (isChecked) {
+                $todoItem.addClass('completed');
+            } else {
+                $todoItem.removeClass('completed');
+            }
+            
+            // Envoyer la requête au serveur
+            var formData = {
+                action: 'wp_bmc_toggle_todo',
+                nonce: wp_bmc_ajax.nonce,
+                todo_id: todoId
+            };
+            
+            $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+                if (!response.success) {
+                    console.error('Erreur lors de la mise à jour de la tâche:', response.data);
+                    // Restaurer l'état précédent en cas d'erreur
+                    $(this).prop('checked', !isChecked);
+                    if (isChecked) {
+                        $todoItem.removeClass('completed');
+                    } else {
+                        $todoItem.addClass('completed');
+                    }
+                }
+            }).fail(function() {
+                console.error('Erreur AJAX lors de la mise à jour de la tâche');
+                // Restaurer l'état précédent en cas d'erreur
+                $(this).prop('checked', !isChecked);
+                if (isChecked) {
+                    $todoItem.removeClass('completed');
+                } else {
+                    $todoItem.addClass('completed');
+                }
+            });
+        });
+    }
+    
+    // ========================================
+    // TRIGGERS DE SAUVEGARDE AUTOMATIQUE
+    // ========================================
+    
+    // Sauvegarder avant de recharger la page
+    $(window).on('beforeunload', function() {
+        if (isDirty) {
+            forceSave();
+        }
+    });
+    
+    // Sauvegarder quand l'utilisateur quitte la page (mobile)
+    $(document).on('visibilitychange', function() {
+        if (document.hidden && isDirty) {
+            forceSave();
+        }
+    });
+    
+    // Sauvegarder périodiquement (toutes les 30 secondes si des modifications)
+    setInterval(function() {
+        if (isDirty) {
+            forceSave();
+        }
+    }, 30000);
     
 });
 

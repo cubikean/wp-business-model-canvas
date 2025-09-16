@@ -239,8 +239,34 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
             echo '</svg>';
             echo '</div>';
             echo '<h4>Plan d\'action</h4>';
+            echo '<p class="action-plan-info"><i class="fas fa-info-circle"></i> Prochaines 5 tâches à réaliser - Cliquez pour marquer comme terminées</p>';
             echo '<ul class="action-plan">';
-            echo '<!-- TO DO LIST -->';
+            
+            // Récupérer toutes les tâches todo de toutes les briques
+            $all_todos = wp_bmc_get_all_project_todos($project_id);
+            
+            if (!empty($all_todos)) {
+                foreach ($all_todos as $todo) {
+                    $section_name = wp_bmc_get_section_display_name($todo->section);
+                    $completed_class = $todo->is_completed ? 'completed' : '';
+                    $checked_attr = $todo->is_completed ? 'checked' : '';
+                    
+                    echo '<li class="todo-item ' . $completed_class . '" data-todo-id="' . $todo->id . '">';
+                    echo '<div class="todo-content">';
+                    echo '<input type="checkbox" class="todo-checkbox" ' . $checked_attr . ' data-todo-id="' . $todo->id . '">';
+                    echo '<span class="todo-text">' . esc_html($todo->task_text) . '</span>';
+                    echo '</div>';
+                    echo '<div class="todo-section-badge">' . esc_html($section_name) . '</div>';
+                    echo '</li>';
+                }
+            } else {
+                echo '<li class="no-todos">';
+                echo '<i class="fas fa-check-circle"></i>';
+                echo '<p>Aucune tâche en cours</p>';
+                echo '<small>Toutes les tâches sont terminées ou aucune tâche n\'a été définie</small>';
+                echo '</li>';
+            }
+            
             echo '</ul>';
             echo '</div>';
         }
@@ -273,4 +299,52 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
     }
     
     return ob_get_clean();
+}
+
+/**
+ * Récupérer toutes les tâches todo d'un projet dans l'ordre des briques
+ */
+function wp_bmc_get_all_project_todos($project_id) {
+    global $wpdb;
+    
+    $table = $wpdb->prefix . 'bmc_todos';
+    
+    // S'assurer que la table existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    // Ordre des sections du canvas
+    $canvas_order = wp_bmc_get_canvas_order();
+    
+    // Construire la requête avec ORDER BY personnalisé
+    $order_clause = "CASE ";
+    foreach ($canvas_order as $index => $section) {
+        $order_clause .= "WHEN section = '" . esc_sql($section) . "' THEN " . $index . " ";
+    }
+    $order_clause .= "ELSE 5 END, created_at ASC";
+    
+    $todos = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT * FROM $table 
+             WHERE project_id = %d AND is_completed = 0
+             ORDER BY $order_clause
+             LIMIT 5",
+            $project_id
+        )
+    );
+    
+    return $todos ? $todos : array();
+}
+
+/**
+ * Obtenir le nom d'affichage d'une section
+ */
+function wp_bmc_get_section_display_name($section_key) {
+    $sections = wp_bmc_get_canvas_sections();
+    
+    if (isset($sections[$section_key])) {
+        return $sections[$section_key]['title'];
+    }
+    
+    // Fallback : convertir la clé en nom lisible
+    return ucwords(str_replace('_', ' ', $section_key));
 }

@@ -1213,3 +1213,390 @@ function wp_bmc_update_user_handler() {
         'message' => 'Utilisateur mis à jour avec succès.'
     ));
 }
+
+// ========================================
+// HANDLERS POUR LA GESTION DES TODOS
+// ========================================
+
+// Handler pour ajouter une nouvelle tâche
+add_action('wp_ajax_wp_bmc_add_todo', 'wp_bmc_add_todo_handler');
+function wp_bmc_add_todo_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour ajouter une tâche.');
+    }
+    
+    $section = sanitize_text_field($_POST['section']);
+    $task_text = sanitize_text_field($_POST['task_text']);
+    
+    if (empty($section) || empty($task_text)) {
+        wp_send_json_error('Section et texte de la tâche sont obligatoires.');
+    }
+    
+    // Récupérer le project_id
+    $project_id = wp_bmc_get_current_project_id();
+    if (!$project_id) {
+        wp_send_json_error('Aucun projet trouvé.');
+    }
+    
+    // S'assurer que la table des todos existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    $todo_id = WP_BMC_Database::add_todo($project_id, $section, $task_text);
+    
+    if ($todo_id) {
+        wp_send_json_success(array(
+            'message' => 'Tâche ajoutée avec succès !',
+            'todo_id' => $todo_id
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'ajout de la tâche.');
+    }
+}
+
+// Handler pour obtenir les tâches d'une section
+add_action('wp_ajax_wp_bmc_get_section_todos', 'wp_bmc_get_section_todos_handler');
+function wp_bmc_get_section_todos_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour accéder aux tâches.');
+    }
+    
+    $section = sanitize_text_field($_POST['section']);
+    $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
+    
+    if (empty($section)) {
+        wp_send_json_error('Section manquante.');
+    }
+    
+    // Si pas de project_id, utiliser le projet de l'utilisateur connecté
+    if (!$project_id) {
+        $user = WP_BMC_Auth::get_current_user();
+        $projects = WP_BMC_Database::get_user_projects($user->user_id);
+        if (empty($projects)) {
+            wp_send_json_error('Aucun projet trouvé.');
+        }
+        $project_id = $projects[0]->id;
+    }
+    
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    // S'assurer que la table des todos existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    $todos = WP_BMC_Database::get_section_todos($project_id, $section);
+    $stats = WP_BMC_Database::get_section_todo_stats($project_id, $section);
+    
+    wp_send_json_success(array(
+        'todos' => $todos,
+        'stats' => $stats
+    ));
+}
+
+// Handler pour basculer l'état d'une tâche
+add_action('wp_ajax_wp_bmc_toggle_todo', 'wp_bmc_toggle_todo_handler');
+function wp_bmc_toggle_todo_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour modifier une tâche.');
+    }
+    
+    $todo_id = intval($_POST['todo_id']);
+    
+    if (!$todo_id) {
+        wp_send_json_error('ID de tâche invalide.');
+    }
+    
+    // Récupérer le project_id depuis la tâche elle-même
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_todos';
+    
+    // S'assurer que la table existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $todo_id));
+    
+    if (!$todo) {
+        wp_send_json_error('Tâche non trouvée.');
+    }
+    
+    $project_id = $todo->project_id;
+    
+    $result = WP_BMC_Database::toggle_todo($todo_id, $project_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'État de la tâche mis à jour.'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour de la tâche.');
+    }
+}
+
+// Handler pour supprimer une tâche
+add_action('wp_ajax_wp_bmc_delete_todo', 'wp_bmc_delete_todo_handler');
+function wp_bmc_delete_todo_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour supprimer une tâche.');
+    }
+    
+    $todo_id = intval($_POST['todo_id']);
+    
+    if (!$todo_id) {
+        wp_send_json_error('ID de tâche invalide.');
+    }
+    
+    // Récupérer le project_id depuis la tâche elle-même
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_todos';
+    
+    // S'assurer que la table existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $todo_id));
+    
+    if (!$todo) {
+        wp_send_json_error('Tâche non trouvée.');
+    }
+    
+    $project_id = $todo->project_id;
+    
+    $result = WP_BMC_Database::delete_todo($todo_id, $project_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Tâche supprimée avec succès.'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la suppression de la tâche.');
+    }
+}
+
+// Handler pour modifier le texte d'une tâche
+add_action('wp_ajax_wp_bmc_update_todo_text', 'wp_bmc_update_todo_text_handler');
+function wp_bmc_update_todo_text_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour modifier une tâche.');
+    }
+    
+    $todo_id = intval($_POST['todo_id']);
+    $new_text = sanitize_text_field($_POST['new_text']);
+    
+    if (!$todo_id || empty($new_text)) {
+        wp_send_json_error('ID de tâche et nouveau texte sont obligatoires.');
+    }
+    
+    // Récupérer le project_id depuis la tâche elle-même
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_todos';
+    
+    // S'assurer que la table existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $todo_id));
+    
+    if (!$todo) {
+        wp_send_json_error('Tâche non trouvée.');
+    }
+    
+    $project_id = $todo->project_id;
+    
+    $result = WP_BMC_Database::update_todo_text($todo_id, $project_id, $new_text);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Texte de la tâche mis à jour.'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour du texte.');
+    }
+}
+
+// Handler pour les opérations batch des todos
+add_action('wp_ajax_wp_bmc_batch_todo_operations', 'wp_bmc_batch_todo_operations_handler');
+function wp_bmc_batch_todo_operations_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté.');
+    }
+    
+    $operations = isset($_POST['operations']) ? $_POST['operations'] : array();
+    
+    if (empty($operations)) {
+        wp_send_json_success(array('message' => 'Aucune opération à traiter'));
+        return;
+    }
+    
+    // Récupérer le project_id depuis une tâche existante ou les paramètres
+    $project_id = null;
+    
+    // Essayer de récupérer depuis les paramètres POST
+    if (isset($_POST['project_id'])) {
+        $project_id = intval($_POST['project_id']);
+    }
+    
+    // Si pas de project_id, essayer de le récupérer depuis une tâche existante
+    if (!$project_id && !empty($operations['update'])) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'bmc_todos';
+        $first_todo_id = $operations['update'][0]['todo_id'];
+        $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $first_todo_id));
+        if ($todo) {
+            $project_id = $todo->project_id;
+        }
+    }
+    
+    if (!$project_id && !empty($operations['delete'])) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'bmc_todos';
+        $first_todo_id = $operations['delete'][0]['todo_id'];
+        $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $first_todo_id));
+        if ($todo) {
+            $project_id = $todo->project_id;
+        }
+    }
+    
+    if (!$project_id && !empty($operations['toggle'])) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'bmc_todos';
+        $first_todo_id = $operations['toggle'][0]['todo_id'];
+        $todo = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM $table WHERE id = %d", $first_todo_id));
+        if ($todo) {
+            $project_id = $todo->project_id;
+        }
+    }
+    
+    if (!$project_id) {
+        wp_send_json_error('Impossible de déterminer le projet.');
+    }
+    
+    $results = array();
+    
+    // S'assurer que la table existe
+    WP_BMC_Database::ensure_todos_table_exists();
+    
+    // Traiter les ajouts
+    if (!empty($operations['add'])) {
+        foreach ($operations['add'] as $add_op) {
+            $todo_id = WP_BMC_Database::add_todo(
+                $project_id,
+                $add_op['section'],
+                $add_op['task_text']
+            );
+            if ($todo_id) {
+                $results['add'][] = array(
+                    'temp_id' => $add_op['temp_id'] ?? null,
+                    'real_id' => $todo_id
+                );
+            }
+        }
+    }
+    
+    // Traiter les mises à jour
+    if (!empty($operations['update'])) {
+        foreach ($operations['update'] as $update_op) {
+            $success = WP_BMC_Database::update_todo_text(
+                $update_op['todo_id'],
+                $project_id,
+                $update_op['new_text']
+            );
+            $results['update'][] = array(
+                'todo_id' => $update_op['todo_id'],
+                'success' => $success
+            );
+        }
+    }
+    
+    // Traiter les suppressions
+    if (!empty($operations['delete'])) {
+        foreach ($operations['delete'] as $delete_op) {
+            $success = WP_BMC_Database::delete_todo(
+                $delete_op['todo_id'],
+                $project_id
+            );
+            $results['delete'][] = array(
+                'todo_id' => $delete_op['todo_id'],
+                'success' => $success
+            );
+        }
+    }
+    
+    // Traiter les changements d'état
+    if (!empty($operations['toggle'])) {
+        foreach ($operations['toggle'] as $toggle_op) {
+            $success = WP_BMC_Database::toggle_todo(
+                $toggle_op['todo_id'],
+                $project_id
+            );
+            $results['toggle'][] = array(
+                'todo_id' => $toggle_op['todo_id'],
+                'success' => $success
+            );
+        }
+    }
+    
+    wp_send_json_success(array(
+        'message' => 'Opérations traitées avec succès',
+        'results' => $results
+    ));
+}
+
+// Handler temporaire pour debug - forcer la création de la table des todos
+add_action('wp_ajax_wp_bmc_debug_create_todos_table', 'wp_bmc_debug_create_todos_table_handler');
+function wp_bmc_debug_create_todos_table_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté.');
+    }
+    
+    // Forcer la création de la table
+    WP_BMC_Database::force_create_todos_table();
+    
+    wp_send_json_success(array(
+        'message' => 'Table des todos recréée avec succès !'
+    ));
+}
+
+// Fonction utilitaire pour récupérer l'ID du projet actuel
+function wp_bmc_get_current_project_id() {
+    // Essayer de récupérer depuis les paramètres POST
+    if (isset($_POST['project_id'])) {
+        return intval($_POST['project_id']);
+    }
+    
+    // Essayer de récupérer depuis l'URL de référence
+    $referer = wp_get_referer();
+    if ($referer) {
+        $url_parts = parse_url($referer);
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $query_params);
+            if (isset($query_params['project_id'])) {
+                return intval($query_params['project_id']);
+            }
+        }
+    }
+    
+    // Utiliser le projet de l'utilisateur connecté
+    $user = WP_BMC_Auth::get_current_user();
+    if ($user) {
+        $projects = WP_BMC_Database::get_user_projects($user->user_id);
+        if (!empty($projects)) {
+            return $projects[0]->id;
+        }
+    }
+    
+    return null;
+}

@@ -118,6 +118,22 @@ class WP_BMC_Database {
             KEY is_read (is_read)
         ) $charset_collate;";
         
+        // Table des todos par section
+        $table_todos = $wpdb->prefix . 'bmc_todos';
+        $sql_todos = "CREATE TABLE $table_todos (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            section varchar(50) NOT NULL,
+            task_text text NOT NULL,
+            is_completed tinyint(1) NOT NULL DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY project_id (project_id),
+            KEY section (section),
+            KEY is_completed (is_completed)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -125,6 +141,7 @@ class WP_BMC_Database {
         dbDelta($sql_grading_requests);
         dbDelta($sql_section_revisions);
         dbDelta($sql_admin_notifications);
+        dbDelta($sql_todos);
     }
     
         /**
@@ -865,5 +882,204 @@ class WP_BMC_Database {
                 $section
             )
         );
+    }
+    
+    // ========================================
+    // FONCTIONS DE GESTION DES TODOS
+    // ========================================
+    
+    /**
+     * Ajouter une nouvelle tâche à une section
+     */
+    public static function add_todo($project_id, $section, $task_text) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        // Vérifier que la table existe
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+        if (!$table_exists) {
+            self::ensure_todos_table_exists();
+        }
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'section' => $section,
+                'task_text' => $task_text,
+                'is_completed' => 0
+            ),
+            array('%d', '%s', '%s', '%d')
+        );
+        
+        return $result ? $wpdb->insert_id : false;
+    }
+    
+    /**
+     * Obtenir toutes les tâches d'une section
+     */
+    public static function get_section_todos($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table 
+                 WHERE project_id = %d AND section = %s 
+                 ORDER BY created_at ASC",
+                $project_id,
+                $section
+            )
+        );
+    }
+    
+    /**
+     * Marquer une tâche comme terminée ou non terminée
+     */
+    public static function toggle_todo($todo_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        // Vérifier que la tâche appartient au projet
+        $todo = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE id = %d AND project_id = %d",
+                $todo_id,
+                $project_id
+            )
+        );
+        
+        if (!$todo) {
+            return false;
+        }
+        
+        // Basculer l'état de completion
+        $new_status = $todo->is_completed ? 0 : 1;
+        
+        $result = $wpdb->update(
+            $table,
+            array('is_completed' => $new_status),
+            array('id' => $todo_id),
+            array('%d'),
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Supprimer une tâche
+     */
+    public static function delete_todo($todo_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        $result = $wpdb->delete(
+            $table,
+            array(
+                'id' => $todo_id,
+                'project_id' => $project_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Modifier le texte d'une tâche
+     */
+    public static function update_todo_text($todo_id, $project_id, $new_text) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        $result = $wpdb->update(
+            $table,
+            array('task_text' => $new_text),
+            array(
+                'id' => $todo_id,
+                'project_id' => $project_id
+            ),
+            array('%s'),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir le nombre de tâches terminées et non terminées pour une section
+     */
+    public static function get_section_todo_stats($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        $stats = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN is_completed = 0 THEN 1 ELSE 0 END) as pending
+                 FROM $table 
+                 WHERE project_id = %d AND section = %s",
+                $project_id,
+                $section
+            )
+        );
+        
+        return $stats;
+    }
+    
+    /**
+     * Vérifier et créer la table des todos si elle n'existe pas
+     */
+    public static function ensure_todos_table_exists() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+        
+        if (!$table_exists) {
+            // Créer la table
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql = "CREATE TABLE $table (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                project_id mediumint(9) NOT NULL,
+                section varchar(50) NOT NULL,
+                task_text text NOT NULL,
+                is_completed tinyint(1) NOT NULL DEFAULT 0,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY project_id (project_id),
+                KEY section (section),
+                KEY is_completed (is_completed)
+            ) $charset_collate;";
+            
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql);
+        }
+    }
+    
+    /**
+     * Forcer la création de la table des todos (pour debug)
+     */
+    public static function force_create_todos_table() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        // Supprimer la table si elle existe
+        $wpdb->query("DROP TABLE IF EXISTS $table");
+        error_log("Table $table supprimée");
+        
+        // Recréer la table
+        self::ensure_todos_table_exists();
     }
 }

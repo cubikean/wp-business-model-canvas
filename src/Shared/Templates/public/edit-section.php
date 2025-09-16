@@ -75,12 +75,35 @@ if (!defined('ABSPATH')) {
     <div class="todo-section">
         <header>
             <h4>Plan d'action</h4>
+            <div class="todo-stats" id="todo-stats">
+                <span class="todo-count">
+                    <span id="todo-completed-count">0</span>/<span id="todo-total-count">0</span> terminées
+                </span>
+                <span id="todo-save-indicator" class="save-indicator" style="display: none;">
+                    <i class="fas fa-circle"></i>
+                </span>
+            </div>
         </header>
-        <ul id="todo-list">
-            <li>Plan d'action 1</li>
-            <li>Plan d'action 2</li>
-            <li>Plan d'action 3</li>
-        </ul>
+        
+        <div class="todo-add-form">
+            <div class="todo-input-group">
+                <input type="text" id="todo-input" placeholder="Ajouter une nouvelle tâche..." maxlength="255">
+                <button type="button" id="add-todo-btn" class="btn-outline --icon --small">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="todo-list-container">
+            <ul id="todo-list" class="todo-list">
+                <!-- Les tâches seront chargées dynamiquement -->
+            </ul>
+            <div id="no-todos" class="no-todos" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <p>Aucune tâche pour cette section</p>
+                <small>Ajoutez votre première tâche ci-dessus</small>
+            </div>
+        </div>
     </div>
 </div>
 
