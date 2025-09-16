@@ -174,3 +174,103 @@ function wp_bmc_get_synthetic_order()
 {
     return array('customer_segments', 'value_proposition', 'revenue_streams');
 }
+
+/**
+ * Fonction centralisée pour rendre une vue canvas (synthétique ou globale)
+ * 
+ * @param string $view_mode Mode de vue ('synthetic' ou 'global')
+ * @param int $project_id ID du projet
+ * @param array $canvas_data Données du canvas
+ * @param array $project_ratings Notes du projet
+ * @param bool $is_admin Si c'est un mode admin
+ * @param array $pending_grading_requests Demandes de notation en attente
+ * @param bool $include_progress_chart Si inclure le graphique de progression (pour vue synthétique)
+ * @return string HTML généré
+ */
+function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin = false, $pending_grading_requests = array(), $include_progress_chart = false) {
+    // Configuration des sections du canvas
+    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
+    
+    // Calculer le pourcentage d'avancement si nécessaire
+    $progress_percentage = 0;
+    if ($include_progress_chart && !empty($project_ratings)) {
+        $total_rating = 0;
+        foreach ($project_ratings as $rating) {
+            $total_rating += intval($rating->rating);
+        }
+        // Maximum possible : 9 sections × 10 points = 90 points
+        $progress_percentage = round(($total_rating / 90) * 100, 0);
+    }
+    
+    ob_start();
+    
+    if ($view_mode === 'synthetic') {
+        // Vue synthétique - 3 briques principales
+        echo '<div class="canvas-synthetic">';
+        echo '<div class="synthetic-grid">';
+        
+        $synthetic_order = wp_bmc_get_synthetic_order();
+        foreach ($synthetic_order as $section_key) {
+            if (isset($canvas_sections[$section_key])) {
+                echo wp_bmc_render_canvas_section(
+                    $section_key,
+                    $canvas_sections[$section_key],
+                    $canvas_data,
+                    $project_id,
+                    $project_ratings,
+                    $is_admin,
+                    $pending_grading_requests
+                );
+            }
+        }
+        
+        // Ajouter le graphique de progression si demandé
+        if ($include_progress_chart) {
+            echo '<div class="canvas-section overview-status" data-column="5/7" data-row="1/3">';
+            echo '<h3>Status d\'avancement du projet</h3>';
+            echo '<div class="chart">';
+            echo '<svg class="progress-svg" viewBox="0 0 200 100" width="200" height="100">';
+            echo '<!-- Cercle de fond -->';
+            echo '<circle cx="100" cy="100" r="80" fill="none" stroke="#FFC1D3" stroke-width="40" stroke-linecap="round" transform="rotate(-90 100 100)" />';
+            echo '<!-- Cercle de progression -->';
+            echo '<circle cx="100" cy="100" r="80" fill="none" stroke="#FF4081" stroke-width="40" stroke-dasharray="251.33" stroke-dashoffset="' . (-251 + (1 - $progress_percentage / 100) * 251.33) . '" class="progress-circle" />';
+            echo '<!-- Texte du pourcentage -->';
+            echo '<text x="100" y="85" text-anchor="middle" class="progress-text">' . $progress_percentage . '%</text>';
+            echo '</svg>';
+            echo '</div>';
+            echo '<h4>Plan d\'action</h4>';
+            echo '<ul class="action-plan">';
+            echo '<!-- TO DO LIST -->';
+            echo '</ul>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        echo '</div>';
+        
+    } else {
+        // Vue globale - Toutes les briques
+        echo '<div class="canvas-global">';
+        echo '<div class="canvas-grid">';
+        
+        $global_order = wp_bmc_get_canvas_order();
+        foreach ($global_order as $section_key) {
+            if (isset($canvas_sections[$section_key])) {
+                echo wp_bmc_render_canvas_section(
+                    $section_key,
+                    $canvas_sections[$section_key],
+                    $canvas_data,
+                    $project_id,
+                    $project_ratings,
+                    $is_admin,
+                    $pending_grading_requests
+                );
+            }
+        }
+        
+        echo '</div>';
+        echo '</div>';
+    }
+    
+    return ob_get_clean();
+}

@@ -946,51 +946,8 @@ function wp_bmc_load_canvas_view_handler() {
         }
     }
     
-    // Configuration des sections du canvas (externalisée)
-    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view);
-    
-    // Fonction pour afficher une section de canvas (utilise les fonctions externalisées)
-    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project_id, $view_mode, $project_ratings, $is_admin = false, $pending_grading_requests = array()) {
-        // Utiliser la fonction externalisée
-        return wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, $is_admin, $pending_grading_requests);
-    }
-    
-    // Générer le HTML selon la vue
-    ob_start();
-    
-    if ($view === 'synthetic') {
-        // Vue synthétique - 3 briques principales
-        echo '<div class="canvas-synthetic">';
-        echo '<div class="synthetic-grid">';
-        
-        $synthetic_order = wp_bmc_get_synthetic_order();
-        foreach ($synthetic_order as $section_key) {
-            if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings, $is_admin, $pending_grading_requests);
-            }
-        }
-        
-        echo '</div>';
-        echo '</div>';
-        
-    } else {
-        // Vue globale - Toutes les briques
-        echo '<div class="canvas-global">';
-        echo '<div class="canvas-grid">';
-        
-        $global_order = wp_bmc_get_canvas_order();
-        
-        foreach ($global_order as $section_key) {
-            if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings, $is_admin, $pending_grading_requests);
-            }
-        }
-        
-        echo '</div>';
-        echo '</div>';
-    }
-    
-    $html = ob_get_clean();
+    // Utiliser la fonction centralisée pour générer le HTML
+    $html = wp_bmc_render_canvas_view($view, $project_id, $canvas_data, $project_ratings, $is_admin, $pending_grading_requests, true);
     
     wp_send_json_success(array(
         'html' => $html,

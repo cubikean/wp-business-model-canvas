@@ -31,19 +31,6 @@ $is_admin = current_user_can('manage_options');
 
 $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
 $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
-$canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
-
-
-// Calculer le pourcentage d'avancement du projet
-$progress_percentage = 0;
-if ($project_id && !empty($project_ratings)) {
-    $total_rating = 0;
-    foreach ($project_ratings as $rating) {
-        $total_rating += intval($rating->rating);
-    }
-    // Maximum possible : 9 sections × 10 points = 90 points
-    $progress_percentage = round(($total_rating / 90) * 100, 0);
-}
 
 // Récupérer les demandes de notation en attente pour ce projet
 $pending_grading_requests = array();
@@ -124,89 +111,7 @@ if ($admin_view && $is_admin) {
     </div>
 
     <div class="canvas-container">
-        <?php if ($view_mode === 'synthetic'): ?>
-            <!-- Vue synthétique - 3 briques principales -->
-            <div class="canvas-synthetic">
-                <div class="synthetic-grid">
-                    <?php
-                    // Afficher les sections synthétiques dans l'ordre spécifique
-                    $synthetic_order = wp_bmc_get_synthetic_order();
-                    foreach ($synthetic_order as $section_key) {
-                        if (isset($canvas_sections[$section_key])) {
-                            echo wp_bmc_render_canvas_section(
-                                $section_key,
-                                $canvas_sections[$section_key],
-                                $canvas_data,
-                                $project_id,
-                                $project_ratings,
-                                $is_admin,
-                                $pending_grading_requests
-                            );
-                        }
-                    }
-                    ?>
-
-                    <div class="canvas-section overview-status" data-column="5/7" data-row="1/3">
-                        <h3>Status d'avancement du projet</h3>
-                        <div class="chart">
-                            <svg class="progress-svg" viewBox="0 0 200 100" width="200" height="100">
-                                <!-- Cercle de fond -->
-                                <circle cx="100" cy="100" r="80"
-                                    fill="none"
-                                    stroke="#FFC1D3"
-                                    stroke-width="40"
-                                    stroke-linecap="round"
-                                    transform="rotate(-90 100 100)" />
-
-                                <!-- Cercle de progression -->
-                                <circle cx="100" cy="100" r="80"
-                                    fill="none"
-                                    stroke="#FF4081"
-                                    stroke-width="40"
-                                    stroke-dasharray="251.33"
-                                    stroke-dashoffset="<?php echo -251 + (1 - $progress_percentage / 100) * 251.33; ?>"
-                                    class="progress-circle" />
-
-                                <!-- Texte du pourcentage -->
-                                <text x="100" y="85" text-anchor="middle" class="progress-text">
-                                    <?php echo $progress_percentage; ?>%
-                                </text>
-                            </svg>
-                        </div>
-                        <h4>Plan d'action</h4>
-                        <ul class="action-plan">
-                            <!-- TO DO LIST -->
-                        </ul>
-                    </div>
-
-                </div>
-
-            </div>
-
-        <?php else: ?>
-            <!-- Vue globale - Toutes les briques -->
-            <div class="canvas-global">
-                <div class="canvas-grid">
-                    <?php
-                    // Afficher toutes les sections dans l'ordre du canvas
-                    $global_order = wp_bmc_get_canvas_order();
-                    foreach ($global_order as $section_key) {
-                        if (isset($canvas_sections[$section_key])) {
-                            echo wp_bmc_render_canvas_section(
-                                $section_key,
-                                $canvas_sections[$section_key],
-                                $canvas_data,
-                                $project_id,
-                                $project_ratings,
-                                $is_admin,
-                                $pending_grading_requests
-                            );
-                        }
-                    }
-                    ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php echo wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin, $pending_grading_requests, true); ?>
     </div>
 
     <!-- <div class="canvas-footer">

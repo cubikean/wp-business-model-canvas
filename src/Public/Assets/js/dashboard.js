@@ -90,6 +90,8 @@ jQuery(document).ready(function($) {
                 $canvasContainer.html(response.data.html);
                 // Réinitialiser les événements pour les nouveaux éléments
                 initCanvasEvents();
+                // Réinitialiser le graphique de progression
+                initProgressChart();
                 // Appeler la fonction updateCanvasGrid depuis public.js
                 if (typeof window.WP_BMC_Public !== 'undefined' && window.WP_BMC_Public.updateCanvasGrid) {
                     window.WP_BMC_Public.updateCanvasGrid();
