@@ -897,10 +897,22 @@ function wp_bmc_load_canvas_view_handler() {
     // Récupérer les données du projet
     $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
     
+    // Debug logs
+    error_log('wp_bmc_load_canvas_view_handler - project_id: ' . $project_id);
+    error_log('wp_bmc_load_canvas_view_handler - view: ' . $view);
+    error_log('wp_bmc_load_canvas_view_handler - user_id: ' . $current_user->user_id);
+    
     if ($project_id) {
         // Mode canvas spécifique - vérifier les permissions
         $project = WP_BMC_Database::get_project($project_id);
-        if (!$project || $current_user->user_id != $project->user_id) {
+        error_log('wp_bmc_load_canvas_view_handler - project found: ' . ($project ? 'yes' : 'no'));
+        if (!$project) {
+            wp_send_json_error('Projet non trouvé.');
+        }
+        
+        // Vérifier si c'est un mode admin ou si l'utilisateur est le propriétaire
+        $is_admin = current_user_can('manage_options');
+        if (!$is_admin && $current_user->user_id != $project->user_id) {
             wp_send_json_error('Accès non autorisé à ce projet.');
         }
     } else {
@@ -917,13 +929,30 @@ function wp_bmc_load_canvas_view_handler() {
     $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
     $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
     
+    // Récupérer les demandes de notation en attente pour les admins
+    $pending_grading_requests = array();
+    if ($is_admin && current_user_can('manage_options')) {
+        global $wpdb;
+        $grading_table = $wpdb->prefix . 'bmc_grading_requests';
+        $pending_requests = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT section FROM $grading_table WHERE project_id = %d AND status = 'pending'",
+                $project_id
+            )
+        );
+        
+        foreach ($pending_requests as $request) {
+            $pending_grading_requests[] = $request->section;
+        }
+    }
+    
     // Configuration des sections du canvas (externalisée)
     $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view);
     
     // Fonction pour afficher une section de canvas (utilise les fonctions externalisées)
-    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project_id, $view_mode, $project_ratings) {
+    function render_canvas_section_ajax($section_key, $section_config, $canvas_data, $project_id, $view_mode, $project_ratings, $is_admin = false, $pending_grading_requests = array()) {
         // Utiliser la fonction externalisée
-        return wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, false, array());
+        return wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, $is_admin, $pending_grading_requests);
     }
     
     // Générer le HTML selon la vue
@@ -937,7 +966,7 @@ function wp_bmc_load_canvas_view_handler() {
         $synthetic_order = wp_bmc_get_synthetic_order();
         foreach ($synthetic_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings);
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings, $is_admin, $pending_grading_requests);
             }
         }
         
@@ -953,7 +982,7 @@ function wp_bmc_load_canvas_view_handler() {
         
         foreach ($global_order as $section_key) {
             if (isset($canvas_sections[$section_key])) {
-                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings);
+                echo render_canvas_section_ajax($section_key, $canvas_sections[$section_key], $canvas_data, $project_id, $view, $project_ratings, $is_admin, $pending_grading_requests);
             }
         }
         

@@ -72,7 +72,11 @@ jQuery(document).ready(function($) {
         $canvasContainer.html($loadingIndicator);
         
         // Récupérer le project_id depuis l'attribut data du container
-        var projectId = $('.wp-bmc-dashboard').data('project-id');
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || 
+                       $('.wp-bmc-canvas-container').data('project-id');
+        
+        console.log('loadCanvasView - projectId:', projectId);
+        console.log('loadCanvasView - view:', view);
         
         // Charger le contenu via AJAX
         $.post(wp_bmc_ajax.ajax_url, {
@@ -81,6 +85,7 @@ jQuery(document).ready(function($) {
             project_id: projectId,
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
+            console.log('loadCanvasView - response:', response);
             if (response.success) {
                 $canvasContainer.html(response.data.html);
                 // Réinitialiser les événements pour les nouveaux éléments
@@ -92,7 +97,8 @@ jQuery(document).ready(function($) {
             } else {
                 $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
             }
-        }).fail(function() {
+        }).fail(function(xhr, status, error) {
+            console.error('loadCanvasView - AJAX error:', error, xhr.responseText);
             $canvasContainer.html('<div class="wp-bmc-error">Erreur de connexion. Veuillez réessayer.</div>');
         });
     }

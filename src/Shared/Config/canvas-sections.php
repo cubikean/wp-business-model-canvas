@@ -87,8 +87,8 @@ function wp_bmc_get_canvas_sections($view_mode = 'global') {
         'placeholder' => 'Comment mon projet génère-t-il de l\'argent ?',
         'synthetic' => true,    
         'color' => 'blue',
-        'grid-column' => ($view_mode === 'synthetic') ? '1/5' : '1/4',
-        'grid-row' => ($view_mode === 'synthetic') ? '2' : '1'
+        'grid-column' => ($view_mode === 'synthetic') ? '1/5' : '4/7',
+        'grid-row' => ($view_mode === 'synthetic') ? '2' : '4'
     )
     );
 }
