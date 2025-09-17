@@ -122,10 +122,10 @@ jQuery(document).ready(function($) {
                     window.location.href = response.data.redirect_url;
                 }, 1000);
             } else {
-                alert('Erreur lors de la déconnexion : ' + response.data);
+                WP_BMC_Toast.error('Erreur lors de la déconnexion : ' + response.data);
             }
         }).fail(function() {
-            alert('Erreur de déconnexion. Veuillez réessayer.');
+            WP_BMC_Toast.error('Erreur de déconnexion. Veuillez réessayer.');
         }).always(function() {
             // Réactiver le bouton
             $btn.prop('disabled', false).text(originalText);

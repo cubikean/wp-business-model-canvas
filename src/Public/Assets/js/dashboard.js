@@ -64,7 +64,6 @@ jQuery(document).ready(function($) {
         }
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        console.log('Project ID récupéré:', projectId);
         
         var formData = {
             action: 'wp_bmc_batch_todo_operations',
@@ -128,15 +127,15 @@ jQuery(document).ready(function($) {
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
-                $message.html('<div class="wp-bmc-message success">' + response.data.message + '</div>').show();
+                WP_BMC_Toast.success(response.data.message);
                 setTimeout(function() {
                     window.location.reload(); // Recharger pour afficher le canvas
                 }, 1500);
             } else {
-                $message.html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                WP_BMC_Toast.error(response.data);
             }
         }).fail(function() {
-            $message.html('<div class="wp-bmc-message error">Erreur lors de la création du projet. Veuillez réessayer.</div>').show();
+            WP_BMC_Toast.error('Erreur lors de la création du projet. Veuillez réessayer.');
         }).always(function() {
             // Réactiver le bouton
             $submitBtn.prop('disabled', false).text('Créer mon canvas');
@@ -246,8 +245,9 @@ jQuery(document).ready(function($) {
         currentEditingSection = sectionName;
         
         // Masquer le contenu principal
-        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view, .dashboard-header)').hide();
-        $('.dashboard-header .canvas-controls').hide();
+        $('.wp-bmc-dashboard .canvas-controls').hide();
+        $('.wp-bmc-dashboard .canvas-container').hide();
+        $('.wp-bmc-dashboard .wp-bmc-edit-view').show();
         $('.dashboard-header-title').text('Bloc projet : ' + $('.dashboard-header').data('project-name'));
         
         // Mettre à jour le contenu de la vue d'édition
@@ -303,8 +303,11 @@ jQuery(document).ready(function($) {
         $('#wp-bmc-edit-view').fadeOut(300);
         
         // Réafficher le contenu principal
-        $('.wp-bmc-dashboard > *:not(#wp-bmc-edit-view)').show();
-        $('.dashboard-header .canvas-controls').show();
+        $('.wp-bmc-dashboard .canvas-controls').show();
+        $('.wp-bmc-dashboard .canvas-container').show();
+
+        $('.wp-bmc-dashboard .wp-bmc-edit-view').hide();
+
         $('.dashboard-header-title').text($('.view-toggle button.wp-bmc-btn-primary').text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
         
         // Détruire l'éditeur WYSIWYG
@@ -473,9 +476,12 @@ jQuery(document).ready(function($) {
                 canvasData[section] = $(this).html();
             });
             
+            var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+            
             var formData = {
                 action: 'wp_bmc_save_canvas',
                 nonce: wp_bmc_ajax.nonce,
+                project_id: projectId,
                 canvas_data: canvasData
             };
             
@@ -484,20 +490,24 @@ jQuery(document).ready(function($) {
                     updateLastSavedTime();
                     callback(true); // Indiquer que la sauvegarde a réussi
                 } else {
+                    console.error('saveBrickContent - Erreur:', response.data);
                     callback(false); // Indiquer que la sauvegarde a échoué
                 }
-            }).fail(function() {
+            }).fail(function(xhr, status, error) {
+                console.error('saveBrickContent - Échec AJAX:', error, xhr.responseText);
                 callback(false); // Indiquer que la sauvegarde a échoué
             });
         } else {
             // Sauvegarder automatiquement (comportement par défaut)
             autoSaveCanvas();
             
-            // Fermer la vue d'édition
-            closeEditView();
+            // Afficher un message de succès sans fermer la vue d'édition
+            WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
             
-            // Afficher un message de succès
-            $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Contenu sauvegardé avec succès !</div>').show();
+            // Masquer le message après 3 secondes
+            setTimeout(function() {
+                $('#wp-bmc-dashboard-message').fadeOut();
+            }, 3000);
         }
     }
     
@@ -662,7 +672,7 @@ jQuery(document).ready(function($) {
         // Vérifier que la vue d'édition est ouverte
         if (!$('#wp-bmc-edit-view').is(':visible')) {
             console.error('Vue d\'édition non ouverte');
-            alert('Veuillez d\'abord ouvrir une section pour éditer');
+            WP_BMC_Toast.warning('Veuillez d\'abord ouvrir une section pour éditer');
             return;
         }
         
@@ -686,7 +696,7 @@ jQuery(document).ready(function($) {
         // Debug: vérifier si la section est définie
         if (!sectionName) {
             console.error('Section non définie pour l\'upload de fichiers');
-            alert('Erreur: Impossible de déterminer la section pour l\'upload');
+            WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour l\'upload');
             return;
         }
         
@@ -731,16 +741,16 @@ jQuery(document).ready(function($) {
                         $message.html('<div class="wp-bmc-message success">Fichiers uploadés avec succès !</div>').show();
                         setTimeout(function() { $message.fadeOut(); }, 3000);
                     } else {
-                        alert('Fichiers uploadés avec succès !');
+                        WP_BMC_Toast.success('Fichiers uploadés avec succès !');
                     }
                 } else {
                     console.error('Erreur upload:', response.data);
-                    alert('Erreur lors de l\'upload : ' + response.data);
+                    WP_BMC_Toast.error('Erreur lors de l\'upload : ' + response.data);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Erreur AJAX upload:', error);
-                alert('Erreur lors de l\'upload des fichiers.');
+                WP_BMC_Toast.error('Erreur lors de l\'upload des fichiers.');
             },
             complete: function() {
                 // Restaurer le bouton
@@ -760,7 +770,7 @@ jQuery(document).ready(function($) {
         
         if (!sectionName) {
             console.error('Section non définie pour charger les documents');
-            alert('Erreur: Impossible de déterminer la section pour charger les documents');
+            WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour charger les documents');
             return;
         }
         
@@ -885,6 +895,7 @@ jQuery(document).ready(function($) {
         var $btn = $('#request-grading');
         var originalText = $btn.text();
         
+        
         // Confirmation avant envoi
         if (!confirm('Êtes-vous sûr de vouloir demander une notation pour cette section ? L\'administrateur sera notifié.')) {
             return;
@@ -895,8 +906,9 @@ jQuery(document).ready(function($) {
         
         // Sauvegarder d'abord le contenu actuel
         saveBrickContent(function(saveSuccess) {
+            
             if (!saveSuccess) {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de la sauvegarde. Impossible de demander la notation.</div>').show();
+                WP_BMC_Toast.error('Erreur lors de la sauvegarde. Impossible de demander la notation.');
                 $btn.prop('disabled', false).text(originalText);
                 return;
             }
@@ -913,7 +925,7 @@ jQuery(document).ready(function($) {
             
             $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
                 if (response.success) {
-                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Demande de notation envoyée avec succès ! L\'administrateur a été notifié.</div>').show();
+                    WP_BMC_Toast.success('Demande de notation envoyée avec succès ! L\'administrateur a été notifié.');
                     
                     // Changer le texte du bouton pour indiquer que la demande a été envoyée
                     $btn.text('Demande envoyée').addClass('wp-bmc-btn-success').removeClass('wp-bmc-btn-warning');
@@ -923,10 +935,10 @@ jQuery(document).ready(function($) {
                         closeEditView();
                     }, 2000);
                 } else {
-                    $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                    WP_BMC_Toast.error(response.data);
                 }
             }).fail(function() {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de l\'envoi de la demande. Veuillez réessayer.</div>').show();
+                WP_BMC_Toast.error('Erreur lors de l\'envoi de la demande. Veuillez réessayer.');
             }).always(function() {
                 // Réactiver le bouton
                 $btn.prop('disabled', false);
@@ -999,13 +1011,13 @@ jQuery(document).ready(function($) {
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
-                $message.html('<div class="wp-bmc-message success">Canvas sauvegardé avec succès !</div>').show();
+                WP_BMC_Toast.success('Canvas sauvegardé avec succès !');
                 updateLastSavedTime();
             } else {
-                $message.html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                WP_BMC_Toast.error(response.data);
             }
         }).fail(function() {
-            $message.html('<div class="wp-bmc-message error">Erreur lors de la sauvegarde. Veuillez réessayer.</div>').show();
+            WP_BMC_Toast.error('Erreur lors de la sauvegarde. Veuillez réessayer.');
         }).always(function() {
             // Réactiver le bouton
             $btn.prop('disabled', false).text(originalText);
@@ -1237,7 +1249,6 @@ jQuery(document).ready(function($) {
     function loadSectionRevisions(section) {
         console.log('Chargement des révisions pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        console.log('Project ID récupéré:', projectId);
         
         $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_revisions',
@@ -1411,7 +1422,6 @@ jQuery(document).ready(function($) {
         }
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        console.log('Project ID récupéré:', projectId);
         
         var formData = {
             action: 'wp_bmc_get_section_todos',
@@ -1657,7 +1667,7 @@ jQuery(document).ready(function($) {
         
         newText = newText.trim();
         if (!newText) {
-            alert('Le texte de la tâche ne peut pas être vide');
+            WP_BMC_Toast.warning('Le texte de la tâche ne peut pas être vide');
             return;
         }
         

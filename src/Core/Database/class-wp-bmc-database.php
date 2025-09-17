@@ -279,16 +279,18 @@ class WP_BMC_Database {
         
         if ($existing) {
             // Mettre à jour
-            return $wpdb->update(
+            $result = $wpdb->update(
                 $table,
                 array('content' => $content),
                 array('project_id' => $project_id, 'section' => $section),
                 array('%s'),
                 array('%d', '%s')
             );
+            // Retourner true si pas d'erreur (même si 0 ligne affectée)
+            return $result !== false;
         } else {
             // Insérer
-            return $wpdb->insert(
+            $result = $wpdb->insert(
                 $table,
                 array(
                     'project_id' => $project_id,
@@ -297,6 +299,7 @@ class WP_BMC_Database {
                 ),
                 array('%d', '%s', '%s')
             );
+            return $result !== false;
         }
     }
     

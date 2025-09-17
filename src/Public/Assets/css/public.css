@@ -1217,7 +1217,7 @@
   height: 46px;
   border: none;
   border-radius: 50%;
-  background: var(--warning-color);
+  background: var(--edit-view-color);
   color: white;
   cursor: pointer;
   display: flex;
@@ -1230,13 +1230,19 @@
 }
 
 .rate-brick-btn:hover {
-  background: currentColor;
-  transform: scale(1.1);
+  background: var(--edit-view-color);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+.rate-brick-btn.disabled {
+  background: var(--edit-view-color);
+  color: white;
+  cursor: not-allowed;
+  opacity: .6;
+}
+
 .rate-brick-btn.rated {
-  background: currentColor;
+  background: var(--edit-view-color);
   color: #333;
 }
 
@@ -1331,12 +1337,12 @@
   align-items: center;
   padding: 20px 30px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--light-gray);
+  background: white;
 }
 
 .popup-header h3 {
   margin: 0;
-  color: var(--primary-color);
+  color: var(--dashboard-text);
   font-size: 1.5em;
   font-weight: 600;
 }

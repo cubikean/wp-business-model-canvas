@@ -51,30 +51,9 @@ function wp_bmc_save_canvas_handler() {
     }
     
     $canvas_data = $_POST['canvas_data'];
+    $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
     
-    // Récupérer le project_id depuis l'URL ou les paramètres
-    $project_id = null;
-    
-    // Essayer de récupérer depuis les paramètres POST
-    if (isset($_POST['project_id'])) {
-        $project_id = intval($_POST['project_id']);
-    }
-    
-    // Si pas de project_id dans POST, essayer de le récupérer depuis l'URL de référence
-    if (!$project_id) {
-        $referer = wp_get_referer();
-        if ($referer) {
-            $url_parts = parse_url($referer);
-            if (isset($url_parts['query'])) {
-                parse_str($url_parts['query'], $query_params);
-                if (isset($query_params['project_id'])) {
-                    $project_id = intval($query_params['project_id']);
-                }
-            }
-        }
-    }
-    
-    // Si toujours pas de project_id, utiliser le projet de l'utilisateur connecté
+    // Si pas de project_id, utiliser le projet de l'utilisateur connecté
     if (!$project_id) {
         $user = WP_BMC_Auth::get_current_user();
         $projects = WP_BMC_Database::get_user_projects($user->user_id);

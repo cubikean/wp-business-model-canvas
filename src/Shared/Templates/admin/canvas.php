@@ -72,29 +72,11 @@ if ($admin_view && $is_admin) {
 }
 ?>
 
-<div class="wp-bmc-canvas-container" data-project-id="<?php echo $project_id; ?>">
-    <div class="canvas-header">
-        <h1><?php echo esc_html($project->title); ?></h1>
-
-        <?php if ($admin_view && $user_id > 0): ?>
-            <?php
-            $user_info = WP_BMC_Database::get_user($user_id);
-            if ($user_info): ?>
-                <div class="admin-user-info">
-                    <span class="user-label">BMC de :</span>
-                    <strong><?php echo esc_html($user_info->first_name . ' ' . $user_info->last_name); ?></strong>
-                    <span class="user-company">(<?php echo esc_html($user_info->company); ?>)</span>
-                </div>
-            <?php endif; ?>
-        <?php endif; ?>
-
+<div class="wp-bmc-canvas-container wp-bmc-dashboard" data-project-id="<?php echo $project_id; ?>">
+    <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
+        <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
+        
         <div class="canvas-actions">
-            <!-- <button id="wp-bmc-save-canvas" class="wp-bmc-btn wp-bmc-btn-primary">
-                Sauvegarder
-            </button>
-            <button id="wp-bmc-export-pdf" class="wp-bmc-btn wp-bmc-btn-secondary">
-                Exporter PDF
-            </button> -->
             <a href="/dashboard" class="wp-bmc-btn wp-bmc-btn-secondary">
                 Retour au tableau de bord
             </a>
@@ -113,16 +95,6 @@ if ($admin_view && $is_admin) {
     <div class="canvas-container">
         <?php echo wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin, $pending_grading_requests, true); ?>
     </div>
-
-    <!-- <div class="canvas-footer">
-        <div class="auto-save-status">
-            <span id="auto-save-status">Sauvegarde automatique activée</span>
-        </div>
-        <div class="last-saved">
-            <span id="last-saved-time">Dernière sauvegarde : <?php echo date('d/m/Y H:i'); ?></span>
-        </div>
-    </div>
-</div> -->
 
     <?php
     // Inclure le template d'édition réutilisable pour l'admin

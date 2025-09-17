@@ -37,6 +37,7 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
 ?>
     <div
         class="canvas-section <?php echo $section_class; ?>"
+        data-title="<?php echo $section_config['title']; ?>"
         data-column="<?php echo $section_config['grid-column']; ?>"
         data-row="<?php echo $section_config['grid-row']; ?>"
         data-section="<?php echo $section_key; ?>"
@@ -44,11 +45,11 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         <div class="canvas-section-header">
             <h3>
                 <?php echo esc_html($section_config['title']); ?>
-                <?php if ($is_admin && in_array($section_key, $pending_grading_requests)): ?>
+                <!-- <?php if ($is_admin && in_array($section_key, $pending_grading_requests)): ?>
                     <span class="grading-request-indicator" title="Cette brique nécessite une notation">
                         <i class="fas fa-star-half-alt"></i>
                     </span>
-                <?php endif; ?>
+                <?php endif; ?> -->
             </h3>
         </div>
         <h4>
@@ -92,14 +93,23 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
 
 
             <div class="edit-brick-btn-container">
-                <?php if ($is_admin): ?>
+                <?php if ($is_admin && !in_array($section_key, $pending_grading_requests)): ?>
                     <button
-                        class="rate-brick-btn"
+                        disabled
+                        class="rate-brick-btn disabled"
                         data-project-id="<?php echo $project_id; ?>"
                         data-section-title="<?php echo esc_attr($section_config['title']); ?>"
                         data-section="<?php echo $section_key; ?>"
                         title="Noter cette brique"
                         data-color="<?php echo $section_config['color']; ?>">
+                        <i class="fas fa-star"></i>
+                    </button>
+                <?php elseif ($is_admin && in_array($section_key, $pending_grading_requests)): ?>
+                    <button 
+                        class="rate-brick-btn" 
+                        data-project-id="<?php echo $project_id; ?>"
+                        data-section="<?php echo $section_key; ?>"
+                        data-section-title="<?php echo esc_attr($section_config['title']); ?>">
                         <i class="fas fa-star"></i>
                     </button>
                 <?php endif; ?>

@@ -253,7 +253,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                 <?php foreach ($all_users as $user): ?>
                     <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
                         <td class="user-name-container">
-                            <div class="user-name">
+                            <div class="user-name edit-user-btn">
                                 <div class="user-avatar">
                                     <?php
                                     $initials = strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));

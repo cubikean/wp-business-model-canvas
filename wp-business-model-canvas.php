@@ -68,10 +68,14 @@ function wp_bmc_admin_scripts($hook) {
         // Charger Font Awesome (fichiers locaux)
         wp_enqueue_style('font-awesome', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css', array(), '6.0.0');
         
+        // Charger le système de Toast
+        wp_enqueue_style('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css', array(), WP_BMC_VERSION);
+        wp_enqueue_script('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js', array(), WP_BMC_VERSION, true);
+        
         // Charger les styles admin avec dépendance sur les polices
         wp_enqueue_style('wp-bmc-admin', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/admin.css', array('wp-bmc-fonts', 'font-awesome'), WP_BMC_VERSION);
         
-        wp_enqueue_script('wp-bmc-admin-dashboard', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js', array('jquery'), WP_BMC_VERSION, true);
+        wp_enqueue_script('wp-bmc-admin-dashboard', WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
         
         // Localiser les variables AJAX
         wp_localize_script('wp-bmc-admin-dashboard', 'wp_bmc_admin_ajax', array(

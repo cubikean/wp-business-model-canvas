@@ -303,7 +303,7 @@ jQuery(document).ready(function($) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert('Erreur lors de l\'export : ' + response.data);
+                WP_BMC_Toast.error('Erreur lors de l\'export : ' + response.data);
             }
         }).always(function() {
             $btn.prop('disabled', false).text(originalText);

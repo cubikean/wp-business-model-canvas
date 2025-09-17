@@ -162,10 +162,26 @@ class WP_BMC_Loader {
             '6.0.0'
         );
         
+        // Charger le système de Toast
+        wp_enqueue_style(
+            'wp-bmc-toast',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
+        wp_enqueue_script(
+            'wp-bmc-toast',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js',
+            array(),
+            WP_BMC_VERSION,
+            true
+        );
+        
         wp_enqueue_script(
             'wp-bmc-public',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/public.js',
-            array('jquery'),
+            array('jquery', 'wp-bmc-toast'),
             WP_BMC_VERSION,
             true
         );
@@ -174,7 +190,7 @@ class WP_BMC_Loader {
         wp_enqueue_script(
             'wp-bmc-auth',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/auth.js',
-            array('jquery'),
+            array('jquery', 'wp-bmc-toast'),
             WP_BMC_VERSION,
             true
         );
@@ -183,7 +199,7 @@ class WP_BMC_Loader {
         wp_enqueue_script(
             'wp-bmc-dashboard',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/dashboard.js',
-            array('jquery'),
+            array('jquery', 'wp-bmc-toast'),
             WP_BMC_VERSION,
             true
         );
@@ -204,7 +220,7 @@ class WP_BMC_Loader {
             wp_enqueue_script(
                 'wp-bmc-admin-dashboard',
                 WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js',
-                array('jquery'),
+                array('jquery', 'wp-bmc-toast'),
                 WP_BMC_VERSION,
                 true
             );
