@@ -41,6 +41,7 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         data-column="<?php echo $section_config['grid-column']; ?>"
         data-row="<?php echo $section_config['grid-row']; ?>"
         data-section="<?php echo $section_key; ?>"
+        data-rating="<?php echo get_rating_number($project_ratings, $section_key); ?>"
         data-color="<?php echo $section_config['color']; ?>">
         <div class="canvas-section-header">
             <h3>
@@ -89,7 +90,7 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         </div>
         <div class="canvas-section-footer">
 
-            <?php wp_bmc_display_section_rating($project_ratings, $section_key); ?>
+            <?php wp_bmc_display_section_rating($project_ratings, $section_key, false); ?>
 
 
             <div class="edit-brick-btn-container">
@@ -134,7 +135,7 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
  * @param string $section_name Nom de la section
  * @return void
  */
-function wp_bmc_display_section_rating($project_ratings, $section_name)
+function wp_bmc_display_section_rating($project_ratings, $section_name, $comment = false)
 {
     $section_rating = null;
     foreach ($project_ratings as $rating) {
@@ -152,8 +153,24 @@ function wp_bmc_display_section_rating($project_ratings, $section_name)
             <?php endif; ?>
             <span class="rating-score-total">10</span>
         </div>
+        <?php if ($comment && $section_rating && isset($section_rating->comment) && !empty($section_rating->comment)): ?>
+            <div class="rating-comment">
+                <?php echo esc_html($section_rating->comment); ?>
+            </div>
+        <?php endif; ?>
     </div>
 <?php }
+
+function get_rating_number($project_ratings, $section_name){
+    $section_rating = null;
+    foreach ($project_ratings as $rating) {
+        if ($rating->section === $section_name) {
+            $section_rating = $rating;
+            break;
+        }
+    } 
+    return $section_rating->rating;
+}
 
 /**
  * Fonction pour obtenir l'ordre des sections du canvas

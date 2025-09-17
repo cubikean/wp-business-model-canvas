@@ -95,11 +95,15 @@ class WP_BMC_Database {
             section varchar(50) NOT NULL,
             content text,
             revision_reason varchar(100) DEFAULT 'manual',
+            rating tinyint(2) DEFAULT NULL,
+            rating_comment text DEFAULT NULL,
+            admin_id bigint(20) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY project_id (project_id),
             KEY section (section),
-            KEY created_at (created_at)
+            KEY created_at (created_at),
+            KEY admin_id (admin_id)
         ) $charset_collate;";
         
         // Table des notifications admin
@@ -522,6 +526,28 @@ class WP_BMC_Database {
     }
     
     /**
+     * Obtenir la dernière note pour une section (peu importe l'admin)
+     */
+    public static function get_latest_section_rating($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_ratings';
+        
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT r.*, u.display_name as admin_name 
+                 FROM $table r
+                 LEFT JOIN {$wpdb->users} u ON r.admin_id = u.ID
+                 WHERE r.project_id = %d AND r.section = %s 
+                 ORDER BY r.created_at DESC 
+                 LIMIT 1",
+                $project_id,
+                $section
+            )
+        );
+    }
+    
+    /**
      * Sauvegarder ou mettre à jour une note
      */
     public static function save_section_rating($project_id, $section, $admin_id, $rating, $comment = '') {
@@ -813,29 +839,45 @@ class WP_BMC_Database {
     // ========================================
     
     /**
-     * Créer une révision d'une section
+     * Créer une révision d'une section avec note et commentaire
      */
-    public static function create_section_revision($project_id, $section, $content, $revision_reason = 'manual') {
+    public static function create_section_revision($project_id, $section, $content, $revision_reason = 'manual', $rating = null, $rating_comment = null, $admin_id = null) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_section_revisions';
         
-        $result = $wpdb->insert(
-            $table,
-            array(
-                'project_id' => $project_id,
-                'section' => $section,
-                'content' => $content,
-                'revision_reason' => $revision_reason
-            ),
-            array('%d', '%s', '%s', '%s')
+        $data = array(
+            'project_id' => $project_id,
+            'section' => $section,
+            'content' => $content,
+            'revision_reason' => $revision_reason
         );
+        
+        $format = array('%d', '%s', '%s', '%s');
+        
+        // Ajouter les données de notation si fournies
+        if ($rating !== null) {
+            $data['rating'] = $rating;
+            $format[] = '%d';
+        }
+        
+        if ($rating_comment !== null) {
+            $data['rating_comment'] = $rating_comment;
+            $format[] = '%s';
+        }
+        
+        if ($admin_id !== null) {
+            $data['admin_id'] = $admin_id;
+            $format[] = '%d';
+        }
+        
+        $result = $wpdb->insert($table, $data, $format);
         
         return $result ? $wpdb->insert_id : false;
     }
     
     /**
-     * Obtenir les révisions d'une section
+     * Obtenir les révisions d'une section avec les informations admin
      */
     public static function get_section_revisions($project_id, $section) {
         global $wpdb;
@@ -844,9 +886,11 @@ class WP_BMC_Database {
         
         return $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM $table 
-                 WHERE project_id = %d AND section = %s 
-                 ORDER BY created_at DESC",
+                "SELECT r.*, u.display_name as admin_name 
+                 FROM $table r
+                 LEFT JOIN {$wpdb->users} u ON r.admin_id = u.ID
+                 WHERE r.project_id = %d AND r.section = %s 
+                 ORDER BY r.created_at DESC",
                 $project_id,
                 $section
             )

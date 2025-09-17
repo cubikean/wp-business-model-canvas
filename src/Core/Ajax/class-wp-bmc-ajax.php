@@ -612,7 +612,7 @@ function wp_bmc_get_documents_handler() {
 // Handler pour obtenir la note d'une section
 add_action('wp_ajax_wp_bmc_get_section_rating', 'wp_bmc_get_section_rating_handler');
 function wp_bmc_get_section_rating_handler() {
-    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
     
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Accès réservé aux administrateurs.');
@@ -663,6 +663,21 @@ function wp_bmc_save_section_rating_handler() {
     $result = WP_BMC_Database::save_section_rating($project_id, $section, $admin_id, $rating, $comment);
     
     if ($result) {
+        // Récupérer le contenu actuel de la section pour la révision
+        $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
+        $current_content = isset($canvas_data[$section]) ? $canvas_data[$section] : '';
+        
+        // Créer une révision avec la note et le commentaire
+        WP_BMC_Database::create_section_revision(
+            $project_id, 
+            $section, 
+            $current_content, 
+            'admin_rating',
+            $rating,
+            $comment,
+            $admin_id
+        );
+        
         wp_send_json_success(array(
             'message' => 'Note sauvegardée avec succès !',
             'project_id' => $project_id,
@@ -672,6 +687,8 @@ function wp_bmc_save_section_rating_handler() {
         wp_send_json_error('Erreur lors de la sauvegarde de la note.');
     }
 }
+
+
 
 // Handler pour obtenir le compteur de demandes de notation d'un utilisateur
 add_action('wp_ajax_wp_bmc_get_user_grading_count', 'wp_bmc_get_user_grading_count_handler');
@@ -750,15 +767,7 @@ function wp_bmc_request_grading_handler() {
     
     $project = $projects[0];
     
-    // Sauvegarder une révision avant la demande de notation
-    $current_content = '';
-    $canvas_data = WP_BMC_Database::get_canvas_data($project->id);
-    if (isset($canvas_data[$section])) {
-        $current_content = $canvas_data[$section];
-    }
-    
-    // Créer une révision avec la raison "grading_request"
-    WP_BMC_Database::create_section_revision($project->id, $section, $current_content, 'grading_request');
+    // Les révisions seront créées lors de la notation par l'admin
     
     // Enregistrer la demande de notation
     $result = WP_BMC_Database::save_grading_request($project->id, $section, $section_title, $user->user_id);
@@ -875,11 +884,6 @@ function wp_bmc_load_canvas_view_handler() {
     
     // Récupérer les données du projet
     $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
-    
-    // Debug logs
-    error_log('wp_bmc_load_canvas_view_handler - project_id: ' . $project_id);
-    error_log('wp_bmc_load_canvas_view_handler - view: ' . $view);
-    error_log('wp_bmc_load_canvas_view_handler - user_id: ' . $current_user->user_id);
     
     if ($project_id) {
         // Mode canvas spécifique - vérifier les permissions

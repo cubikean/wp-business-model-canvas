@@ -781,7 +781,13 @@ jQuery(document).ready(function ($) {
           // Mettre à jour le compteur de demandes
           updateGradingRequestsCount();
 
-          window.WP_BMC_Dashboard.loadCanvasView('synthetic');
+          let params = new URLSearchParams(window.location.search);
+          let view = params.get('view');
+          if(view === 'synthetic') {
+            window.WP_BMC_Dashboard.loadCanvasView('synthetic');
+          } else {
+            window.WP_BMC_Dashboard.loadCanvasView('global');
+          }
 
         //   // Mettre à jour dynamiquement l'affichage de la note sur la section du canvas sans recharger la page entière
         //   var $ratingDisplay = $("#rating-display-" + section);
@@ -806,6 +812,54 @@ jQuery(document).ready(function ($) {
         modal.remove();
       });
     });
+  }
+
+  // ========================================
+  // CHARGEMENT DES NOTES DE SECTION
+  // ========================================
+  
+  // Fonction pour charger la note d'une section
+  function loadSectionRating(projectId, section) {
+    $.post(wp_bmc_admin_ajax.ajax_url, {
+      action: 'wp_bmc_get_section_rating',
+      project_id: projectId,
+      section: section,
+      nonce: wp_bmc_admin_ajax.nonce
+    }, function(response) {
+      if (response.success && response.data.rating) {
+        displaySectionRating(response.data.rating);
+      } else {
+        displayNoRating();
+      }
+    }).fail(function() {
+      displayNoRating();
+    });
+  }
+  
+  // Afficher la note d'une section
+  function displaySectionRating(rating) {
+    $('#rating-score-number').text(rating.rating);
+    
+    if (rating.comment) {
+      $('#rating-comment').html('<p>' + rating.comment + '</p>');
+    } else {
+      $('#rating-comment').html('<p class="no-comment">Aucun commentaire</p>');
+    }
+    
+    // Afficher les métadonnées
+    var ratingDate = new Date(rating.created_at).toLocaleDateString('fr-FR');
+    $('#rating-meta .rating-date').text('Noté le ' + ratingDate);
+    $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
+    
+    $('#rating-section').removeClass('no-rating').addClass('has-rating');
+  }
+  
+  // Afficher l'absence de note
+  function displayNoRating() {
+    $('#rating-score-number').text('-');
+    $('#rating-comment').html('<p class="no-rating">Aucune note attribuée</p>');
+    $('#rating-meta .rating-date, #rating-meta .rating-admin').text('');
+    $('#rating-section').removeClass('has-rating').addClass('no-rating');
   }
 
   // ========================================

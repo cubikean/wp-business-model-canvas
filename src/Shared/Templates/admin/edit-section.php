@@ -54,6 +54,23 @@ if (!defined('ABSPATH')) {
             <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
         </div>
+
+        <div class="rating-section" id="rating-section">
+            <h4>Note de la brique</h4>
+            <div class="rating-display" id="rating-display">
+                <div class="rating-score">
+                    <span class="rating-score-number" id="rating-score-number">-</span>
+                    <span class="rating-score-total">/10</span>
+                </div>
+                <div class="rating-comment" id="rating-comment">
+                    <p class="no-rating">Aucune note attribuée</p>
+                </div>
+                <div class="rating-meta" id="rating-meta">
+                    <small class="rating-date"></small>
+                    <small class="rating-admin"></small>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="history-section">

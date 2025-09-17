@@ -204,7 +204,6 @@ jQuery(document).ready(function($) {
             $canvasContainer.html('<div class="wp-bmc-error">Erreur de connexion. Veuillez réessayer.</div>');
         });
     }
-    
     // Fonction pour initialiser les événements du canvas
     function initCanvasEvents() {
         // Réattacher les événements aux boutons d'édition
@@ -278,6 +277,8 @@ jQuery(document).ready(function($) {
 
         // Charger les révisions de la section
         loadSectionRevisions(sectionName);
+
+        loadSectionRating(sectionName);
         
         // Réinitialiser la liste des révisions pour cette brique
         $('#revisions-list').html(`
@@ -1265,7 +1266,35 @@ jQuery(document).ready(function($) {
             console.error('Erreur de connexion lors du chargement des révisions');
         });
     }
-    
+
+    function loadSectionRating(section) {
+        console.log('Chargement de la note pour la section:', section);
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_get_section_rating',
+            section: section,
+            project_id: projectId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                console.log('data:', response.data);
+                displaySectionRating(response.data.rating);
+            } else {    
+                console.error('Erreur lors du chargement de la note:', response.data);
+            }
+        }).fail(function() {
+            console.error('Erreur de connexion lors du chargement de la note');
+        });
+    }
+
+    function displaySectionRating(rating) {
+        $('#rating-score-number').text(rating.rating);
+        $('#rating-comment').text(rating.comment);
+        $('#rating-meta .rating-date').text('Noté le ' + rating.created_at);
+        $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
+    }
+
     // Afficher les révisions dans la liste
     function displayRevisions(revisions, section) {
         var $revisionsList = $('#revisions-list');
@@ -1295,6 +1324,17 @@ jQuery(document).ready(function($) {
             
             var reasonLabel = getRevisionReasonLabel(revision.revision_reason);
             
+            // Ajouter les informations de notation si disponibles
+            var ratingInfo = '';
+            if (revision.rating !== null && revision.rating !== undefined) {
+                ratingInfo = `
+                    <div class="revision-rating">
+                        <span class="revision-score">${revision.rating}/10</span>
+                        <span class="revision-admin">Par ${revision.admin_name || 'Admin'}</span>
+                    </div>
+                `;
+            }
+            
             html += `
                 <div class="revision-item" data-revision-id="${revision.id}">
                     <div class="revision-header">
@@ -1305,6 +1345,7 @@ jQuery(document).ready(function($) {
                         <div class="revision-reason">
                             <span class="reason-badge reason-${revision.revision_reason}">${reasonLabel}</span>
                         </div>
+                        ${ratingInfo}
                     </div>
                     <div class="revision-actions">
                         <button class="btn-outline --small view-revision-btn" data-revision-id="${revision.id}">
@@ -1329,6 +1370,7 @@ jQuery(document).ready(function($) {
     function getRevisionReasonLabel(reason) {
         var labels = {
             'grading_request': 'Demande de notation',
+            'admin_rating': 'Notation par admin',
             'manual': 'Modification manuelle',
             'auto_save': 'Sauvegarde automatique'
         };
@@ -1369,6 +1411,26 @@ jQuery(document).ready(function($) {
         $('#revision-date').text(formattedDate);
         $('#revision-reason').text(reasonLabel);
         $('#revision-content').html(revision.content || '<p class="empty-content">Aucun contenu dans cette révision</p>');
+        
+        // Ajouter les informations de notation si disponibles
+        var $revisionInfo = $('.revision-info');
+        if (revision.rating !== null && revision.rating !== undefined) {
+            var ratingHtml = `
+                <div class="revision-rating-info">
+                    <div class="revision-score-display">
+                        <span class="score">${revision.rating}/10</span>
+                        <span class="admin-name">Noté par ${revision.admin_name || 'Admin'}</span>
+                    </div>
+                    ${revision.rating_comment ? `<div class="revision-comment-display">
+                        <p>${revision.rating_comment}</p>
+                    </div>` : ''}
+                </div>
+            `;
+            $revisionInfo.append(ratingHtml);
+        } else {
+            // Supprimer les infos de notation précédentes
+            $revisionInfo.find('.revision-rating-info').remove();
+        }
         
         $('#wp-bmc-revision-popup').fadeIn(300);
     }

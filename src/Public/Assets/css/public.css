@@ -1022,7 +1022,7 @@
 .synthetic-section {
   background: white;
   transition: all 0.3s ease;
-  border-radius: 20px;
+  border-radius: 26px;
   position: relative;
   min-height: 150px;
   display: flex;
@@ -1825,6 +1825,11 @@ body.popup-open {
 .admin-rating-display {
   margin-top: 15px;
   font-size: 14px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 [data-color="green"] .admin-rating-display .rating-score {
@@ -1846,6 +1851,27 @@ body.popup-open {
   color: var(--admin-red-rating);
   background: var(--admin-red_light-rating);
 }
+
+[data-rating="0"], [data-rating="1"], [data-rating="2"], [data-rating="3"], [data-rating="4"], [data-rating="5"] {
+  border: 5px solid var(--admin-red-rating);
+
+  &::before{
+    position: absolute;
+    content: "";
+    top: -24px;
+    right: -24px;
+    width: 60px;
+    height: 60px;
+    background-color: var(--admin-red-rating);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='white' d='M2.725 21q-.275 0-.5-.137t-.35-.363t-.137-.488t.137-.512l9.25-16q.15-.25.388-.375T12 3t.488.125t.387.375l9.25 16q.15.25.138.513t-.138.487t-.35.363t-.5.137zm1.725-2h15.1L12 6zM12 18q.425 0 .713-.288T13 17t-.288-.712T12 16t-.712.288T11 17t.288.713T12 18m0-3q.425 0 .713-.288T13 14v-3q0-.425-.288-.712T12 10t-.712.288T11 11v3q0 .425.288.713T12 15m0-2.5'/></svg>");
+    background-size: 40px;
+    background-position: center 8px;
+    background-repeat: no-repeat;
+    border-radius: 50%;
+    z-index: 1;
+  }
+}
+
 
 .admin-rating-display .rating-score {
   position: relative;
@@ -2253,6 +2279,60 @@ body.popup-open {
   font-style: italic;
 }
 
+/* Styles pour les informations de notation dans les révisions */
+.revision-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.revision-score {
+  background: var(--dashboard-green);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.revision-admin {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.revision-rating-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--light-green);
+  border-radius: 8px;
+  border-left: 3px solid var(--dashboard-green);
+}
+
+.revision-score-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.revision-score-display .score {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--dashboard-green);
+}
+
+.revision-score-display .admin-name {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.revision-comment-display p {
+  margin: 0;
+  font-style: italic;
+  color: var(--text-color);
+}
+
 /* Styles pour le graphique de progression du projet */
 .overview-status .chart {
   position: relative;
@@ -2431,6 +2511,85 @@ body.popup-open {
 
 .action-plan::-webkit-scrollbar-thumb:hover {
   background: var(--dashboard-dark-blue);
+}
+
+/* ========================================
+   STYLES POUR LA SECTION DE NOTATION
+   ======================================== */
+
+.rating-section {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.rating-section h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.rating-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rating-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.rating-score-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--edit-view-color);
+}
+
+.rating-score-total {
+  font-size: 1.25rem;
+  color: var(--edit-view-color);
+  font-weight: bold;
+  line-height: 1;
+
+}
+
+.rating-section.has-rating .rating-score-number {
+  color: var(--edit-view-color);
+}
+
+.rating-section.no-rating .rating-score-number {
+  color: var(--edit-view-color);
+}
+
+.rating-comment p {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--light-grey);
+  border-radius: 8px;
+  border-left: 3px solid var(--dashboard-blue);
+  font-style: italic;
+}
+
+.rating-comment .no-rating,
+.rating-comment .no-comment {
+  color: var(--text-muted);
+  border-left-color: var(--border-color);
+}
+
+.rating-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.rating-meta small {
+  margin: 0;
 }
 
 /* ========================================
