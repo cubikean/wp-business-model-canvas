@@ -846,9 +846,8 @@ jQuery(document).ready(function ($) {
       $('#rating-comment').html('<p class="no-comment">Aucun commentaire</p>');
     }
     
-    // Afficher les métadonnées
-    var ratingDate = new Date(rating.created_at).toLocaleDateString('fr-FR');
-    $('#rating-meta .rating-date').text('Noté le ' + ratingDate);
+    // Utiliser la date formatée selon les paramètres WordPress
+    $('#rating-meta .rating-date').text('Noté le ' + (rating.formatted_date || rating.created_at));
     $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
     
     $('#rating-section').removeClass('no-rating').addClass('has-rating');

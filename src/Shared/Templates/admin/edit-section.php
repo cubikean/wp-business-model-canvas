@@ -60,7 +60,7 @@ if (!defined('ABSPATH')) {
             <div class="rating-display" id="rating-display">
                 <div class="rating-score">
                     <span class="rating-score-number" id="rating-score-number">-</span>
-                    <span class="rating-score-total">/10</span>
+                    <span class="rating-score-total">10</span>
                 </div>
                 <div class="rating-comment" id="rating-comment">
                     <p class="no-rating">Aucune note attribuée</p>

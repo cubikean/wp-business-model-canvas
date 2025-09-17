@@ -1238,7 +1238,7 @@ jQuery(document).ready(function($) {
         }
         
         // Rediriger vers le canvas de l'utilisateur avec les paramètres admin
-        var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&user_id=' + userId;
+        var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&user_id=' + userId +'&view=global';
         window.open(canvasUrl, '_blank');
     });
     
@@ -1290,8 +1290,14 @@ jQuery(document).ready(function($) {
 
     function displaySectionRating(rating) {
         $('#rating-score-number').text(rating.rating);
-        $('#rating-comment').text(rating.comment);
-        $('#rating-meta .rating-date').text('Noté le ' + rating.created_at);
+        console.log(rating.comment);
+        if(rating.comment !== null && rating.comment !== undefined && rating.comment !== '') {
+            $('#rating-comment').text(rating.comment);
+        } else {
+            $('#rating-comment').hide();
+        }
+        // Utiliser la date formatée selon les paramètres WordPress
+        $('#rating-meta .rating-date').text('Noté le ' + (rating.formatted_date || rating.created_at));
         $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
     }
 
@@ -1313,16 +1319,9 @@ jQuery(document).ready(function($) {
         var html = '<div class="revisions-items">';
         
         revisions.forEach(function(revision, index) {
-            var date = new Date(revision.created_at);
-            var formattedDate = date.toLocaleDateString('fr-FR', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            // Utiliser la date formatée selon les paramètres WordPress
+            var formattedDate = revision.formatted_date || revision.created_at;
             
-            var reasonLabel = getRevisionReasonLabel(revision.revision_reason);
             
             // Ajouter les informations de notation si disponibles
             var ratingInfo = '';
@@ -1343,7 +1342,7 @@ jQuery(document).ready(function($) {
                             <span class="revision-date">${formattedDate}</span>
                         </div>
                         <div class="revision-reason">
-                            <span class="reason-badge reason-${revision.revision_reason}">${reasonLabel}</span>
+                            <span class="reason-badge reason-${revision.revision_reason}">${revision.rating_comment}</span>
                         </div>
                         ${ratingInfo}
                     </div>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template pour la section d'édition des briques
  * Réutilisable dans le dashboard public et admin
@@ -24,7 +25,7 @@ if (!defined('ABSPATH')) {
             <div class="sub-section">
                 <p>Placeholder pour le contenu de la brique</p>
                 <button type="button" class="view-documents-btn btn-outline --icon" id="view-documents-btn">
-                <i class="fa fa-file-lines"></i>Ressources pédagogiques
+                    <i class="fa fa-file-lines"></i>Ressources pédagogiques
                 </button>
             </div>
             <div class="editor-section">
@@ -54,7 +55,27 @@ if (!defined('ABSPATH')) {
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="request-grading">Demander une notation</button>
         </div>
+
+        <div class="rating-section" id="rating-section">
+        <h4>Note de la brique</h4>
+        <div class="rating-display" id="rating-display">
+            <div class="rating-score">
+                <span class="rating-score-number" id="rating-score-number">-</span>
+                <span class="rating-score-total">10</span>
+            </div>
+            <div class="rating-comment" id="rating-comment">
+                <p class="no-rating">Aucune note attribuée</p>
+            </div>
+            <div class="rating-meta" id="rating-meta">
+                <small class="rating-date"></small>
+                <small class="rating-admin"></small>
+            </div>
+        </div>
     </div>
+    
+    </div>
+
+    
 
     <div class="history-section">
         <header>
@@ -84,7 +105,7 @@ if (!defined('ABSPATH')) {
                 </span>
             </div>
         </header>
-        
+
         <div class="todo-add-form">
             <div class="todo-input-group">
                 <input type="text" id="todo-input" placeholder="Ajouter une nouvelle tâche..." maxlength="255">
@@ -93,7 +114,7 @@ if (!defined('ABSPATH')) {
                 </button>
             </div>
         </div>
-        
+
         <div class="todo-list-container">
             <ul id="todo-list" class="todo-list">
                 <!-- Les tâches seront chargées dynamiquement -->

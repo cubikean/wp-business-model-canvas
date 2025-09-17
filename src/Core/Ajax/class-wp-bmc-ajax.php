@@ -614,9 +614,11 @@ add_action('wp_ajax_wp_bmc_get_section_rating', 'wp_bmc_get_section_rating_handl
 function wp_bmc_get_section_rating_handler() {
     check_ajax_referer('wp_bmc_nonce', 'nonce');
     
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Accès réservé aux administrateurs.');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour accéder aux documents.');
     }
+    
     
     if (!isset($_POST['section']) || !isset($_POST['project_id'])) {
         wp_send_json_error('Paramètres manquants pour récupérer la note.');
@@ -630,7 +632,7 @@ function wp_bmc_get_section_rating_handler() {
         wp_send_json_error('Paramètres invalides.');
     }
     
-    $rating = WP_BMC_Database::get_section_rating($project_id, $section, $admin_id);
+    $rating = WP_BMC_Database::get_latest_section_rating($project_id, $section);
     
     wp_send_json_success(array(
         'rating' => $rating

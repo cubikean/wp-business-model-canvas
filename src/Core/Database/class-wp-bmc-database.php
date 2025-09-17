@@ -17,6 +17,29 @@ class WP_BMC_Database {
     }
     
     /**
+     * Formater une date selon les paramètres WordPress (fuseau horaire et format)
+     */
+    public static function format_date_for_display($date_string, $format = 'datetime') {
+        if (empty($date_string)) {
+            return '';
+        }
+        
+        // Convertir la date UTC en fuseau horaire local WordPress
+        $timestamp = strtotime($date_string . ' UTC');
+        
+        switch ($format) {
+            case 'date':
+                return wp_date(get_option('date_format'), $timestamp);
+            case 'time':
+                return wp_date(get_option('time_format'), $timestamp);
+            case 'datetime':
+                return wp_date(get_option('date_format') . ' ' . get_option('time_format'), $timestamp);
+            default:
+                return wp_date($format, $timestamp);
+        }
+    }
+    
+    /**
      * Créer les tables de base de données
      */
     public static function create_tables() {
@@ -533,7 +556,7 @@ class WP_BMC_Database {
         
         $table = $wpdb->prefix . 'bmc_ratings';
         
-        return $wpdb->get_row(
+        $rating = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT r.*, u.display_name as admin_name 
                  FROM $table r
@@ -545,6 +568,13 @@ class WP_BMC_Database {
                 $section
             )
         );
+        
+        // Ajouter la date formatée selon les paramètres WordPress
+        if ($rating) {
+            $rating->formatted_date = self::format_date_for_display($rating->created_at);
+        }
+        
+        return $rating;
     }
     
     /**
@@ -884,7 +914,7 @@ class WP_BMC_Database {
         
         $table = $wpdb->prefix . 'bmc_section_revisions';
         
-        return $wpdb->get_results(
+        $revisions = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT r.*, u.display_name as admin_name 
                  FROM $table r
@@ -895,6 +925,15 @@ class WP_BMC_Database {
                 $section
             )
         );
+        
+        // Ajouter les dates formatées selon les paramètres WordPress
+        if ($revisions) {
+            foreach ($revisions as $revision) {
+                $revision->formatted_date = self::format_date_for_display($revision->created_at);
+            }
+        }
+        
+        return $revisions;
     }
     
     /**
