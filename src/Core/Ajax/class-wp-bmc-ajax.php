@@ -1704,7 +1704,7 @@ function compile_handlebars_template($template, $data) {
             }, $section_html);
             
             // Remplacer les variables simples de la section
-            $section_html = str_replace('{{title}}', htmlspecialchars($section_data['title']) . ' [' . $section_key . ']', $section_html);
+            $section_html = str_replace('{{title}}', htmlspecialchars($section_data['title']), $section_html);
             $section_html = str_replace('{{color}}', $section_data['color'], $section_html);
             
             error_log('HANDLEBARS: Section ' . $section_key . ' HTML généré (' . strlen($section_html) . ' chars)');
