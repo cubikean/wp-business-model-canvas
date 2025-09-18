@@ -359,21 +359,6 @@
                         {{/if}}
                     </div>
                     
-                    {{#if todos.items}}
-                    <div class="section-todos">
-                        <div class="todos-title">
-                            Tâches ({{todos.completed}}/{{todos.total}})
-                        </div>
-                        {{#each todos.items}}
-                        <div class="todo-item {{#if completed}}todo-completed{{/if}}">
-                            <div class="todo-checkbox">
-                                {{#if completed}}✓{{/if}}
-                            </div>
-                            <span>{{text}}</span>
-                        </div>
-                        {{/each}}
-                    </div>
-                    {{/if}}
                 </div>
                 {{/each}}
             </div>

@@ -1420,7 +1420,8 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
         )
     );
     
-    // Organiser les données par section
+    // Organiser les données par section dans l'ordre de la configuration
+    error_log('PDF: Création des sections dans l\'ordre de la config...');
     foreach ($sections_config as $section_key => $section_config) {
         $section_content = isset($canvas_data[$section_key]) ? $canvas_data[$section_key] : '';
         
@@ -1438,6 +1439,7 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
             'title' => $section_config['title'],
             'content' => $section_content,
             'color' => $section_config['color'],
+            'placeholder' => $section_config['placeholder'] ?? '',
             'ratings' => array(
                 'latest' => !empty($section_ratings) ? array(
                     'rating' => intval(reset($section_ratings)->rating)
@@ -1449,18 +1451,28 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
                     return intval($todo->is_completed) === 1;
                 })),
                 'items' => array_map(function($todo) {
+                    $is_completed = intval($todo->is_completed) === 1;
                     return array(
                         'text' => $todo->task_text,
-                        'completed' => intval($todo->is_completed) === 1
+                        'completed' => $is_completed
                     );
                 }, array_values($section_todos))
             )
         );
+        
+        error_log('PDF: Section ' . $section_key . ' créée - couleur: ' . $section_config['color'] . ', contenu: ' . (empty($section_content) ? 'vide' : strlen($section_content) . ' chars'));
     }
+    
+    error_log('PDF: Toutes les sections créées. Ordre final: ' . implode(', ', array_keys($pdf_data['canvas']['sections'])));
     
     error_log('PDF: Structure de données créée, sections: ' . count($pdf_data['canvas']['sections']));
     
-    // Charger le template HTML simple
+    // Debug: afficher les données de quelques sections
+    foreach (array_slice($pdf_data['canvas']['sections'], 0, 2, true) as $key => $section) {
+        error_log('PDF: Section ' . $key . ' - titre: ' . $section['title'] . ', todos: ' . count($section['todos']['items']) . ', content length: ' . strlen($section['content']));
+    }
+    
+    // Charger le template HTML principal
     $template_path = WP_BMC_PLUGIN_DIR . 'templates/canvas-dashboard-template.html';
     error_log('PDF: Chemin template: ' . $template_path);
     error_log('PDF: Dossier plugin: ' . WP_BMC_PLUGIN_DIR);
@@ -1615,6 +1627,7 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     }
     
     error_log('PDF: Sauvegarde réussie, taille fichier: ' . filesize($pdf_path) . ' bytes');
+    error_log('PDF: Data: ' . print_r($pdf_data, true));
     error_log('=== FIN GÉNÉRATION PDF GOTENBERG ===');
     
     wp_send_json_success(array(
@@ -1627,67 +1640,112 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
 }
 
 /**
- * Fonction simple pour compiler un template avec des placeholders
+ * Moteur de template Handlebars corrigé pour canvas-dashboard-template.html
  */
-function compile_simple_template($template, $data) {
-    error_log('TEMPLATE SIMPLE: Début compilation...');
+function compile_handlebars_template($template, $data) {
+    error_log('HANDLEBARS: Début compilation...');
+    error_log('HANDLEBARS: Taille du template: ' . strlen($template) . ' chars');
     
-    // Remplacements simples
-    $replacements = array(
-        'TITLE_PLACEHOLDER' => $data['project']['title'],
-        'USER_PLACEHOLDER' => $data['user']['full_name'] . ' • ' . $data['user']['company'],
-        'DATE_PLACEHOLDER' => $data['document']['generated_at']
-    );
+    // Vérifier si le pattern de boucle est présent
+    if (preg_match('/\{\{#each\s+canvas\.sections\}\}/', $template)) {
+        error_log('HANDLEBARS: Pattern de boucle canvas.sections trouvé dans le template');
+    } else {
+        error_log('HANDLEBARS: ERREUR - Pattern de boucle canvas.sections NON trouvé dans le template');
+    }
     
-    // Générer le HTML des sections
-    $sections_html = '';
-    foreach ($data['canvas']['sections'] as $section_key => $section) {
-        $rating_badge = '';
-        if ($section['ratings']['latest']) {
-            $rating_badge = '<div class="section-rating">' . $section['ratings']['latest']['rating'] . '/10</div>';
+    $compiled = $template;
+    
+    // 1. Traiter la boucle principale {{#each canvas.sections}}
+    $compiled = preg_replace_callback('/\{\{#each\s+canvas\.sections\}\}(.*?)\{\{\/each\}\}/s', function($matches) use ($data) {
+        $section_template = $matches[1];
+        $all_sections_html = '';
+        
+        error_log('HANDLEBARS: Début traitement boucle sections');
+        error_log('HANDLEBARS: Nombre de sections disponibles: ' . count($data['canvas']['sections']));
+        error_log('HANDLEBARS: Clés des sections: ' . implode(', ', array_keys($data['canvas']['sections'])));
+        
+        $section_count = 0;
+        foreach ($data['canvas']['sections'] as $section_key => $section_data) {
+            $section_count++;
+            $section_html = $section_template;
+            
+            error_log('HANDLEBARS: Traitement section #' . $section_count . ' - ' . $section_key . ' (' . $section_data['title'] . ')');
+            
+            // Remplacer {{@key}}
+            $section_html = str_replace('{{@key}}', $section_key, $section_html);
+            
+            // Traiter {{#if ratings.latest}}
+            $section_html = preg_replace_callback('/\{\{#if\s+ratings\.latest\}\}(.*?)\{\{\/if\}\}/s', function($if_matches) use ($section_data, $section_key) {
+                if (!empty($section_data['ratings']['latest'])) {
+                    $content = $if_matches[1];
+                    $content = str_replace('{{ratings.latest.rating}}', $section_data['ratings']['latest']['rating'], $content);
+                    error_log('HANDLEBARS: Section ' . $section_key . ' a une note: ' . $section_data['ratings']['latest']['rating']);
+                    return $content;
+                } else {
+                    error_log('HANDLEBARS: Section ' . $section_key . ' sans note');
+                }
+                return '';
+            }, $section_html);
+            
+            // Traiter {{#if content}}...{{else}}...{{/if}}
+            $section_html = preg_replace_callback('/\{\{#if\s+content\}\}(.*?)(\{\{else\}\}(.*?))?\{\{\/if\}\}/s', function($if_matches) use ($section_data, $section_key) {
+                $if_content = $if_matches[1];
+                $else_content = isset($if_matches[3]) ? $if_matches[3] : '';
+                
+                if (!empty(trim(strip_tags($section_data['content'])))) {
+                    $if_content = str_replace('{{{content}}}', $section_data['content'], $if_content);
+                    error_log('HANDLEBARS: Section ' . $section_key . ' avec contenu (' . strlen($section_data['content']) . ' chars)');
+                    return $if_content;
+                } else {
+                    $else_content = str_replace('{{placeholder}}', htmlspecialchars($section_data['placeholder']), $else_content);
+                    error_log('HANDLEBARS: Section ' . $section_key . ' sans contenu, placeholder utilisé');
+                    return $else_content;
+                }
+            }, $section_html);
+            
+            // Remplacer les variables simples de la section
+            $section_html = str_replace('{{title}}', htmlspecialchars($section_data['title']) . ' [' . $section_key . ']', $section_html);
+            $section_html = str_replace('{{color}}', $section_data['color'], $section_html);
+            
+            error_log('HANDLEBARS: Section ' . $section_key . ' HTML généré (' . strlen($section_html) . ' chars)');
+            
+            $all_sections_html .= $section_html;
         }
         
-        $content = $section['content'] ?: '<em style="opacity: 0.7;">Section non remplie</em>';
-        
-        $sections_html .= '
-            <div class="canvas-section ' . $section['color'] . ' ' . $section_key . '">
-                <div class="section-title">' . htmlspecialchars($section['title']) . '</div>
-                ' . $rating_badge . '
-                <div class="section-content">' . $content . '</div>
-            </div>';
+        error_log('HANDLEBARS: Toutes les sections traitées, HTML total: ' . strlen($all_sections_html) . ' chars');
+        return $all_sections_html;
+    }, $compiled);
+    
+    // 2. Remplacer toutes les variables globales
+    $global_vars = array(
+        '{{document.title}}' => $data['document']['title'],
+        '{{document.generated_at}}' => $data['document']['generated_at'],
+        '{{document.creator}}' => $data['document']['creator'],
+        '{{project.title}}' => $data['project']['title'],
+        '{{project.description}}' => $data['project']['description'],
+        '{{user.full_name}}' => $data['user']['full_name'],
+        '{{user.company}}' => $data['user']['company'],
+        '{{statistics.content.completion_percentage}}' => $data['statistics']['content']['completion_percentage'],
+        '{{statistics.content.sections_with_content}}' => $data['statistics']['content']['sections_with_content'],
+        '{{statistics.content.total_characters}}' => $data['statistics']['content']['total_characters'],
+        '{{statistics.ratings.average_rating}}' => $data['statistics']['ratings']['average_rating'],
+        '{{statistics.ratings.sections_rated}}' => $data['statistics']['ratings']['sections_rated'],
+        '{{statistics.todos.completion_rate}}' => $data['statistics']['todos']['completion_rate'],
+        '{{statistics.todos.total}}' => $data['statistics']['todos']['total']
+    );
+    
+    foreach ($global_vars as $pattern => $value) {
+        $compiled = str_replace($pattern, $value, $compiled);
     }
     
-    $replacements['SECTIONS_PLACEHOLDER'] = $sections_html;
+    // 3. Au lieu de remplacer par [VAR_NON_TRAITEE], supprimer simplement les variables restantes
+    $compiled = preg_replace('/\{\{[^}]*\}\}/', '', $compiled);
+    $compiled = preg_replace('/\{\{\{[^}]*\}\}\}/', '', $compiled);
     
-    // Effectuer les remplacements
-    $compiled = $template;
-    foreach ($replacements as $placeholder => $value) {
-        $compiled = str_replace($placeholder, $value, $compiled);
-        error_log('TEMPLATE SIMPLE: ' . $placeholder . ' remplacé');
-    }
-    
-    error_log('TEMPLATE SIMPLE: Compilation terminée');
+    error_log('HANDLEBARS: Compilation terminée');
     return $compiled;
 }
 
-/**
- * Récupérer une valeur nested dans un array
- */
-function get_nested_value($array, $path) {
-    $keys = explode('.', $path);
-    $current = $array;
-    
-    foreach ($keys as $key) {
-        if (is_array($current) && isset($current[$key])) {
-            $current = $current[$key];
-        } else {
-            error_log('TEMPLATE: Clé manquante "' . $key . '" dans le chemin "' . $path . '"');
-            return '[MANQUANT: ' . $path . ']';
-        }
-    }
-    
-    return is_array($current) ? '[ARRAY]' : (string)$current;
-}
 
 /**
  * Construire les données multipart pour Gotenberg v8
