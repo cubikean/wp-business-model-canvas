@@ -110,3 +110,7 @@ if ($admin_view && $is_admin) {
         <i class="fas fa-download"></i>
         Exporter le canvas
     </button>
+
+    <button id="wp-bmc-generate-pdf" class="wp-bmc-btn wp-bmc-btn-success" data-project-id="<?php echo $project_id; ?>">
+    <i class="fas fa-file-pdf"></i> Générer PDF
+</button>

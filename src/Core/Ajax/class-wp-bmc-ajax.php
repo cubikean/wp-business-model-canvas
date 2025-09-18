@@ -1296,6 +1296,424 @@ function wp_bmc_export_all_data_handler() {
     ));
 }
 
+// Handler pour générer un PDF via Gotenberg
+add_action('wp_ajax_wp_bmc_generate_pdf_gotenberg', 'wp_bmc_generate_pdf_gotenberg_handler');
+function wp_bmc_generate_pdf_gotenberg_handler() {
+    error_log('=== DÉBUT GÉNÉRATION PDF GOTENBERG ===');
+    error_log('POST data: ' . print_r($_POST, true));
+    
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        error_log('PDF: Utilisateur non connecté');
+        wp_send_json_error('Vous devez être connecté pour générer le PDF.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    error_log('PDF: Project ID = ' . $project_id);
+    
+    if (!$project_id) {
+        error_log('PDF: ID de projet invalide');
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    // Récupérer les données directement au lieu d'utiliser l'autre handler
+    error_log('PDF: Récupération directe des données du projet...');
+    
+    // Récupérer les informations du projet et de l'utilisateur
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        error_log('PDF: Projet introuvable pour ID: ' . $project_id);
+        wp_send_json_error('Projet introuvable.');
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    $is_admin = current_user_can('manage_options');
+    
+    // Vérifier les permissions
+    if (!$is_admin && $project->user_id != $user->user_id) {
+        error_log('PDF: Permissions insuffisantes');
+        wp_send_json_error('Vous n\'avez pas accès à ce projet.');
+    }
+    
+    // Si c'est un admin qui accède au projet d'un autre utilisateur, récupérer les infos de cet utilisateur
+    if ($is_admin && $project->user_id != $user->user_id) {
+        $project_owner = WP_BMC_Database::get_user($project->user_id);
+        if ($project_owner) {
+            $user = $project_owner;
+        }
+    }
+    
+    error_log('PDF: Projet trouvé: ' . $project->title);
+    error_log('PDF: Utilisateur: ' . $user->first_name . ' ' . $user->last_name);
+    
+    // Récupérer toutes les données nécessaires pour le PDF
+    $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
+    $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
+    $project_todos = WP_BMC_Database::get_project_todos($project_id);
+    
+    error_log('PDF: Canvas data sections: ' . implode(', ', array_keys($canvas_data)));
+    error_log('PDF: Ratings count: ' . count($project_ratings));
+    error_log('PDF: Todos count: ' . count($project_todos));
+    
+    // Configuration des sections du canvas
+    include_once WP_BMC_SHARED_DIR . 'Config/canvas-sections.php';
+    $sections_config = wp_bmc_get_canvas_sections('global');
+    
+    error_log('PDF: Sections config: ' . implode(', ', array_keys($sections_config)));
+    
+    // Créer une structure de données simplifiée pour le template
+    $pdf_data = array(
+        'document' => array(
+            'title' => 'Business Model Canvas - ' . $project->title,
+            'author' => $user->first_name . ' ' . $user->last_name,
+            'subject' => 'Business Model Canvas',
+            'creator' => 'WP Business Model Canvas Plugin',
+            'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql')),
+            'language' => 'fr'
+        ),
+        'project' => array(
+            'id' => intval($project_id),
+            'title' => $project->title,
+            'description' => $project->description,
+            'status' => $project->status,
+            'created_at' => WP_BMC_Database::format_date_for_display($project->created_at),
+            'updated_at' => WP_BMC_Database::format_date_for_display($project->updated_at)
+        ),
+        'user' => array(
+            'id' => intval($user->user_id),
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'full_name' => $user->first_name . ' ' . $user->last_name,
+            'email' => $user->email,
+            'company' => $user->company
+        ),
+        'canvas' => array(
+            'sections' => array()
+        ),
+        'statistics' => array(
+            'todos' => array(
+                'total' => count($project_todos),
+                'completed' => count(array_filter($project_todos, function($todo) {
+                    return intval($todo->is_completed) === 1;
+                })),
+                'completion_rate' => count($project_todos) > 0 ? round((count(array_filter($project_todos, function($todo) {
+                    return intval($todo->is_completed) === 1;
+                })) / count($project_todos)) * 100, 1) : 0
+            ),
+            'content' => array(
+                'sections_with_content' => count(array_filter($canvas_data, function($content) {
+                    return !empty(trim(strip_tags($content)));
+                })),
+                'completion_percentage' => round((count(array_filter($canvas_data, function($content) {
+                    return !empty(trim(strip_tags($content)));
+                })) / count($sections_config)) * 100, 1),
+                'total_characters' => array_sum(array_map(function($content) {
+                    return strlen(strip_tags($content));
+                }, $canvas_data))
+            ),
+            'ratings' => array(
+                'total_ratings' => count($project_ratings),
+                'average_rating' => count($project_ratings) > 0 ? round(array_sum(array_column($project_ratings, 'rating')) / count($project_ratings), 1) : 0,
+                'sections_rated' => count(array_unique(array_column($project_ratings, 'section')))
+            )
+        )
+    );
+    
+    // Organiser les données par section
+    foreach ($sections_config as $section_key => $section_config) {
+        $section_content = isset($canvas_data[$section_key]) ? $canvas_data[$section_key] : '';
+        
+        // Notes pour cette section
+        $section_ratings = array_filter($project_ratings, function($rating) use ($section_key) {
+            return $rating->section === $section_key;
+        });
+        
+        // Todos pour cette section
+        $section_todos = array_filter($project_todos, function($todo) use ($section_key) {
+            return $todo->section === $section_key;
+        });
+        
+        $pdf_data['canvas']['sections'][$section_key] = array(
+            'title' => $section_config['title'],
+            'content' => $section_content,
+            'color' => $section_config['color'],
+            'ratings' => array(
+                'latest' => !empty($section_ratings) ? array(
+                    'rating' => intval(reset($section_ratings)->rating)
+                ) : null
+            ),
+            'todos' => array(
+                'total' => count($section_todos),
+                'completed' => count(array_filter($section_todos, function($todo) {
+                    return intval($todo->is_completed) === 1;
+                })),
+                'items' => array_map(function($todo) {
+                    return array(
+                        'text' => $todo->task_text,
+                        'completed' => intval($todo->is_completed) === 1
+                    );
+                }, array_values($section_todos))
+            )
+        );
+    }
+    
+    error_log('PDF: Structure de données créée, sections: ' . count($pdf_data['canvas']['sections']));
+    
+    // Charger le template HTML simple
+    $template_path = WP_BMC_PLUGIN_DIR . 'templates/canvas-dashboard-template.html';
+    error_log('PDF: Chemin template: ' . $template_path);
+    error_log('PDF: Dossier plugin: ' . WP_BMC_PLUGIN_DIR);
+    error_log('PDF: Template existe: ' . (file_exists($template_path) ? 'OUI' : 'NON'));
+    
+    if (!file_exists($template_path)) {
+        error_log('PDF: Template introuvable à: ' . $template_path);
+        // Lister les fichiers du dossier templates
+        $templates_dir = WP_BMC_PLUGIN_DIR . 'templates/';
+        if (is_dir($templates_dir)) {
+            $files = scandir($templates_dir);
+            error_log('PDF: Fichiers dans templates/: ' . implode(', ', $files));
+        } else {
+            error_log('PDF: Dossier templates/ n\'existe pas');
+        }
+        wp_send_json_error('Template PDF introuvable: ' . $template_path);
+    }
+    
+    $template_content = file_get_contents($template_path);
+    error_log('PDF: Template chargé, taille: ' . strlen($template_content) . ' caractères');
+    
+    // Compiler le template avec le moteur Handlebars-like
+    error_log('PDF: Compilation du template avec moteur complet...');
+    $compiled_html = compile_handlebars_template($template_content, $pdf_data);
+    error_log('PDF: Template compilé, taille: ' . strlen($compiled_html) . ' caractères');
+    
+    // Sauvegarder le HTML compilé pour debug
+    $debug_html_path = WP_CONTENT_DIR . '/uploads/debug-canvas.html';
+    file_put_contents($debug_html_path, $compiled_html);
+    error_log('PDF: HTML debug sauvegardé: ' . $debug_html_path);
+    
+    // Faire la requête à Gotenberg v8 - tester plusieurs adresses pour Docker
+    $gotenberg_hosts = array(
+        'gotenberg-gotenberg-1:3000', // Nom du container Gotenberg
+        'host.docker.internal:3000',  // Docker Desktop Windows/Mac
+        '172.17.0.1:3000',            // Docker Linux gateway
+        'localhost:3000',             // Si pas dans un container
+        '127.0.0.1:3000'              // Fallback localhost
+    );
+    
+    $gotenberg_url = null;
+    $working_host = null;
+    
+    foreach ($gotenberg_hosts as $host) {
+        error_log('PDF: Test connexion à: ' . $host);
+        $test_response = wp_remote_get('http://' . $host . '/health', array('timeout' => 5));
+        
+        if (!is_wp_error($test_response) && wp_remote_retrieve_response_code($test_response) === 200) {
+            $working_host = $host;
+            $gotenberg_url = 'http://' . $host . '/forms/chromium/convert/html';
+            error_log('PDF: Gotenberg trouvé sur: ' . $host);
+            break;
+        } else {
+            error_log('PDF: Échec connexion à: ' . $host . ' - ' . (is_wp_error($test_response) ? $test_response->get_error_message() : 'Code: ' . wp_remote_retrieve_response_code($test_response)));
+        }
+    }
+    
+    if (!$gotenberg_url) {
+        error_log('PDF: Aucun serveur Gotenberg accessible');
+        wp_send_json_error('Gotenberg inaccessible sur toutes les adresses testées. Vérifiez que Gotenberg est démarré.');
+    }
+    
+    error_log('PDF: URL Gotenberg: ' . $gotenberg_url);
+    
+    // Utiliser wp_remote_post avec les fichiers pour Gotenberg v8
+    $boundary = 'wpbmc' . uniqid();
+    
+    // Construire la requête multipart manuellement
+    $post_data = '';
+    
+    // Ajouter le fichier HTML avec la syntaxe correcte pour Gotenberg v8
+    $post_data .= "--{$boundary}\r\n";
+    $post_data .= "Content-Disposition: form-data; name=\"files\"; filename=\"index.html\"\r\n";
+    $post_data .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+    $post_data .= $compiled_html . "\r\n";
+    
+    // Paramètres pour Gotenberg v8
+    $params = array(
+        'paperWidth' => '11.7',
+        'paperHeight' => '8.3',
+        'marginTop' => '0.5',
+        'marginBottom' => '0.5',
+        'marginLeft' => '0.5',
+        'marginRight' => '0.5',
+        'landscape' => 'true',
+        'printBackground' => 'true',
+        'scale' => '1.0',
+        'waitDelay' => '1s'
+    );
+    
+    foreach ($params as $name => $value) {
+        $post_data .= "--{$boundary}\r\n";
+        $post_data .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
+        $post_data .= $value . "\r\n";
+    }
+    
+    $post_data .= "--{$boundary}--\r\n";
+    
+    error_log('PDF: Taille des données POST: ' . strlen($post_data) . ' bytes');
+    error_log('PDF: Début des données POST: ' . substr($post_data, 0, 300));
+    
+    // Faire la requête
+    error_log('PDF: Envoi de la requête à Gotenberg...');
+    $response = wp_remote_post($gotenberg_url, array(
+        'body' => $post_data,
+        'headers' => array(
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+            'Content-Length' => strlen($post_data)
+        ),
+        'timeout' => 60
+    ));
+    
+    if (is_wp_error($response)) {
+        error_log('PDF: Erreur wp_remote_post: ' . $response->get_error_message());
+        wp_send_json_error('Erreur lors de la connexion à Gotenberg: ' . $response->get_error_message());
+    }
+    
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_headers = wp_remote_retrieve_headers($response);
+    $response_body = wp_remote_retrieve_body($response);
+    
+    error_log('PDF: Code de réponse Gotenberg: ' . $response_code);
+    error_log('PDF: Headers de réponse: ' . print_r($response_headers, true));
+    error_log('PDF: Taille du body: ' . strlen($response_body) . ' bytes');
+    
+    if ($response_code !== 200) {
+        error_log('PDF: Erreur Gotenberg, body: ' . substr($response_body, 0, 1000));
+        wp_send_json_error('Erreur Gotenberg (Code: ' . $response_code . '): ' . substr($response_body, 0, 500));
+    }
+    
+    $pdf_content = $response_body;
+    
+    // Vérifier que c'est bien un PDF
+    $pdf_header = substr($pdf_content, 0, 4);
+    if ($pdf_header !== '%PDF') {
+        error_log('PDF: Le contenu reçu n\'est pas un PDF. Header: ' . bin2hex(substr($pdf_content, 0, 20)));
+        error_log('PDF: Début du contenu: ' . substr($pdf_content, 0, 200));
+        wp_send_json_error('Le contenu reçu n\'est pas un PDF valide');
+    }
+    
+    // Sauvegarder le PDF dans le dossier uploads
+    $upload_dir = wp_upload_dir();
+    $pdf_filename = 'canvas-' . $pdf_data['project']['id'] . '-' . date('Y-m-d-H-i-s') . '.pdf';
+    $pdf_path = $upload_dir['path'] . '/' . $pdf_filename;
+    $pdf_url = $upload_dir['url'] . '/' . $pdf_filename;
+    
+    error_log('PDF: Sauvegarde vers: ' . $pdf_path);
+    
+    if (file_put_contents($pdf_path, $pdf_content) === false) {
+        error_log('PDF: Erreur lors de la sauvegarde');
+        wp_send_json_error('Erreur lors de la sauvegarde du PDF.');
+    }
+    
+    error_log('PDF: Sauvegarde réussie, taille fichier: ' . filesize($pdf_path) . ' bytes');
+    error_log('=== FIN GÉNÉRATION PDF GOTENBERG ===');
+    
+    wp_send_json_success(array(
+        'pdf_url' => $pdf_url,
+        'pdf_path' => $pdf_path,
+        'filename' => $pdf_filename,
+        'message' => 'PDF généré avec succès!',
+        'debug_html_url' => content_url('/uploads/debug-canvas.html')
+    ));
+}
+
+/**
+ * Fonction simple pour compiler un template avec des placeholders
+ */
+function compile_simple_template($template, $data) {
+    error_log('TEMPLATE SIMPLE: Début compilation...');
+    
+    // Remplacements simples
+    $replacements = array(
+        'TITLE_PLACEHOLDER' => $data['project']['title'],
+        'USER_PLACEHOLDER' => $data['user']['full_name'] . ' • ' . $data['user']['company'],
+        'DATE_PLACEHOLDER' => $data['document']['generated_at']
+    );
+    
+    // Générer le HTML des sections
+    $sections_html = '';
+    foreach ($data['canvas']['sections'] as $section_key => $section) {
+        $rating_badge = '';
+        if ($section['ratings']['latest']) {
+            $rating_badge = '<div class="section-rating">' . $section['ratings']['latest']['rating'] . '/10</div>';
+        }
+        
+        $content = $section['content'] ?: '<em style="opacity: 0.7;">Section non remplie</em>';
+        
+        $sections_html .= '
+            <div class="canvas-section ' . $section['color'] . ' ' . $section_key . '">
+                <div class="section-title">' . htmlspecialchars($section['title']) . '</div>
+                ' . $rating_badge . '
+                <div class="section-content">' . $content . '</div>
+            </div>';
+    }
+    
+    $replacements['SECTIONS_PLACEHOLDER'] = $sections_html;
+    
+    // Effectuer les remplacements
+    $compiled = $template;
+    foreach ($replacements as $placeholder => $value) {
+        $compiled = str_replace($placeholder, $value, $compiled);
+        error_log('TEMPLATE SIMPLE: ' . $placeholder . ' remplacé');
+    }
+    
+    error_log('TEMPLATE SIMPLE: Compilation terminée');
+    return $compiled;
+}
+
+/**
+ * Récupérer une valeur nested dans un array
+ */
+function get_nested_value($array, $path) {
+    $keys = explode('.', $path);
+    $current = $array;
+    
+    foreach ($keys as $key) {
+        if (is_array($current) && isset($current[$key])) {
+            $current = $current[$key];
+        } else {
+            error_log('TEMPLATE: Clé manquante "' . $key . '" dans le chemin "' . $path . '"');
+            return '[MANQUANT: ' . $path . ']';
+        }
+    }
+    
+    return is_array($current) ? '[ARRAY]' : (string)$current;
+}
+
+/**
+ * Construire les données multipart pour Gotenberg v8
+ */
+function build_data_files($delimiter, $files, $fields) {
+    $data = '';
+    
+    // Ajouter les fichiers d'abord (requis par Gotenberg)
+    foreach ($files as $filename => $content) {
+        $data .= "--{$delimiter}\r\n";
+        $data .= "Content-Disposition: form-data; name=\"files\"; filename=\"{$filename}\"\r\n";
+        $data .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
+        $data .= $content . "\r\n";
+    }
+    
+    // Ajouter les champs de formulaire
+    foreach ($fields as $name => $value) {
+        $data .= "--{$delimiter}\r\n";
+        $data .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
+        $data .= $value . "\r\n";
+    }
+    
+    return $data;
+}
+
+
 // Handler pour vider le cache (admin)
 add_action('wp_ajax_wp_bmc_clear_cache', 'wp_bmc_clear_cache_handler');
 function wp_bmc_clear_cache_handler() {

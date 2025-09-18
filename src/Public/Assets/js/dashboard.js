@@ -1081,6 +1081,92 @@ jQuery(document).ready(function($) {
     });
     
     // ========================================
+    // GÉNÉRATION PDF AVEC GOTENBERG
+    // ========================================
+    $('#wp-bmc-generate-pdf').on('click', function() {
+        console.log('=== DÉBUT GÉNÉRATION PDF CLIENT ===');
+        var $btn = $(this);
+        var originalText = $btn.html();
+        var projectId = $btn.data('project-id');
+        
+        console.log('PDF Client: Project ID =', projectId);
+        console.log('PDF Client: AJAX URL =', wp_bmc_ajax.ajax_url);
+        console.log('PDF Client: Nonce =', wp_bmc_ajax.nonce);
+        
+        if (!projectId) {
+            console.error('PDF Client: ID de projet manquant');
+            WP_BMC_Toast.error('ID de projet manquant');
+            return;
+        }
+        
+        // Désactiver le bouton et afficher le loader
+        $btn.prop('disabled', true).html('<div class="btn-loader"><div class="loader-spinner"></div></div>Génération PDF...');
+        
+        var formData = {
+            action: 'wp_bmc_generate_pdf_gotenberg',
+            nonce: wp_bmc_ajax.nonce,
+            project_id: projectId
+        };
+        
+        console.log('PDF Client: Données envoyées =', formData);
+        
+        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            console.log('PDF Client: Réponse reçue =', response);
+            
+            if (response.success) {
+                console.log('PDF Client: Succès, URL PDF =', response.data.pdf_url);
+                console.log('PDF Client: Filename =', response.data.filename);
+                console.log('PDF Client: Debug HTML =', response.data.debug_html_url);
+                
+                WP_BMC_Toast.success(response.data.message);
+                
+                // Afficher l'URL de debug dans la console
+                if (response.data.debug_html_url) {
+                    console.log('🔍 HTML de debug disponible:', response.data.debug_html_url);
+                }
+                
+                // Télécharger automatiquement le PDF
+                var link = document.createElement('a');
+                link.href = response.data.pdf_url;
+                link.download = response.data.filename;
+                link.target = '_blank'; // Ouvrir dans un nouvel onglet pour debug
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('PDF Client: Téléchargement déclenché');
+            } else {
+                console.error('PDF Client: Erreur serveur =', response.data);
+                WP_BMC_Toast.error('Erreur: ' + response.data);
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('PDF Client: Erreur AJAX =', {
+                status: status,
+                error: error,
+                responseText: xhr.responseText,
+                statusCode: xhr.status
+            });
+            
+            // Essayer de parser la réponse pour plus d'infos
+            try {
+                var errorResponse = JSON.parse(xhr.responseText);
+                console.error('PDF Client: Réponse d\'erreur parsée =', errorResponse);
+                WP_BMC_Toast.error('Erreur serveur: ' + (errorResponse.data || error));
+            } catch (e) {
+                WP_BMC_Toast.error('Erreur lors de la génération du PDF: ' + error);
+            }
+        }).always(function() {
+            console.log('PDF Client: Réactivation du bouton');
+            // Réactiver le bouton
+            $btn.prop('disabled', false).html(originalText);
+        });
+        
+        console.log('=== FIN GÉNÉRATION PDF CLIENT ===');
+    });
+    
+        
+    
+    // ========================================
     // FONCTIONS UTILITAIRES
     // ========================================
     
