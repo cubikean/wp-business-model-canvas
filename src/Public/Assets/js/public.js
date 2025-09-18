@@ -224,127 +224,24 @@ jQuery(document).ready(function($) {
         $(this).parent().removeClass('focused');
     });
     
-    // Tooltips pour les sections du canvas
-    const tooltips = {
-        'key_partners': 'Qui sont vos partenaires et fournisseurs clés ?',
-        'key_activities': 'Quelles sont les activités clés de votre modèle économique ?',
-        'key_resources': 'Quelles sont les ressources clés nécessaires ?',
-        'value_proposition': 'Quelle valeur apportez-vous à vos clients ?',
-        'customer_relationships': 'Quel type de relation entretenez-vous avec vos clients ?',
-        'channels': 'Par quels canaux vos clients veulent-ils être contactés ?',
-        'customer_segments': 'Pour quels segments de clients créez-vous de la valeur ?',
-        'cost_structure': 'Quels sont les coûts les plus importants de votre modèle économique ?',
-        'revenue_streams': 'Pour quelle valeur vos clients sont-ils prêts à payer ?'
-    };
-    
-    $('.canvas-section').each(function() {
-        const section = $(this);
-        const sectionType = section.attr('class').split(' ')[1];
-        const tooltip = tooltips[sectionType.replace('-', '_')];
-        
-        if (tooltip) {
-            section.find('h3').attr('title', tooltip);
-        }
-    });
-    
-    // Export du canvas (fonctionnalité future)
+
     $('#wp-bmc-export-canvas').on('click', function() {
-        const canvasData = {};
-        $('.canvas-input').each(function() {
-            const section = $(this).data('section');
-            const content = $(this).val();
-            canvasData[section] = content;
+
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_export_all_data',
+            project_id: projectId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                console.log('data:', response.data);
+            } else {
+                console.error('Erreur lors de la génération du PDF:', response.data);
+            }
         });
-        
-        const dataStr = JSON.stringify(canvasData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(dataBlob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'business-model-canvas.json';
-        link.click();
-        
-        URL.revokeObjectURL(url);
     });
     
-    // Import du canvas (fonctionnalité future)
-    $('#wp-bmc-import-canvas').on('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    Object.keys(data).forEach(function(section) {
-                        $(`[data-section="${section}"]`).val(data[section]);
-                    });
-                    showNotification('Canvas importé avec succès', 'success');
-                } catch (error) {
-                    showNotification('Erreur lors de l\'import du fichier', 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-    });
-    
-    // Styles CSS supplémentaires pour les nouvelles fonctionnalités
-    const additionalStyles = `
-        <style>
-            
-            .field-error {
-                color: #dc3545;
-                font-size: 12px;
-                margin-top: 5px;
-            }
-            
-            .wp-bmc-form input.error,
-            .wp-bmc-form textarea.error {
-                border-color: #dc3545;
-            }
-            
-            .saving-indicator {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                color: #6c757d;
-                font-size: 14px;
-            }
-            
-            .saving-indicator::before {
-                content: '';
-                width: 12px;
-                height: 12px;
-                border: 2px solid #6c757d;
-                border-top-color: transparent;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-            
-            .canvas-section.focused {
-                box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.2);
-            }
-            
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-        </style>
-    `;
-    
-    $('head').append(additionalStyles);
     
     // ========================================
     // INITIALISATION DE LA GRILLE

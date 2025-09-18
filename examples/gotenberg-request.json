@@ -1,0 +1,407 @@
+{
+  "comment": "Exemple de structure JSON complète pour générer un PDF via Gotenberg",
+  "gotenberg_endpoint": "http://gotenberg:3000/forms/chromium/convert/html",
+  "request_structure": {
+    "files": {
+      "index.html": "templates/pdf-template.html",
+      "data.json": "Structure JSON ci-dessous"
+    },
+    "form_data": {
+      "paperWidth": "11.7",
+      "paperHeight": "8.3",
+      "marginTop": "0.39",
+      "marginBottom": "0.39",
+      "marginLeft": "0.39",
+      "marginRight": "0.39",
+      "landscape": "true",
+      "printBackground": "true",
+      "preferCSSPageSize": "true"
+    }
+  },
+  "example_json_data": {
+    "document": {
+      "title": "Business Model Canvas - Mon Projet Innovant",
+      "author": "Jean Dupont",
+      "subject": "Business Model Canvas",
+      "creator": "WP Business Model Canvas Plugin",
+      "generated_at": "18 septembre 2025 à 14:30",
+      "generated_timestamp": 1726663800,
+      "language": "fr"
+    },
+    "project": {
+      "id": 1,
+      "title": "Mon Projet Innovant",
+      "description": "Une plateforme révolutionnaire pour connecter les entrepreneurs",
+      "status": "active",
+      "created_at": "15 septembre 2025 à 10:00",
+      "updated_at": "18 septembre 2025 à 14:25",
+      "raw_created_at": "2025-09-15 10:00:00",
+      "raw_updated_at": "2025-09-18 14:25:00"
+    },
+    "user": {
+      "id": 1,
+      "first_name": "Jean",
+      "last_name": "Dupont",
+      "full_name": "Jean Dupont",
+      "email": "jean.dupont@example.com",
+      "company": "Startup Innovations"
+    },
+    "canvas": {
+      "sections": {
+        "key_partners": {
+          "title": "Partenaires clés",
+          "content": "<p>Investisseurs technologiques</p><ul><li>Fonds d'investissement spécialisés</li><li>Business angels du secteur tech</li><li>Partenaires stratégiques</li></ul>",
+          "content_length": 145,
+          "color": "red",
+          "is_synthetic": false,
+          "placeholder": "Quelles sont mes principales dépenses ?",
+          "grid_position": {
+            "column": "1/4",
+            "row": "1"
+          },
+          "ratings": {
+            "count": 2,
+            "average": 7.5,
+            "latest": {
+              "rating": 8,
+              "comment": "Très bon travail sur l'identification des partenaires",
+              "admin_name": "Admin",
+              "created_at": "17 septembre 2025 à 16:30",
+              "raw_date": "2025-09-17 16:30:00"
+            }
+          },
+          "todos": {
+            "total": 3,
+            "completed": 2,
+            "pending": 1,
+            "completion_rate": 66.7,
+            "items": [
+              {
+                "id": 1,
+                "text": "Contacter les fonds d'investissement",
+                "completed": true,
+                "created_at": "16 septembre 2025 à 09:15",
+                "raw_date": "2025-09-16 09:15:00"
+              },
+              {
+                "id": 2,
+                "text": "Préparer le pitch deck",
+                "completed": true,
+                "created_at": "16 septembre 2025 à 09:20",
+                "raw_date": "2025-09-16 09:20:00"
+              },
+              {
+                "id": 3,
+                "text": "Organiser une réunion avec les partenaires",
+                "completed": false,
+                "created_at": "17 septembre 2025 à 14:00",
+                "raw_date": "2025-09-17 14:00:00"
+              }
+            ]
+          }
+        },
+        "value_proposition": {
+          "title": "Proposition de valeur",
+          "content": "<h3>Notre solution unique</h3><p>Nous proposons une plateforme qui révolutionne la façon dont les entrepreneurs se connectent et collaborent.</p><p><strong>Avantages clés :</strong></p><ul><li>Interface intuitive</li><li>Matching intelligent</li><li>Outils de collaboration intégrés</li></ul>",
+          "content_length": 285,
+          "color": "green",
+          "is_synthetic": true,
+          "placeholder": "Pourquoi un client choisirait-il ton offre plutôt qu'une autre ?",
+          "grid_position": {
+            "column": "3/5",
+            "row": "2/4"
+          },
+          "ratings": {
+            "count": 1,
+            "average": 9.0,
+            "latest": {
+              "rating": 9,
+              "comment": "Excellente proposition de valeur, très claire",
+              "admin_name": "Admin",
+              "created_at": "18 septembre 2025 à 10:15",
+              "raw_date": "2025-09-18 10:15:00"
+            }
+          },
+          "todos": {
+            "total": 2,
+            "completed": 1,
+            "pending": 1,
+            "completion_rate": 50.0,
+            "items": [
+              {
+                "id": 4,
+                "text": "Valider la proposition avec des clients potentiels",
+                "completed": true,
+                "created_at": "17 septembre 2025 à 11:30",
+                "raw_date": "2025-09-17 11:30:00"
+              },
+              {
+                "id": 5,
+                "text": "Créer des maquettes de l'interface",
+                "completed": false,
+                "created_at": "18 septembre 2025 à 09:00",
+                "raw_date": "2025-09-18 09:00:00"
+              }
+            ]
+          }
+        },
+        "customer_segments": {
+          "title": "Segments clients",
+          "content": "<p>Nos clients cibles sont :</p><ul><li>Entrepreneurs en phase de démarrage</li><li>Startups cherchant des partenaires</li><li>Investisseurs recherchant des opportunités</li></ul>",
+          "content_length": 178,
+          "color": "orange",
+          "is_synthetic": true,
+          "placeholder": "Comment mon projet génère-t-il de l'argent ?",
+          "grid_position": {
+            "column": "4/7",
+            "row": "1"
+          },
+          "ratings": {
+            "count": 1,
+            "average": 7.0,
+            "latest": {
+              "rating": 7,
+              "comment": "Bonne segmentation, pourrait être plus précise",
+              "admin_name": "Admin",
+              "created_at": "17 septembre 2025 à 15:45",
+              "raw_date": "2025-09-17 15:45:00"
+            }
+          },
+          "todos": {
+            "total": 1,
+            "completed": 0,
+            "pending": 1,
+            "completion_rate": 0.0,
+            "items": [
+              {
+                "id": 6,
+                "text": "Effectuer une étude de marché approfondie",
+                "completed": false,
+                "created_at": "18 septembre 2025 à 13:00",
+                "raw_date": "2025-09-18 13:00:00"
+              }
+            ]
+          }
+        },
+        "revenue_streams": {
+          "title": "Sources de revenus",
+          "content": "<p>Modèle de revenus diversifié :</p><ul><li>Abonnement mensuel premium (49€/mois)</li><li>Commission sur les transactions (3%)</li><li>Services de consulting (150€/heure)</li></ul>",
+          "content_length": 188,
+          "color": "blue",
+          "is_synthetic": true,
+          "placeholder": "Comment mon projet génère-t-il de l'argent ?",
+          "grid_position": {
+            "column": "4/7",
+            "row": "4"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 2,
+            "completed": 1,
+            "pending": 1,
+            "completion_rate": 50.0,
+            "items": [
+              {
+                "id": 7,
+                "text": "Analyser la concurrence sur les prix",
+                "completed": true,
+                "created_at": "16 septembre 2025 à 16:00",
+                "raw_date": "2025-09-16 16:00:00"
+              },
+              {
+                "id": 8,
+                "text": "Définir les packages d'abonnement",
+                "completed": false,
+                "created_at": "18 septembre 2025 à 08:30",
+                "raw_date": "2025-09-18 08:30:00"
+              }
+            ]
+          }
+        },
+        "key_activities": {
+          "title": "Activités clés",
+          "content": "<p>Nos activités principales :</p><ul><li>Développement de la plateforme</li><li>Acquisition de clients</li><li>Support et maintenance</li></ul>",
+          "content_length": 148,
+          "color": "red",
+          "is_synthetic": false,
+          "placeholder": "Quels sont les caractéristiques de ton client idéal ?",
+          "grid_position": {
+            "column": "1/3",
+            "row": "2"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 0,
+            "completed": 0,
+            "pending": 0,
+            "completion_rate": 0,
+            "items": []
+          }
+        },
+        "key_resources": {
+          "title": "Ressources clés",
+          "content": "<p>Ressources essentielles :</p><ul><li>Équipe technique expérimentée</li><li>Infrastructure cloud scalable</li><li>Base de données utilisateurs</li></ul>",
+          "content_length": 154,
+          "color": "red",
+          "is_synthetic": false,
+          "placeholder": "Quels sont les caractéristiques de ton client idéal ?",
+          "grid_position": {
+            "column": "1/3",
+            "row": "3"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 0,
+            "completed": 0,
+            "pending": 0,
+            "completion_rate": 0,
+            "items": []
+          }
+        },
+        "customer_relationships": {
+          "title": "Relations clients",
+          "content": "<p>Nous entretenons des relations privilégiées via :</p><ul><li>Support client 24/7</li><li>Communauté en ligne</li><li>Webinaires mensuels</li></ul>",
+          "content_length": 147,
+          "color": "orange",
+          "is_synthetic": false,
+          "placeholder": "Quels sont les caractéristiques de ton client idéal ?",
+          "grid_position": {
+            "column": "5/7",
+            "row": "2"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 0,
+            "completed": 0,
+            "pending": 0,
+            "completion_rate": 0,
+            "items": []
+          }
+        },
+        "channels": {
+          "title": "Canaux",
+          "content": "<p>Nos canaux de distribution :</p><ul><li>Site web et application mobile</li><li>Réseaux sociaux professionnels</li><li>Partenariats avec incubateurs</li></ul>",
+          "content_length": 156,
+          "color": "orange",
+          "is_synthetic": false,
+          "placeholder": "Quels sont les caractéristiques de ton client idéal ?",
+          "grid_position": {
+            "column": "5/7",
+            "row": "3"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 0,
+            "completed": 0,
+            "pending": 0,
+            "completion_rate": 0,
+            "items": []
+          }
+        },
+        "cost_structure": {
+          "title": "Structure des coûts",
+          "content": "<p>Nos principaux coûts :</p><ul><li>Développement et R&D (40%)</li><li>Marketing et acquisition (30%)</li><li>Infrastructure technique (20%)</li><li>Opérations (10%)</li></ul>",
+          "content_length": 182,
+          "color": "blue",
+          "is_synthetic": false,
+          "placeholder": "Quelles sont mes principales dépenses ?",
+          "grid_position": {
+            "column": "1/4",
+            "row": "4"
+          },
+          "ratings": {
+            "count": 0,
+            "average": 0,
+            "latest": null
+          },
+          "todos": {
+            "total": 0,
+            "completed": 0,
+            "pending": 0,
+            "completion_rate": 0,
+            "items": []
+          }
+        }
+      },
+      "view_modes": ["global", "synthetic"],
+      "sections_order": [
+        "key_partners",
+        "key_activities", 
+        "key_resources",
+        "value_proposition",
+        "customer_segments",
+        "customer_relationships",
+        "channels",
+        "cost_structure",
+        "revenue_streams"
+      ]
+    },
+    "statistics": {
+      "todos": {
+        "total": 8,
+        "completed": 4,
+        "pending": 4,
+        "completion_rate": 50.0
+      },
+      "ratings": {
+        "total_ratings": 4,
+        "average_rating": 7.8,
+        "sections_rated": 4,
+        "sections_total": 9
+      },
+      "content": {
+        "total_characters": 1583,
+        "sections_with_content": 9,
+        "completion_percentage": 100.0
+      }
+    },
+    "template": {
+      "type": "business_model_canvas",
+      "version": "2.0",
+      "format": "a4",
+      "orientation": "landscape",
+      "margins": {
+        "top": "1cm",
+        "right": "1cm", 
+        "bottom": "1cm",
+        "left": "1cm"
+      }
+    },
+    "meta": {
+      "export_type": "pdf",
+      "wordpress_version": "6.3.1",
+      "plugin_version": "2.0.0",
+      "php_version": "8.1.0",
+      "timezone": "Europe/Paris",
+      "locale": "fr_FR"
+    }
+  },
+  "usage_instructions": {
+    "step_1": "Récupérer les données JSON via l'endpoint AJAX wp_bmc_get_canvas_data",
+    "step_2": "Compiler le template HTML avec les données (utiliser Handlebars ou similaire)",
+    "step_3": "Envoyer une requête multipart/form-data à Gotenberg avec le HTML compilé",
+    "step_4": "Gotenberg retourne le PDF généré",
+    "step_5": "Servir le PDF à l'utilisateur ou le stocker"
+  },
+  "gotenberg_curl_example": "curl -X POST http://gotenberg:3000/forms/chromium/convert/html -F 'files=@index.html' -F 'paperWidth=11.7' -F 'paperHeight=8.3' -F 'landscape=true' -F 'printBackground=true' --output canvas.pdf"
+}

@@ -75,7 +75,7 @@ if ($admin_view && $is_admin) {
 <div class="wp-bmc-canvas-container wp-bmc-dashboard" data-project-id="<?php echo $project_id; ?>">
     <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
         <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
-        
+
         <div class="canvas-actions">
             <a href="/dashboard" class="wp-bmc-btn wp-bmc-btn-secondary">
                 Retour au tableau de bord
@@ -106,4 +106,7 @@ if ($admin_view && $is_admin) {
         <i class="fas fa-user-shield"></i> Mode Administrateur
     </div>
 
-    <div id="wp-bmc-canvas-message" class="wp-bmc-message" style="display: none;"></div>
+    <button id="wp-bmc-export-canvas" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon">
+        <i class="fas fa-download"></i>
+        Exporter le canvas
+    </button>

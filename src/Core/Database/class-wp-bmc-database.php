@@ -643,12 +643,25 @@ class WP_BMC_Database {
         
         $table = $wpdb->prefix . 'bmc_ratings';
         
-        return $wpdb->get_results(
+        $results = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM $table WHERE project_id = %d ORDER BY section, created_at DESC",
+                "SELECT r.*, u.display_name as admin_name 
+                 FROM $table r
+                 LEFT JOIN {$wpdb->users} u ON r.admin_id = u.ID
+                 WHERE r.project_id = %d 
+                 ORDER BY r.section, r.created_at DESC",
                 $project_id
             )
         );
+        
+        // Ajouter les dates formatées
+        if ($results) {
+            foreach ($results as $rating) {
+                $rating->formatted_date = self::format_date_for_display($rating->created_at);
+            }
+        }
+        
+        return $results ?: array();
     }
     
     /**
@@ -1019,6 +1032,40 @@ class WP_BMC_Database {
                 $section
             )
         );
+    }
+    
+    /**
+     * Obtenir toutes les tâches d'un projet
+     */
+    public static function get_project_todos($project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_todos';
+        
+        // Vérifier que la table existe
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+        if (!$table_exists) {
+            self::ensure_todos_table_exists();
+            return array(); // Retourner un tableau vide si la table vient d'être créée
+        }
+        
+        $results = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table 
+                 WHERE project_id = %d 
+                 ORDER BY section ASC, created_at ASC",
+                $project_id
+            )
+        );
+        
+        // Ajouter les dates formatées
+        if ($results) {
+            foreach ($results as $todo) {
+                $todo->formatted_date = self::format_date_for_display($todo->created_at);
+            }
+        }
+        
+        return $results ?: array();
     }
     
     /**

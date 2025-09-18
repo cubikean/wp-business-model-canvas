@@ -101,6 +101,9 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
     <?php endif; ?>
 </div>
 
-<div id="wp-bmc-dashboard-message" class="wp-bmc-message" style="display: none;"></div>
+<button id="wp-bmc-export-canvas" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon">
+    <i class="fas fa-download"></i>
+    Exporter le canvas
+</button>
 
 <?php wp_bmc_include_edit_section('public'); ?>

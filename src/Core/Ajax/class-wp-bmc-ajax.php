@@ -1076,29 +1076,223 @@ function wp_bmc_export_users_handler() {
 // Handler pour exporter toutes les données (admin)
 add_action('wp_ajax_wp_bmc_export_all_data', 'wp_bmc_export_all_data_handler');
 function wp_bmc_export_all_data_handler() {
-    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
     
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Accès réservé aux administrateurs.');
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Vous devez être connecté pour exporter les données.');
     }
     
-    // Récupérer toutes les données
-    $data = array(
-        'users' => WP_BMC_Database::get_all_users_with_projects(),
-        'projects' => WP_BMC_Database::get_all_projects(),
-        'grading_requests' => WP_BMC_Database::get_pending_grading_requests(),
-        'notifications' => WP_BMC_Database::get_all_notifications(),
-        'export_date' => current_time('mysql')
+    $project_id = intval($_POST['project_id']);
+    
+    if (!$project_id) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    // Récupérer les informations du projet et de l'utilisateur
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet introuvable.');
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    $is_admin = current_user_can('manage_options');
+    
+    // Vérifier les permissions
+    if (!$is_admin && $project->user_id != $user->user_id) {
+        wp_send_json_error('Vous n\'avez pas accès à ce projet.');
+    }
+    
+    // Si c'est un admin qui accède au projet d'un autre utilisateur, récupérer les infos de cet utilisateur
+    if ($is_admin && $project->user_id != $user->user_id) {
+        $project_owner = WP_BMC_Database::get_user($project->user_id);
+        if ($project_owner) {
+            $user = $project_owner;
+        }
+    }
+    
+    // Récupérer toutes les données nécessaires pour le PDF
+    $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
+    $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
+    $project_todos = WP_BMC_Database::get_project_todos($project_id);
+    
+    // Configuration des sections du canvas
+    include_once WP_BMC_SHARED_DIR . 'Config/canvas-sections.php';
+    $sections_config = wp_bmc_get_canvas_sections('global');
+    
+    // Organiser les données par section avec métadonnées complètes
+    $sections_data = array();
+    foreach ($sections_config as $section_key => $section_config) {
+        // Contenu de la section
+        $section_content = isset($canvas_data[$section_key]) ? $canvas_data[$section_key] : '';
+        
+        // Notes pour cette section
+        $section_ratings = array_filter($project_ratings, function($rating) use ($section_key) {
+            return $rating->section === $section_key;
+        });
+        
+        // Todos pour cette section
+        $section_todos = array_filter($project_todos, function($todo) use ($section_key) {
+            return $todo->section === $section_key;
+        });
+        
+        // Statistiques des todos
+        $todos_total = count($section_todos);
+        $todos_completed = count(array_filter($section_todos, function($todo) {
+            return intval($todo->is_completed) === 1;
+        }));
+        $todos_pending = $todos_total - $todos_completed;
+        $completion_rate = $todos_total > 0 ? round(($todos_completed / $todos_total) * 100, 1) : 0;
+        
+        // Note moyenne pour cette section
+        $average_rating = 0;
+        $latest_rating = null;
+        if (!empty($section_ratings)) {
+            $ratings_values = array_column($section_ratings, 'rating');
+            $average_rating = round(array_sum($ratings_values) / count($ratings_values), 1);
+            
+            // Dernière note avec métadonnées
+            $latest_rating_obj = reset($section_ratings);
+            $latest_rating = array(
+                'rating' => intval($latest_rating_obj->rating),
+                'comment' => $latest_rating_obj->comment,
+                'admin_name' => $latest_rating_obj->admin_name ?? 'Admin',
+                'created_at' => WP_BMC_Database::format_date_for_display($latest_rating_obj->created_at),
+                'raw_date' => $latest_rating_obj->created_at
+            );
+        }
+        
+        $sections_data[$section_key] = array(
+            'title' => $section_config['title'],
+            'content' => $section_content,
+            'content_length' => strlen(strip_tags($section_content)),
+            'color' => $section_config['color'],
+            'is_synthetic' => $section_config['synthetic'],
+            'placeholder' => $section_config['placeholder'],
+            'grid_position' => array(
+                'column' => $section_config['grid-column'],
+                'row' => $section_config['grid-row']
+            ),
+            'ratings' => array(
+                'count' => count($section_ratings),
+                'average' => $average_rating,
+                'latest' => $latest_rating
+            ),
+            'todos' => array(
+                'total' => $todos_total,
+                'completed' => $todos_completed,
+                'pending' => $todos_pending,
+                'completion_rate' => $completion_rate,
+                'items' => array_map(function($todo) {
+                    return array(
+                        'id' => intval($todo->id),
+                        'text' => $todo->task_text,
+                        'completed' => intval($todo->is_completed) === 1,
+                        'created_at' => WP_BMC_Database::format_date_for_display($todo->created_at),
+                        'raw_date' => $todo->created_at
+                    );
+                }, array_values($section_todos))
+            )
+        );
+    }
+    
+    // Calculer les statistiques globales du projet
+    $total_todos = count($project_todos);
+    $total_completed = count(array_filter($project_todos, function($todo) {
+        return intval($todo->is_completed) === 1;
+    }));
+    $global_completion_rate = $total_todos > 0 ? round(($total_completed / $total_todos) * 100, 1) : 0;
+    
+    // Note moyenne globale
+    $global_average_rating = 0;
+    if (!empty($project_ratings)) {
+        $all_ratings = array_column($project_ratings, 'rating');
+        $global_average_rating = round(array_sum($all_ratings) / count($all_ratings), 1);
+    }
+    
+    // Structure JSON complète pour Gotenberg
+    $pdf_data = array(
+        'document' => array(
+            'title' => 'Business Model Canvas - ' . $project->title,
+            'author' => $user->first_name . ' ' . $user->last_name,
+            'subject' => 'Business Model Canvas',
+            'creator' => 'WP Business Model Canvas Plugin',
+            'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql')),
+            'generated_timestamp' => current_time('timestamp'),
+            'language' => 'fr'
+        ),
+        'project' => array(
+            'id' => intval($project_id),
+            'title' => $project->title,
+            'description' => $project->description,
+            'status' => $project->status,
+            'created_at' => WP_BMC_Database::format_date_for_display($project->created_at),
+            'updated_at' => WP_BMC_Database::format_date_for_display($project->updated_at),
+            'raw_created_at' => $project->created_at,
+            'raw_updated_at' => $project->updated_at
+        ),
+        'user' => array(
+            'id' => intval($user->user_id),
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'full_name' => $user->first_name . ' ' . $user->last_name,
+            'email' => $user->email,
+            'company' => $user->company
+        ),
+        'canvas' => array(
+            'sections' => $sections_data,
+            'view_modes' => array('global', 'synthetic'),
+            'sections_order' => array_keys($sections_config)
+        ),
+        'statistics' => array(
+            'todos' => array(
+                'total' => $total_todos,
+                'completed' => $total_completed,
+                'pending' => $total_todos - $total_completed,
+                'completion_rate' => $global_completion_rate
+            ),
+            'ratings' => array(
+                'total_ratings' => count($project_ratings),
+                'average_rating' => $global_average_rating,
+                'sections_rated' => count(array_unique(array_column($project_ratings, 'section'))),
+                'sections_total' => count($sections_config)
+            ),
+            'content' => array(
+                'total_characters' => array_sum(array_map(function($section) {
+                    return $section['content_length'];
+                }, $sections_data)),
+                'sections_with_content' => count(array_filter($sections_data, function($section) {
+                    return $section['content_length'] > 0;
+                })),
+                'completion_percentage' => round((count(array_filter($sections_data, function($section) {
+                    return $section['content_length'] > 0;
+                })) / count($sections_config)) * 100, 1)
+            )
+        ),
+        'template' => array(
+            'type' => 'business_model_canvas',
+            'version' => '2.0',
+            'format' => 'a4',
+            'orientation' => 'landscape',
+            'margins' => array(
+                'top' => '1cm',
+                'right' => '1cm',
+                'bottom' => '1cm',
+                'left' => '1cm'
+            )
+        ),
+        'meta' => array(
+            'export_type' => 'pdf',
+            'wordpress_version' => get_bloginfo('version'),
+            'plugin_version' => '2.0.0',
+            'php_version' => PHP_VERSION,
+            'timezone' => wp_timezone_string(),
+            'locale' => get_locale()
+        )
     );
-    
-    // Créer le fichier JSON
-    $filename = 'bmc-data-export-' . date('Y-m-d-H-i-s') . '.json';
-    $filepath = WP_CONTENT_DIR . '/uploads/' . $filename;
-    
-    file_put_contents($filepath, json_encode($data, JSON_PRETTY_PRINT));
-    
+   
     wp_send_json_success(array(
-        'file_url' => content_url('/uploads/' . $filename)
+        'pdf_data' => $pdf_data,
+        'message' => 'Données PDF générées avec succès'
     ));
 }
 
