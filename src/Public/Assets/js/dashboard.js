@@ -1308,7 +1308,7 @@ jQuery(document).ready(function($) {
             if (revision.rating !== null && revision.rating !== undefined) {
                 ratingInfo = `
                     <div class="revision-rating">
-                        <span class="revision-score">${revision.rating}10</span>
+                        <span class="revision-score">${revision.rating}/10</span>
                         <span class="revision-admin">Par ${revision.admin_name || 'Admin'}</span>
                     </div>
                 `;
@@ -1394,7 +1394,7 @@ jQuery(document).ready(function($) {
             var ratingHtml = `
                 <div class="revision-rating-info">
                     <div class="revision-score-display">
-                        <span class="score">${revision.rating}10</span>
+                        <span class="score">${revision.rating}/10</span>
                         <span class="admin-name">Noté par ${revision.admin_name || 'Admin'}</span>
                     </div>
                     ${revision.rating_comment ? `<div class="revision-comment-display">
@@ -1697,29 +1697,100 @@ jQuery(document).ready(function($) {
     
     // Modifier le texte d'une tâche (avec opération différée)
     function editTodo(todoId, currentText) {
-        var newText = prompt('Modifier la tâche:', currentText);
+        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        var $todoText = $todoItem.find('.todo-text');
         
-        if (newText === null || newText.trim() === currentText) {
-            return; // Annulé ou pas de changement
+        // Créer un input d'édition
+        var $editInput = $('<input type="text" class="todo-edit-input">')
+            .val(currentText)
+            .css({
+                'width': '100%',
+                'border': '2px solid #007cba',
+                'border-radius': '4px',
+                'padding': '8px',
+                'font-size': '14px',
+                'background': '#fff'
+            });
+        
+        // Créer les boutons de validation/annulation
+        var $editActions = $('<div class="todo-edit-actions">')
+            .css({
+                'display': 'flex',
+                'gap': '8px',
+                'margin-top': '8px'
+            })
+            .html(`
+                <button type="button" class="todo-save-edit" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-check"></i> Sauver
+                </button>
+                <button type="button" class="todo-cancel-edit" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+            `);
+        
+        // Remplacer le texte par l'input
+        $todoText.hide();
+        $todoItem.find('.todo-actions').hide();
+        $todoText.after($editInput).after($editActions);
+        
+        // Focus sur l'input
+        $editInput.focus().select();
+        
+        // Fonction pour sauvegarder
+        function saveEdit() {
+            var newText = $editInput.val().trim();
+            
+            if (!newText) {
+                WP_BMC_Toast.warning('Le texte de la tâche ne peut pas être vide');
+                $editInput.focus();
+                return;
+            }
+            
+            if (newText === currentText) {
+                cancelEdit();
+                return;
+            }
+            
+            // Mettre à jour l'interface
+            $todoText.text(newText).show();
+            $editInput.remove();
+            $editActions.remove();
+            $todoItem.find('.todo-actions').show();
+            
+            // Ajouter à la liste des opérations en attente
+            pendingOperations.update.push({
+                todo_id: todoId,
+                new_text: newText
+            });
+            
+            // Marquer comme modifié
+            markAsDirty();
+            
+            WP_BMC_Toast.success('Tâche modifiée avec succès !');
         }
         
-        newText = newText.trim();
-        if (!newText) {
-            WP_BMC_Toast.warning('Le texte de la tâche ne peut pas être vide');
-            return;
+        // Fonction pour annuler
+        function cancelEdit() {
+            $todoText.show();
+            $editInput.remove();
+            $editActions.remove();
+            $todoItem.find('.todo-actions').show();
         }
         
-        // Mettre à jour l'interface immédiatement
-        $('.todo-item[data-todo-id="' + todoId + '"] .todo-text').text(newText);
+        // Événements
+        $editActions.find('.todo-save-edit').on('click', saveEdit);
+        $editActions.find('.todo-cancel-edit').on('click', cancelEdit);
         
-        // Ajouter à la liste des opérations en attente
-        pendingOperations.update.push({
-            todo_id: todoId,
-            new_text: newText
+        // Sauvegarder avec Entrée, annuler avec Échap
+        $editInput.on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEdit();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEdit();
+            }
         });
-        
-        // Marquer comme modifié
-        markAsDirty();
     }
     
     // Supprimer une tâche

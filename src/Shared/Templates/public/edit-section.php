@@ -51,9 +51,9 @@ if (!defined('ABSPATH')) {
 
         <!-- Actions d'édition -->
         <div class="edit-actions">
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button>
+            <!-- <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button> -->
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="request-grading">Demander une notation</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="request-grading">Demander une notation</button>
         </div>
 
         <div class="rating-section" id="rating-section">
@@ -99,10 +99,11 @@ if (!defined('ABSPATH')) {
                 <span class="todo-count">
                     <span id="todo-completed-count">0</span>/<span id="todo-total-count">0</span> terminées
                 </span>
-                <span id="todo-save-indicator" class="save-indicator" style="display: none;">
+                
+            </div>
+            <span id="todo-save-indicator" class="save-indicator" style="display: none;">
                     <i class="fas fa-circle"></i>
                 </span>
-            </div>
         </header>
 
         <div class="todo-add-form">

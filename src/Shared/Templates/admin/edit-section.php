@@ -95,12 +95,13 @@ if (!defined('ABSPATH')) {
                 <span class="todo-count">
                     <span id="todo-completed-count">0</span>/<span id="todo-total-count">0</span> terminées
                 </span>
-                <span id="todo-save-indicator" class="save-indicator" style="display: none;">
-                    <i class="fas fa-circle"></i>
-                </span>
+
             </div>
+            <span id="todo-save-indicator" class="save-indicator" style="display: none;">
+                <i class="fas fa-circle"></i>
+            </span>
         </header>
-        
+
         <div class="todo-add-form">
             <div class="todo-input-group">
                 <input type="text" id="todo-input" placeholder="Ajouter une nouvelle tâche..." maxlength="255">
@@ -109,7 +110,7 @@ if (!defined('ABSPATH')) {
                 </button>
             </div>
         </div>
-        
+
         <div class="todo-list-container">
             <ul id="todo-list" class="todo-list">
                 <!-- Les tâches seront chargées dynamiquement -->
