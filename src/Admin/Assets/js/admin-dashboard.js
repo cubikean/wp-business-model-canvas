@@ -4,6 +4,56 @@
 
 jQuery(document).ready(function ($) {
   // ========================================
+  // AUTO-OUVERTURE DE LA POPUP DE NOTATION
+  // ========================================
+  
+  // Vérifier si on doit auto-ouvrir une popup de notation
+  function checkAutoGradeSection() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var autoGradeSection = urlParams.get('auto_grade_section');
+    
+    if (autoGradeSection) {
+      // Attendre que la page soit entièrement chargée
+      setTimeout(function() {
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        var userId = urlParams.get('user_id');
+        
+        if (projectId && autoGradeSection) {
+          // Obtenir le titre de la section
+          var sectionTitle = getSectionTitle(autoGradeSection);
+          
+          // Ouvrir la popup de notation
+          openGradingModal(projectId, autoGradeSection, sectionTitle);
+          
+          // Nettoyer l'URL pour éviter de ré-ouvrir la popup au refresh
+          var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + 
+                      "?admin_view=true&view=global&user_id=" + userId + "&project_id=" + projectId;
+          window.history.replaceState({}, document.title, newUrl);
+        }
+      }, 1000); // Délai pour s'assurer que tout est chargé
+    }
+  }
+  
+  // Fonction pour obtenir le titre d'une section
+  function getSectionTitle(sectionKey) {
+    var titles = {
+      'key_partners': 'Partenaires clés',
+      'key_activities': 'Activités clés',
+      'key_resources': 'Ressources clés',
+      'value_propositions': 'Propositions de valeur',
+      'customer_relationships': 'Relations clients',
+      'channels': 'Canaux',
+      'customer_segments': 'Segments clients',
+      'cost_structure': 'Structure des coûts',
+      'revenue_streams': 'Sources de revenus'
+    };
+    return titles[sectionKey] || sectionKey;
+  }
+  
+  // Exécuter la vérification
+  checkAutoGradeSection();
+  
+  // ========================================
   // RECHERCHE D'UTILISATEURS
   // ========================================
   $("#users-search").on("input", function () {
@@ -142,14 +192,17 @@ jQuery(document).ready(function ($) {
   $(document).on("click", ".grade-btn", function () {
     var projectId = $(this).data("project-id");
     var userId = $(this).data("user-id");
+    var section = $(this).data("section");
 
-    // Rediriger vers le canvas de l'utilisateur avec vue admin
+    // Rediriger vers le canvas de l'utilisateur avec vue admin et auto-ouvrir la popup de notation
     var url =
       window.location.origin +
-      "/business-model-canvas/?admin_view=true&user_id=" +
+      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
       userId +
       "&project_id=" +
-      projectId;
+      projectId +
+      "&auto_grade_section=" +
+      encodeURIComponent(section);
     window.open(url, "_blank");
   });
 
@@ -157,14 +210,17 @@ jQuery(document).ready(function ($) {
   $(document).on("click", ".grade-section-btn", function () {
     var projectId = $(this).data("project-id");
     var userId = $(this).data("user-id");
+    var section = $(this).data("section");
 
     // Rediriger vers le canvas de l'utilisateur avec vue admin
     var url =
       window.location.origin +
-      "/business-model-canvas/?admin_view=true&user_id=" +
+      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
       userId +
       "&project_id=" +
-      projectId;
+      projectId +
+      "&auto_grade_section=" +
+      encodeURIComponent(section);
     window.open(url, "_blank");
   });
 
@@ -185,7 +241,7 @@ jQuery(document).ready(function ($) {
     var userId = $(this).data("user-id");
     var url =
       window.location.origin +
-      "/business-model-canvas/?admin_view=true&user_id=" +
+      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
       userId;
     window.open(url, "_blank");
   });
@@ -199,88 +255,7 @@ jQuery(document).ready(function ($) {
   // ========================================
   // EXPORT DES DONNÉES
   // ========================================
-  $("#export-users-btn").on("click", function () {
-    var $btn = $(this);
-    var originalText = $btn.text();
-
-    $btn.prop("disabled", true).text("Export en cours...");
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_export_users",
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          // Télécharger le fichier
-          var link = document.createElement("a");
-          link.href = response.data.file_url;
-          link.download = "utilisateurs-bmc.csv";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } else {
-          WP_BMC_Toast.error("Erreur lors de l'export : " + response.data);
-        }
-      }
-    ).always(function () {
-      $btn.prop("disabled", false).text(originalText);
-    });
-  });
-
-  $("#export-data-btn").on("click", function () {
-    var $btn = $(this);
-    var originalText = $btn.text();
-
-    $btn.prop("disabled", true).text("Export en cours...");
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_export_all_data",
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          var link = document.createElement("a");
-          link.href = response.data.file_url;
-          link.download = "bmc-data-export.json";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        } else {
-          WP_BMC_Toast.error("Erreur lors de l'export : " + response.data);
-        }
-      }
-    ).always(function () {
-      $btn.prop("disabled", false).text(originalText);
-    });
-  });
-
-  $("#clear-cache-btn").on("click", function () {
-    var $btn = $(this);
-    var originalText = $btn.text();
-
-    $btn.prop("disabled", true).text("Nettoyage...");
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_clear_cache",
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          WP_BMC_Toast.success("Cache vidé avec succès !");
-        } else {
-          WP_BMC_Toast.error("Erreur lors du nettoyage : " + response.data);
-        }
-      }
-    ).always(function () {
-      $btn.prop("disabled", false).text(originalText);
-    });
-  });
+ 
 
   // ========================================
   // FONCTIONS UTILITAIRES
@@ -437,101 +412,7 @@ jQuery(document).ready(function ($) {
     $("#users-count").text(visibleCount + " utilisateur(s) sur " + totalCount);
   }
 
-  // Fonction pour éditer un utilisateur dans une popup
-  function editUserInPopup(userId) {
-    var popup = $(
-      '<div class="wp-bmc-popup user-edit-popup">' +
-        '<div class="popup-overlay"></div>' +
-        '<div class="popup-content">' +
-        '<div class="popup-header">' +
-        "<h3>Éditer l'utilisateur</h3>" +
-        '<button class="popup-close">&times;</button>' +
-        "</div>" +
-        '<div class="popup-body">' +
-        '<div class="user-edit-loading">Chargement...</div>' +
-        "</div>" +
-        "</div>" +
-        "</div>"
-    );
-
-    $("body").append(popup);
-    popup.fadeIn(300);
-
-    // Charger le formulaire d'édition
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_get_user_edit_form",
-        user_id: userId,
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          popup.find(".user-edit-loading").html(response.data.html);
-        } else {
-          popup
-            .find(".user-edit-loading")
-            .html(
-              '<div class="error">Erreur lors du chargement du formulaire.</div>'
-            );
-        }
-      }
-    );
-
-    // Gérer la fermeture
-    popup.find(".popup-close, .popup-overlay").on("click", function () {
-      popup.fadeOut(300, function () {
-        popup.remove();
-      });
-    });
-  }
-
-  // Sauvegarder les modifications d'un utilisateur
-  $(document).on("submit", "#user-edit-form", function (e) {
-    e.preventDefault();
-
-    var $form = $(this);
-    var $submitBtn = $form.find('button[type="submit"]');
-    var originalText = $submitBtn.text();
-
-    $submitBtn.prop("disabled", true).text("Sauvegarde...");
-
-    var formData = $form.serialize();
-    formData += "&action=wp_bmc_update_user&nonce=" + wp_bmc_admin_ajax.nonce;
-
-    $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
-      if (response.success) {
-        WP_BMC_Toast.success("Utilisateur mis à jour avec succès.");
-        $(".user-edit-popup").fadeOut(300, function () {
-          $(this).remove();
-        });
-        // Recharger la page pour voir les changements
-        window.location.reload();
-      } else {
-        WP_BMC_Toast.error(
-          "Erreur lors de la mise à jour : " + response.data
-        );
-      }
-    }).always(function () {
-      $submitBtn.prop("disabled", false).text(originalText);
-    });
-  });
-
-  // Fonction pour afficher des messages (dépréciée - utiliser WP_BMC_Toast à la place)
-  function showMessage(message, type) {
-    // Rediriger vers le système de toast
-    if (type === 'success') {
-      WP_BMC_Toast.success(message);
-    } else if (type === 'error') {
-      WP_BMC_Toast.error(message);
-    } else if (type === 'warning') {
-      WP_BMC_Toast.warning(message);
-    } else {
-      WP_BMC_Toast.info(message);
-    }
-  }
-
-  // Fonction pour mettre à jour le compteur de notifications
+   // Fonction pour mettre à jour le compteur de notifications
   function updateNotificationCount() {
     var remainingNotifications = $(".notification-item").length;
     var $badge = $(".notification-badge");

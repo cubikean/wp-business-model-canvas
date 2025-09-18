@@ -90,19 +90,17 @@ jQuery(document).ready(function($) {
         return urlParams.get('project_id');
     }
    
-    // Fonction pour afficher les notifications
+    // Fonction pour afficher les notifications (utilise maintenant le système de toast)
     function showNotification(message, type = 'info') {
-        const notification = $('<div>')
-            .addClass('wp-bmc-notification')
-            .addClass(type)
-            .text(message)
-            .appendTo('body');
-        
-        setTimeout(function() {
-            notification.fadeOut(function() {
-                $(this).remove();
-            });
-        }, 3000);
+        if (type === 'success') {
+            WP_BMC_Toast.success(message);
+        } else if (type === 'error') {
+            WP_BMC_Toast.error(message);
+        } else if (type === 'warning') {
+            WP_BMC_Toast.warning(message);
+        } else {
+            WP_BMC_Toast.info(message);
+        }
     }
     
     // Gestion des formulaires avec validation
@@ -284,29 +282,6 @@ jQuery(document).ready(function($) {
     // Styles CSS supplémentaires pour les nouvelles fonctionnalités
     const additionalStyles = `
         <style>
-            .wp-bmc-notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 4px;
-                color: white;
-                font-weight: 600;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-            }
-            
-            .wp-bmc-notification.success {
-                background: #28a745;
-            }
-            
-            .wp-bmc-notification.error {
-                background: #dc3545;
-            }
-            
-            .wp-bmc-notification.info {
-                background: #17a2b8;
-            }
             
             .field-error {
                 color: #dc3545;

@@ -1121,83 +1121,7 @@ function wp_bmc_clear_cache_handler() {
     ));
 }
 
-// Handler pour obtenir le formulaire d'édition utilisateur (admin)
-add_action('wp_ajax_wp_bmc_get_user_edit_form', 'wp_bmc_get_user_edit_form_handler');
-function wp_bmc_get_user_edit_form_handler() {
-    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
-    
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Accès réservé aux administrateurs.');
-    }
-    
-    $user_id = intval($_POST['user_id']);
-    $user = get_user_by('id', $user_id);
-    
-    if (!$user) {
-        wp_send_json_error('Utilisateur non trouvé.');
-    }
-    
-    $html = '<form id="user-edit-form">';
-    $html .= '<input type="hidden" name="user_id" value="' . $user_id . '">';
-    $html .= '<div class="form-group">';
-    $html .= '<label for="display_name">Nom d\'affichage :</label>';
-    $html .= '<input type="text" id="display_name" name="display_name" value="' . esc_attr($user->display_name) . '" required>';
-    $html .= '</div>';
-    $html .= '<div class="form-group">';
-    $html .= '<label for="user_email">Email :</label>';
-    $html .= '<input type="email" id="user_email" name="user_email" value="' . esc_attr($user->user_email) . '" required>';
-    $html .= '</div>';
-    $html .= '<div class="form-group">';
-    $html .= '<label for="company">Entreprise :</label>';
-    $html .= '<input type="text" id="company" name="company" value="' . esc_attr(get_user_meta($user_id, 'company', true)) . '">';
-    $html .= '</div>';
-    $html .= '<div class="form-actions">';
-    $html .= '<button type="submit" class="button button-primary">Sauvegarder</button>';
-    $html .= '<button type="button" class="button popup-close">Annuler</button>';
-    $html .= '</div>';
-    $html .= '</form>';
-    
-    wp_send_json_success(array(
-        'html' => $html
-    ));
-}
 
-// Handler pour mettre à jour un utilisateur (admin)
-add_action('wp_ajax_wp_bmc_update_user', 'wp_bmc_update_user_handler');
-function wp_bmc_update_user_handler() {
-    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
-    
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Accès réservé aux administrateurs.');
-    }
-    
-    $user_id = intval($_POST['user_id']);
-    $display_name = sanitize_text_field($_POST['display_name']);
-    $user_email = sanitize_email($_POST['user_email']);
-    $company = sanitize_text_field($_POST['company']);
-    
-    if (!$user_id || !$display_name || !$user_email) {
-        wp_send_json_error('Données manquantes.');
-    }
-    
-    // Mettre à jour l'utilisateur
-    $result = wp_update_user(array(
-        'ID' => $user_id,
-        'display_name' => $display_name,
-        'user_email' => $user_email
-    ));
-    
-    if (is_wp_error($result)) {
-        wp_send_json_error('Erreur lors de la mise à jour : ' . $result->get_error_message());
-    }
-    
-    // Mettre à jour les métadonnées
-    update_user_meta($user_id, 'company', $company);
-    
-    wp_send_json_success(array(
-        'message' => 'Utilisateur mis à jour avec succès.'
-    ));
-}
 
 // ========================================
 // HANDLERS POUR LA GESTION DES TODOS
@@ -1231,7 +1155,7 @@ function wp_bmc_add_todo_handler() {
     $todo_id = WP_BMC_Database::add_todo($project_id, $section, $task_text);
     
     if ($todo_id) {
-        wp_send_json_success(array(
+    wp_send_json_success(array(
             'message' => 'Tâche ajoutée avec succès !',
             'todo_id' => $todo_id
         ));
@@ -1317,7 +1241,7 @@ function wp_bmc_toggle_todo_handler() {
     $result = WP_BMC_Database::toggle_todo($todo_id, $project_id);
     
     if ($result) {
-        wp_send_json_success(array(
+    wp_send_json_success(array(
             'message' => 'État de la tâche mis à jour.'
         ));
     } else {

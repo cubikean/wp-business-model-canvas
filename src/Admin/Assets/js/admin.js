@@ -107,19 +107,17 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Notifications d'administration
+    // Notifications d'administration (utilise maintenant le système de toast)
     function showAdminNotification(message, type = 'info') {
-        const notification = $('<div>')
-            .addClass('wp-bmc-admin-notification')
-            .addClass(type)
-            .text(message)
-            .appendTo('.wrap');
-        
-        setTimeout(function() {
-            notification.fadeOut(function() {
-                $(this).remove();
-            });
-        }, 5000);
+        if (type === 'success') {
+            WP_BMC_Toast.success(message);
+        } else if (type === 'error') {
+            WP_BMC_Toast.error(message);
+        } else if (type === 'warning') {
+            WP_BMC_Toast.warning(message);
+        } else {
+            WP_BMC_Toast.info(message);
+        }
     }
     
     // Recherche dans les tableaux
@@ -271,30 +269,6 @@ jQuery(document).ready(function($) {
     // Styles CSS supplémentaires pour les fonctionnalités JavaScript
     const additionalStyles = `
         <style>
-            .wp-bmc-admin-notification {
-                position: fixed;
-                top: 32px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 100000;
-                animation: slideInRight 0.3s ease;
-                max-width: 300px;
-            }
-            
-            .wp-bmc-admin-notification.success {
-                background: #28a745;
-            }
-            
-            .wp-bmc-admin-notification.error {
-                background: #dc3545;
-            }
-            
-            .wp-bmc-admin-notification.info {
-                background: #17a2b8;
-            }
             
             .wp-bmc-search {
                 width: 100%;
@@ -392,16 +366,6 @@ jQuery(document).ready(function($) {
                 color: #6c757d;
             }
             
-            @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
             
             .wp-bmc-admin-form input.error,
             .wp-bmc-admin-form textarea.error {

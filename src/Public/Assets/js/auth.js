@@ -12,7 +12,6 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var $form = $(this);
-        var $message = $('#wp-bmc-login-message');
         var $submitBtn = $form.find('button[type="submit"]');
         
         // Désactiver le bouton pendant la soumission
@@ -27,15 +26,15 @@ jQuery(document).ready(function($) {
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
-                $message.html('<div class="wp-bmc-message success">' + response.data.message + '</div>').show();
+                WP_BMC_Toast.success(response.data.message);
                 setTimeout(function() {
                     window.location.href = response.data.redirect_url;
                 }, 1500);
             } else {
-                $message.html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                WP_BMC_Toast.error(response.data);
             }
         }).fail(function() {
-            $message.html('<div class="wp-bmc-message error">Erreur de connexion. Veuillez réessayer.</div>').show();
+            WP_BMC_Toast.error('Erreur de connexion. Veuillez réessayer.');
         }).always(function() {
             // Réactiver le bouton
             $submitBtn.prop('disabled', false).text('Se connecter');
@@ -49,7 +48,6 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var $form = $(this);
-        var $message = $('#wp-bmc-register-message');
         var $submitBtn = $form.find('button[type="submit"]');
         
         // Validation côté client
@@ -57,12 +55,12 @@ jQuery(document).ready(function($) {
         var confirmPassword = $('#confirm_password').val();
         
         if (password !== confirmPassword) {
-            $message.html('<div class="wp-bmc-message error">Les mots de passe ne correspondent pas.</div>').show();
+            WP_BMC_Toast.error('Les mots de passe ne correspondent pas.');
             return;
         }
         
         if (password.length < 6) {
-            $message.html('<div class="wp-bmc-message error">Le mot de passe doit contenir au moins 6 caractères.</div>').show();
+            WP_BMC_Toast.error('Le mot de passe doit contenir au moins 6 caractères.');
             return;
         }
         
@@ -81,15 +79,15 @@ jQuery(document).ready(function($) {
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
-                $message.html('<div class="wp-bmc-message success">' + response.data.message + '</div>').show();
+                WP_BMC_Toast.success(response.data.message);
                 setTimeout(function() {
                     window.location.href = response.data.redirect_url;
                 }, 1500);
             } else {
-                $message.html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                WP_BMC_Toast.error(response.data);
             }
         }).fail(function() {
-            $message.html('<div class="wp-bmc-message error">Erreur d\'inscription. Veuillez réessayer.</div>').show();
+            WP_BMC_Toast.error('Erreur d\'inscription. Veuillez réessayer.');
         }).always(function() {
             // Réactiver le bouton
             $submitBtn.prop('disabled', false).text('S\'inscrire');
@@ -115,12 +113,10 @@ jQuery(document).ready(function($) {
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
-                // Afficher un message de succès avant la redirection
-                $('body').append('<div class="wp-bmc-logout-message" style="position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 15px; border-radius: 5px; z-index: 9999;">' + response.data.message + '</div>');
-                
+                WP_BMC_Toast.success(response.data.message);
                 setTimeout(function() {
                     window.location.href = response.data.redirect_url;
-                }, 1000);
+                }, 1500);
             } else {
                 WP_BMC_Toast.error('Erreur lors de la déconnexion : ' + response.data);
             }
@@ -206,16 +202,6 @@ jQuery(document).ready(function($) {
     // ANIMATIONS ET UX
     // ========================================
     
-    // Animation des messages
-    $('.wp-bmc-message').on('show', function() {
-        $(this).hide().fadeIn(300);
-    });
-    
-    // Auto-hide des messages d'erreur après 5 secondes
-    setInterval(function() {
-        $('.wp-bmc-message.error').fadeOut(500);
-    }, 5000);
-    
     // Focus sur le premier champ vide
     $('form').on('submit', function() {
         var $firstEmpty = $(this).find('input[required]:invalid').first();
@@ -228,23 +214,15 @@ jQuery(document).ready(function($) {
     // UTILITAIRES
     // ========================================
     
-    // Fonction pour afficher un message
-    function showMessage(selector, message, type) {
-        var $message = $(selector);
-        $message.html('<div class="wp-bmc-message ' + type + '">' + message + '</div>').show();
-    }
-    
     // Fonction pour nettoyer les formulaires
     function clearForm(formSelector) {
         $(formSelector)[0].reset();
-        $(formSelector + ' .wp-bmc-message').hide();
         $(formSelector + ' input').removeClass('error valid');
         $('.password-match-indicator, .password-strength-indicator').remove();
     }
     
     // Exposer les fonctions globalement si nécessaire
     window.WP_BMC_Auth = {
-        showMessage: showMessage,
         clearForm: clearForm
     };
     

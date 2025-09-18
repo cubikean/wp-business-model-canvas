@@ -113,7 +113,6 @@ jQuery(document).ready(function($) {
         
         var $form = $(this);
         var $submitBtn = $form.find('button[type="submit"]');
-        var $message = $('#wp-bmc-dashboard-message');
         
         // Désactiver le bouton pendant la soumission
         $submitBtn.prop('disabled', true).text('Création en cours...');
@@ -448,9 +447,9 @@ jQuery(document).ready(function($) {
                  // Recharger la liste des fichiers
                  var sectionName = $('#wp-bmc-edit-view').attr('data-section');
                  loadSectionFiles(sectionName);
-                 $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message success">Fichier supprimé avec succès !</div>').show();
+                 WP_BMC_Toast.success('Fichier supprimé avec succès !');
              } else {
-                 $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                 WP_BMC_Toast.error(response.data);
              }
          });
      }
@@ -506,9 +505,6 @@ jQuery(document).ready(function($) {
             WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
             
             // Masquer le message après 3 secondes
-            setTimeout(function() {
-                $('#wp-bmc-dashboard-message').fadeOut();
-            }, 3000);
         }
     }
     
@@ -737,13 +733,7 @@ jQuery(document).ready(function($) {
                     loadSectionFiles(sectionName);
                     
                     // Afficher le message de succès
-                    var $message = $('#wp-bmc-canvas-message');
-                    if ($message.length > 0) {
-                        $message.html('<div class="wp-bmc-message success">Fichiers uploadés avec succès !</div>').show();
-                        setTimeout(function() { $message.fadeOut(); }, 3000);
-                    } else {
-                        WP_BMC_Toast.success('Fichiers uploadés avec succès !');
-                    }
+                    WP_BMC_Toast.success('Fichiers uploadés avec succès !');
                 } else {
                     console.error('Erreur upload:', response.data);
                     WP_BMC_Toast.error('Erreur lors de l\'upload : ' + response.data);
@@ -991,7 +981,6 @@ jQuery(document).ready(function($) {
     // ========================================
     $('#wp-bmc-save-canvas').on('click', function() {
         var $btn = $(this);
-        var $message = $('#wp-bmc-dashboard-message');
         var originalText = $btn.text();
         
         // Désactiver le bouton
@@ -1100,10 +1089,10 @@ jQuery(document).ready(function($) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">' + response.data + '</div>').show();
+                WP_BMC_Toast.error(response.data);
             }
         }).fail(function() {
-            $('#wp-bmc-dashboard-message').html('<div class="wp-bmc-message error">Erreur lors de la génération du PDF.</div>').show();
+            WP_BMC_Toast.error('Erreur lors de la génération du PDF.');
         }).always(function() {
             // Réactiver le bouton
             $btn.prop('disabled', false).text(originalText);
@@ -1149,20 +1138,6 @@ jQuery(document).ready(function($) {
     // ANIMATIONS ET UX
     // ========================================
     
-    // Animation des messages
-    $('.wp-bmc-message').on('show', function() {
-        $(this).hide().fadeIn(300);
-    });
-    
-    // Auto-hide des messages de succès après 3 secondes
-    setInterval(function() {
-        $('.wp-bmc-message.success').fadeOut(500);
-    }, 3000);
-    
-    // Auto-hide des messages d'erreur après 5 secondes
-    setInterval(function() {
-        $('.wp-bmc-message.error').fadeOut(500);
-    }, 5000);
     
     // Focus sur le premier champ vide lors de la création
     $('#wp-bmc-create-first-canvas-form').on('submit', function() {

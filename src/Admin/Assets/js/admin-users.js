@@ -281,33 +281,4 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // ========================================
-    // EXPORT DES DONNÉES
-    // ========================================
-    $('#export-users-btn').on('click', function() {
-        var $btn = $(this);
-        var originalText = $btn.text();
-        
-        $btn.prop('disabled', true).text('Export en cours...');
-        
-        $.post(ajaxurl, {
-            action: 'wp_bmc_export_users',
-            nonce: wp_bmc_admin_ajax.nonce
-        }, function(response) {
-            if (response.success) {
-                // Télécharger le fichier
-                var link = document.createElement('a');
-                link.href = response.data.file_url;
-                link.download = 'utilisateurs-bmc.csv';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                WP_BMC_Toast.error('Erreur lors de l\'export : ' + response.data);
-            }
-        }).always(function() {
-            $btn.prop('disabled', false).text(originalText);
-        });
-    });
-    
 });

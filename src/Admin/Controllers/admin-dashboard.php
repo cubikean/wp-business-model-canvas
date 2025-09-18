@@ -224,24 +224,7 @@ $recent_projects = $wpdb->get_results("
         </table>
     </div>
     
-    <!-- Actions d'administration -->
-    <div class="wp-bmc-actions-section">
-        <h2>⚙️ Actions d'administration</h2>
-        
-        <div class="admin-actions">
-            <button type="button" id="export-users-btn" class="button button-secondary">
-                <i class="fas fa-download"></i> Exporter les utilisateurs (CSV)
-            </button>
-            
-            <button type="button" id="export-data-btn" class="button button-secondary">
-                <i class="fas fa-database"></i> Exporter toutes les données
-            </button>
-            
-            <button type="button" id="clear-cache-btn" class="button button-secondary">
-                <i class="fas fa-broom"></i> Vider le cache
-            </button>
-        </div>
-    </div>
+   
     
     <!-- Informations système -->
     <div class="wp-bmc-system-section">
