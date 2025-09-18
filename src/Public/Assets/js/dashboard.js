@@ -165,7 +165,7 @@ jQuery(document).ready(function($) {
     // Fonction pour charger une vue du canvas via AJAX
     function loadCanvasView(view) {
         var $canvasContainer = $('.canvas-container');
-        var $loadingIndicator = $('<div class="canvas-loading">Chargement...</div>');
+        var $loadingIndicator = $('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement de la vue...</span></div>');
         
         // Afficher l'indicateur de chargement
         $canvasContainer.html($loadingIndicator);
@@ -525,13 +525,10 @@ jQuery(document).ready(function($) {
         }
         
         // Afficher le loader pour la liste de fichiers
-        $('#files-list').addClass('loading');
+        $('#files-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des fichiers...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             console.log('Réponse chargement fichiers:', response);
-            
-            // Retirer le loader
-            $('#files-list').removeClass('loading');
             
             if (response.success) {
                 console.log('Fichiers chargés:', response.data.files);
@@ -542,9 +539,6 @@ jQuery(document).ready(function($) {
                 $('#files-list').html('<div class="no-files">Aucun fichier attaché</div>');
             }
         }).fail(function() {
-            // Retirer le loader en cas d'erreur
-            $('#files-list').removeClass('loading');
-            
             // Afficher un message d'erreur
             $('#files-list').html('<div class="no-files">Erreur de connexion</div>');
         });
@@ -559,15 +553,12 @@ jQuery(document).ready(function($) {
         };
 
         // Afficher le loader pour la liste de documents
-        $('#documents-list').addClass('loading');
+        $('#documents-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des documents...</span></div>');
         
         // Afficher le loader pour la grille de documents dans la popup
-        $('#documents-grid').addClass('loading');
+        $('#documents-grid').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des documents...</span></div>');
 
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            // Retirer les loaders
-            $('#documents-list').removeClass('loading');
-            $('#documents-grid').removeClass('loading');
             
             if (response.success) {
                 displayReferenceDocuments(response.data.documents, sectionName);
@@ -577,10 +568,6 @@ jQuery(document).ready(function($) {
                 $('#documents-grid').html('<div class="no-documents">Erreur lors du chargement des documents</div>');
             }
         }).fail(function() {
-            // Retirer les loaders en cas d'erreur
-            $('#documents-list').removeClass('loading');
-            $('#documents-grid').removeClass('loading');
-            
             // Afficher un message d'erreur
             $('#documents-list').html('<div class="no-documents">Erreur de connexion</div>');
             $('#documents-grid').html('<div class="no-documents">Erreur de connexion</div>');
@@ -818,13 +805,10 @@ jQuery(document).ready(function($) {
         };
         
         // Afficher le loader pour la grille de documents
-        $('#documents-grid').addClass('loading');
+        $('#documents-grid').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des documents...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             console.log('Réponse chargement documents:', response);
-            
-            // Retirer le loader
-            $('#documents-grid').removeClass('loading');
             
             if (response.success) {
                 console.log('Documents chargés:', response.data.documents);
@@ -834,9 +818,6 @@ jQuery(document).ready(function($) {
                 $('#documents-grid').html('<div class="no-documents">Erreur lors du chargement des documents</div>');
             }
         }).fail(function() {
-            // Retirer le loader en cas d'erreur
-            $('#documents-grid').removeClass('loading');
-            
             // Afficher un message d'erreur
             $('#documents-grid').html('<div class="no-documents">Erreur de connexion</div>');
         });
@@ -1226,6 +1207,9 @@ jQuery(document).ready(function($) {
         console.log('Chargement des révisions pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
+        // Afficher le loader pour les révisions
+        $('#revisions-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des révisions...</span></div>');
+        
         $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_revisions',
             section: section,
@@ -1246,6 +1230,9 @@ jQuery(document).ready(function($) {
         console.log('Chargement de la note pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
+        // Afficher le loader pour la note
+        $('#rating-section').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement de la note...</span></div>');
+        
         $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_rating',
             section: section,
@@ -1254,12 +1241,30 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 console.log('data:', response.data);
+                // Restaurer la structure HTML de la section rating avant d'afficher
+                $('#rating-section').html(`
+                    <div class="rating-display" id="rating-display">
+                        <div class="rating-score">
+                            <span class="rating-score-number" id="rating-score-number">-</span>
+                            <span class="rating-score-total">10</span>
+                        </div>
+                        <div class="rating-comment" id="rating-comment">
+                            <p class="no-rating">Aucune note attribuée</p>
+                        </div>
+                        <div class="rating-meta" id="rating-meta">
+                            <small class="rating-date"></small>
+                            <small class="rating-admin"></small>
+                        </div>
+                    </div>
+                `);
                 displaySectionRating(response.data.rating);
             } else {    
                 console.error('Erreur lors du chargement de la note:', response.data);
+                $('#rating-section').html('<div class="no-rating">Aucune note disponible</div>');
             }
         }).fail(function() {
             console.error('Erreur de connexion lors du chargement de la note');
+            $('#rating-section').html('<div class="no-rating">Erreur de connexion</div>');
         });
     }
 
@@ -1303,7 +1308,7 @@ jQuery(document).ready(function($) {
             if (revision.rating !== null && revision.rating !== undefined) {
                 ratingInfo = `
                     <div class="revision-rating">
-                        <span class="revision-score">${revision.rating}/10</span>
+                        <span class="revision-score">${revision.rating}10</span>
                         <span class="revision-admin">Par ${revision.admin_name || 'Admin'}</span>
                     </div>
                 `;
@@ -1370,14 +1375,8 @@ jQuery(document).ready(function($) {
     
     // Afficher le popup de révision
     function showRevisionPopup(revision) {
-        var date = new Date(revision.created_at);
-        var formattedDate = date.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        // Utiliser la date formatée par PHP selon les conventions
+        var formattedDate = revision.formatted_date || revision.created_at;
         
         var reasonLabel = getRevisionReasonLabel(revision.revision_reason);
         
@@ -1386,13 +1385,16 @@ jQuery(document).ready(function($) {
         $('#revision-reason').text(reasonLabel);
         $('#revision-content').html(revision.content || '<p class="empty-content">Aucun contenu dans cette révision</p>');
         
-        // Ajouter les informations de notation si disponibles
-        var $revisionInfo = $('.revision-info');
+        // Nettoyer et ajouter les informations de notation si disponibles
+        var $revisionInfo = $('.popup-body .revision-info');
+        // Supprimer toutes les infos de notation précédentes
+        $revisionInfo.find('.revision-rating-info').remove();
+        
         if (revision.rating !== null && revision.rating !== undefined) {
             var ratingHtml = `
                 <div class="revision-rating-info">
                     <div class="revision-score-display">
-                        <span class="score">${revision.rating}/10</span>
+                        <span class="score">${revision.rating}10</span>
                         <span class="admin-name">Noté par ${revision.admin_name || 'Admin'}</span>
                     </div>
                     ${revision.rating_comment ? `<div class="revision-comment-display">
@@ -1401,9 +1403,6 @@ jQuery(document).ready(function($) {
                 </div>
             `;
             $revisionInfo.append(ratingHtml);
-        } else {
-            // Supprimer les infos de notation précédentes
-            $revisionInfo.find('.revision-rating-info').remove();
         }
         
         $('#wp-bmc-revision-popup').fadeIn(300);
@@ -1456,6 +1455,9 @@ jQuery(document).ready(function($) {
             displayTodos(todoCache[sectionName].todos, todoCache[sectionName].stats);
             return;
         }
+        
+        // Afficher le loader pour les todos
+        $('#todo-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des tâches...</span></div>');
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         

@@ -9,7 +9,7 @@
     // Configuration par défaut
     const defaultConfig = {
         duration: 4000,
-        position: 'top-right',
+        position: 'bottom-right',
         closeButton: true,
         progress: true
     };

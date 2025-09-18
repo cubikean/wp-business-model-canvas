@@ -5,7 +5,7 @@
 /* Conteneur principal */
 .wp-bmc-toast-container {
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
     z-index: 9999;
     pointer-events: none;
@@ -46,24 +46,36 @@
 /* Types de toast */
 .wp-bmc-toast-success {
     border-left-color: var(--dashboard-green, #86c171);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-green_light-rating);
+    }
 }
 
 .wp-bmc-toast-error {
     border-left-color: var(--dashboard-primary, #ff4b6b);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-red_light-rating);
+    }
 }
 
 .wp-bmc-toast-warning {
     border-left-color: var(--dashboard-orange, #f18949);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-orange_light-rating);
+    }
 }
 
 .wp-bmc-toast-info {
     border-left-color: var(--dashboard-blue, #62aadd);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-blue_light-rating);
+    }
 }
 
 /* Contenu du toast */
 .wp-bmc-toast-content {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     padding: 16px;
     gap: 12px;
 }
@@ -97,7 +109,8 @@
 .wp-bmc-toast-message {
     flex: 1;
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1;
+    font-weight: 600;
     color: var(--dashboard-text, #2f52a0);
     word-wrap: break-word;
 }
@@ -116,6 +129,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    i{
+        font-size: 16px;
+        color: var(--dashboard-text, #2f52a0);
+    }
 }
 
 .wp-bmc-toast-close:hover {

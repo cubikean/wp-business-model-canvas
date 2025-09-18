@@ -56,7 +56,6 @@ if (!defined('ABSPATH')) {
         </div>
 
         <div class="rating-section" id="rating-section">
-            <h4>Note de la brique</h4>
             <div class="rating-display" id="rating-display">
                 <div class="rating-score">
                     <span class="rating-score-number" id="rating-score-number">-</span>

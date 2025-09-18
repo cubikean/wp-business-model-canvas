@@ -2112,7 +2112,7 @@ body.popup-open {
   justify-content: flex-end;
   align-items: center;
   gap: 16px;
-  padding: 0 32px 32px 32px;
+  padding: 0 32px;
 }
 
 .history-section {
@@ -2312,7 +2312,7 @@ body.popup-open {
 }
 
 .revision-score {
-  background: var(--dashboard-green);
+  background: var(--edit-view-color);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
@@ -2330,7 +2330,7 @@ body.popup-open {
   padding: 1rem;
   background: var(--light-green);
   border-radius: 8px;
-  border-left: 3px solid var(--dashboard-green);
+  border-left: 3px solid var(--edit-view-color);
 }
 
 .revision-score-display {
@@ -2343,7 +2343,7 @@ body.popup-open {
 .revision-score-display .score {
   font-size: 1.5rem;
   font-weight: bold;
-  color: var(--dashboard-green);
+  color: var(--edit-view-color);
 }
 
 .revision-score-display .admin-name {
@@ -2778,6 +2778,129 @@ body.popup-open {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ========================================
+   LOADERS ET INDICATEURS DE CHARGEMENT
+   ======================================== */
+
+/* Loader principal */
+.wp-bmc-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 14px;
+    gap: 15px;
+}
+
+.wp-bmc-loader span {
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+/* Spinner animation */
+.loader-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #e9ecef;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Loader pour les boutons */
+.btn-loader {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.btn-loader .loader-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #ffffff;
+    margin-right: 8px;
+}
+
+/* Indicateur de sauvegarde flottant */
+.saving-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 10000;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: slideInRight 0.3s ease-out;
+}
+
+.saving-indicator .loader-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #ffffff;
+    margin-right: 10px;
+}
+
+/* Animation pour les loaders */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Loader pour les sections spécifiques */
+#files-list .wp-bmc-loader,
+#documents-list .wp-bmc-loader,
+#documents-grid .wp-bmc-loader,
+#revisions-list .wp-bmc-loader,
+#rating-section .wp-bmc-loader,
+#todo-list .wp-bmc-loader {
+    min-height: 100px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #dee2e6;
+}
+
+/* Loader pour le canvas */
+.canvas-container .wp-bmc-loader {
+    min-height: 300px;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+}
+
+/* États de chargement pour les boutons */
+button:disabled .loader-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Loader compact pour les petites zones */
+.wp-bmc-loader.compact {
+    padding: 20px;
+    min-height: auto;
+}
+
+.wp-bmc-loader.compact .loader-spinner {
+    width: 20px;
+    height: 20px;
 }
 
 /* Responsive design pour les todos */

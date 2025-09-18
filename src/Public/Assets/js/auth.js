@@ -14,8 +14,8 @@ jQuery(document).ready(function($) {
         var $form = $(this);
         var $submitBtn = $form.find('button[type="submit"]');
         
-        // Désactiver le bouton pendant la soumission
-        $submitBtn.prop('disabled', true).text('Connexion en cours...');
+        // Afficher le loader et désactiver le bouton
+        $submitBtn.prop('disabled', true).html('<div class="btn-loader"><div class="loader-spinner"></div></div>Connexion en cours...');
         
         var formData = {
             action: 'wp_bmc_login',
@@ -36,7 +36,7 @@ jQuery(document).ready(function($) {
         }).fail(function() {
             WP_BMC_Toast.error('Erreur de connexion. Veuillez réessayer.');
         }).always(function() {
-            // Réactiver le bouton
+            // Réactiver le bouton et supprimer le loader
             $submitBtn.prop('disabled', false).text('Se connecter');
         });
     });
@@ -64,8 +64,8 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        // Désactiver le bouton pendant la soumission
-        $submitBtn.prop('disabled', true).text('Inscription en cours...');
+        // Afficher le loader et désactiver le bouton
+        $submitBtn.prop('disabled', true).html('<div class="btn-loader"><div class="loader-spinner"></div></div>Inscription en cours...');
         
         var formData = {
             action: 'wp_bmc_register',
@@ -89,7 +89,7 @@ jQuery(document).ready(function($) {
         }).fail(function() {
             WP_BMC_Toast.error('Erreur d\'inscription. Veuillez réessayer.');
         }).always(function() {
-            // Réactiver le bouton
+            // Réactiver le bouton et supprimer le loader
             $submitBtn.prop('disabled', false).text('S\'inscrire');
         });
     });
@@ -103,8 +103,8 @@ jQuery(document).ready(function($) {
         var $btn = $(this);
         var originalText = $btn.text();
         
-        // Désactiver le bouton
-        $btn.prop('disabled', true).text('Déconnexion...');
+        // Afficher le loader et désactiver le bouton
+        $btn.prop('disabled', true).html('<div class="btn-loader"><div class="loader-spinner"></div></div>Déconnexion...');
         
         var formData = {
             action: 'wp_bmc_logout',
@@ -123,7 +123,7 @@ jQuery(document).ready(function($) {
         }).fail(function() {
             WP_BMC_Toast.error('Erreur de déconnexion. Veuillez réessayer.');
         }).always(function() {
-            // Réactiver le bouton
+            // Réactiver le bouton et supprimer le loader
             $btn.prop('disabled', false).text(originalText);
         });
     });

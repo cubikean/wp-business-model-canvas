@@ -47,6 +47,9 @@ jQuery(document).ready(function($) {
         const projectId = getProjectId();
         if (!projectId) return;
         
+        // Afficher l'indicateur de sauvegarde
+        showSavingIndicator();
+        
         const canvasData = {};
         $('.canvas-input').each(function() {
             const section = $(this).data('section');
@@ -62,9 +65,15 @@ jQuery(document).ready(function($) {
         };
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            hideSavingIndicator();
             if (response.success) {
                 showNotification('Sauvegarde automatique effectuée', 'success');
+            } else {
+                showNotification('Erreur lors de la sauvegarde', 'error');
             }
+        }).fail(function() {
+            hideSavingIndicator();
+            showNotification('Erreur de connexion lors de la sauvegarde', 'error');
         });
     }
     
@@ -197,9 +206,9 @@ jQuery(document).ready(function($) {
         if (!isSaving) {
             isSaving = true;
             const indicator = $('<div>')
-                .addClass('saving-indicator')
-                .html('<span>Sauvegarde...</span>')
-                .appendTo('.canvas-header');
+                .addClass('wp-bmc-loader saving-indicator')
+                .html('<div class="loader-spinner"></div><span>Sauvegarde...</span>')
+                .appendTo('body');
         }
     }
     
