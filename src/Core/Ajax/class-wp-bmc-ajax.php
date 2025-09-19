@@ -2152,7 +2152,7 @@ function wp_bmc_debug_create_todos_table_handler() {
 // Handler pour réinitialiser toutes les données du plugin
 add_action('wp_ajax_wp_bmc_reset_all_data', 'wp_bmc_reset_all_data_handler');
 function wp_bmc_reset_all_data_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
     
     // Vérifier que l'utilisateur est administrateur
     if (!current_user_can('manage_options')) {

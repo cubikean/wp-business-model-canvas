@@ -4,6 +4,9 @@
  */
 
 jQuery(document).ready(function($) {
+    console.log('✅ admin-users.js chargé avec succès !');
+    console.log('Variables AJAX disponibles:', typeof wp_bmc_admin_ajax !== 'undefined' ? 'OUI' : 'NON');
+    console.log('Toast disponible:', typeof WP_BMC_Toast !== 'undefined' ? 'OUI' : 'NON');
     
     // ========================================
     // RECHERCHE D'UTILISATEURS

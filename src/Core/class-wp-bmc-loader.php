@@ -119,13 +119,50 @@ class WP_BMC_Loader {
             return;
         }
         
+        // Charger le système de toasts
         wp_enqueue_script(
-            'wp-bmc-admin',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin.js',
+            'wp-bmc-toast',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js',
             array('jquery'),
             WP_BMC_VERSION,
             true
         );
+        
+        wp_enqueue_style(
+            'wp-bmc-toast-css',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
+        // Script principal d'administration
+        wp_enqueue_script(
+            'wp-bmc-admin',
+            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin.js',
+            array('jquery', 'wp-bmc-toast'),
+            WP_BMC_VERSION,
+            true
+        );
+        
+        // Script de gestion des utilisateurs
+        wp_enqueue_script(
+            'wp-bmc-admin-users',
+            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users.js',
+            array('jquery', 'wp-bmc-toast'),
+            WP_BMC_VERSION,
+            true
+        );
+        
+        // Variables AJAX pour les scripts admin
+        wp_localize_script('wp-bmc-admin', 'wp_bmc_admin_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+        ));
+        
+        wp_localize_script('wp-bmc-admin-users', 'wp_bmc_admin_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+        ));
     }
     
     /**
