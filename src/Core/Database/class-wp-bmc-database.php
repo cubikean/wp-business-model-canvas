@@ -1215,4 +1215,55 @@ class WP_BMC_Database {
         // Recréer la table
         self::ensure_todos_table_exists();
     }
+    
+    /**
+     * Réinitialiser toutes les données du plugin
+     * Vide toutes les tables mais conserve la structure
+     */
+    public static function reset_all_data() {
+        global $wpdb;
+        
+        $tables = array(
+            $wpdb->prefix . 'bmc_section_revisions',
+            $wpdb->prefix . 'bmc_todos', 
+            $wpdb->prefix . 'bmc_ratings',
+            $wpdb->prefix . 'bmc_canvas_data',
+            $wpdb->prefix . 'bmc_projects',
+            $wpdb->prefix . 'bmc_users'
+        );
+        
+        $total_deleted = 0;
+        $results = array();
+        
+        foreach ($tables as $table) {
+            // Vérifier si la table existe
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+            
+            if ($table_exists) {
+                // Compter les enregistrements avant suppression
+                $count = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+                
+                // Vider la table
+                $result = $wpdb->query("TRUNCATE TABLE $table");
+                
+                if ($result !== false) {
+                    $total_deleted += $count;
+                    $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : $count enregistrements supprimés";
+                    error_log("wp_bmc_reset_data - Table $table : $count enregistrements supprimés");
+                } else {
+                    $results[] = "Erreur lors de la suppression de la table " . str_replace($wpdb->prefix, '', $table);
+                    error_log("wp_bmc_reset_data - Erreur lors de la suppression de la table $table");
+                }
+            } else {
+                $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : n'existe pas";
+            }
+        }
+        
+        error_log("wp_bmc_reset_data - Total : $total_deleted enregistrements supprimés");
+        
+        return array(
+            'total_deleted' => $total_deleted,
+            'details' => $results
+        );
+    }
 }

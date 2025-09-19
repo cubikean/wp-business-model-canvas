@@ -342,6 +342,38 @@ $categories = array(
         </div>
     </div>
     
+    <!-- Outils d'administration -->
+    <div class="wp-bmc-section">
+        <h2>Outils d'administration</h2>
+        <p>Outils de maintenance et de gestion avancée du plugin.</p>
+        
+        <div class="wp-bmc-admin-tools">
+            <div class="admin-tool-card">
+                <h3>⚠️ Réinitialisation des données</h3>
+                <p>
+                    <strong>ATTENTION :</strong> Cette action supprimera définitivement toutes les données du plugin :
+                    <br>• Tous les utilisateurs et leurs profils
+                    <br>• Tous les projets et canvas
+                    <br>• Toutes les notes et révisions
+                    <br>• Toutes les tâches et fichiers
+                    <br><br>
+                    <em>Cette action est irréversible !</em>
+                </p>
+                <button id="wp-bmc-reset-data-btn" class="button button-secondary button-large" style="color: #d63638; border-color: #d63638;">
+                    <i class="fas fa-trash-alt"></i> Réinitialiser toutes les données
+                </button>
+            </div>
+            
+            <div class="admin-tool-card">
+                <h3>📊 Export des données</h3>
+                <p>Exporter toutes les données du plugin au format CSV pour sauvegarde ou analyse.</p>
+                <button id="wp-bmc-export-users-btn" class="button button-primary">
+                    <i class="fas fa-download"></i> Exporter les utilisateurs
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Liste des projets -->
     <div class="wp-bmc-section">
         <h2>Projets des utilisateurs</h2>
@@ -565,6 +597,52 @@ $categories = array(
 
 .wp-list-table td {
     vertical-align: middle;
+}
+
+/* Outils d'administration */
+.wp-bmc-admin-tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.admin-tool-card {
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.admin-tool-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.admin-tool-card p {
+    margin-bottom: 15px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.admin-tool-card button {
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-tool-card button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#wp-bmc-reset-data-btn:hover {
+    background-color: #d63638 !important;
+    color: white !important;
 }
 </style>
 

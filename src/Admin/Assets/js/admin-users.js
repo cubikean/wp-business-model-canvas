@@ -281,4 +281,102 @@ jQuery(document).ready(function($) {
         }
     });
     
+    // ========================================
+    // RESET DES DONNÉES
+    // ========================================
+    
+    // Bouton de reset des données
+    $(document).on('click', '#wp-bmc-reset-data-btn', function() {
+        resetAllData();
+    });
+    
+    // Bouton d'export des utilisateurs
+    $(document).on('click', '#wp-bmc-export-users-btn', function() {
+        exportUsers();
+    });
+    
+    function resetAllData() {
+        // Confirmation critique avec plusieurs étapes
+        if (!confirm('⚠️ ATTENTION : Cette action va supprimer TOUTES les données du plugin !\n\nCela inclut :\n- Tous les utilisateurs\n- Tous les projets\n- Tous les canvas\n- Toutes les notes et révisions\n- Toutes les tâches\n\nÊtes-vous sûr de vouloir continuer ?')) {
+            return;
+        }
+        
+        if (!confirm('🚨 DERNIÈRE CHANCE !\n\nCette action est IRRÉVERSIBLE !\n\nTapez "OUI" dans la prochaine boîte pour confirmer.')) {
+            return;
+        }
+        
+        var finalConfirm = prompt('Pour confirmer la suppression complète, tapez exactement : SUPPRIMER TOUT');
+        if (finalConfirm !== 'SUPPRIMER TOUT') {
+            WP_BMC_Toast.info('Opération annulée.');
+            return;
+        }
+        
+        // Afficher un loader
+        $('#wp-bmc-reset-data-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Suppression en cours...');
+        
+        $.post(wp_bmc_admin_ajax.ajax_url, {
+            action: 'wp_bmc_reset_all_data',
+            nonce: wp_bmc_admin_ajax.nonce,
+            confirm: 'RESET_ALL_DATA'
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('✅ Toutes les données ont été supprimées !');
+                WP_BMC_Toast.info('📊 ' + response.data.total_deleted + ' enregistrements supprimés');
+                
+                // Afficher les détails
+                if (response.data.details && response.data.details.length > 0) {
+                    setTimeout(function() {
+                        var details = response.data.details.join('\n');
+                        WP_BMC_Toast.info('Détails :\n' + details);
+                    }, 2000);
+                }
+                
+                // Recharger la page après un délai
+                setTimeout(function() {
+                    location.reload();
+                }, 4000);
+                
+            } else {
+                WP_BMC_Toast.error('❌ Erreur : ' + response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion lors de la suppression');
+        }).always(function() {
+            // Restaurer le bouton
+            $('#wp-bmc-reset-data-btn').prop('disabled', false).html('<i class="fas fa-trash-alt"></i> Réinitialiser toutes les données');
+        });
+    }
+    
+    function exportUsers() {
+        // Afficher un loader
+        $('#wp-bmc-export-users-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Export en cours...');
+        
+        $.post(wp_bmc_admin_ajax.ajax_url, {
+            action: 'wp_bmc_export_users',
+            nonce: wp_bmc_admin_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('✅ Export terminé !');
+                
+                // Télécharger le fichier
+                var link = document.createElement('a');
+                link.href = response.data.file_url;
+                link.download = '';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                WP_BMC_Toast.info('📥 Téléchargement du fichier CSV...');
+                
+            } else {
+                WP_BMC_Toast.error('❌ Erreur lors de l\'export : ' + response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion lors de l\'export');
+        }).always(function() {
+            // Restaurer le bouton
+            $('#wp-bmc-export-users-btn').prop('disabled', false).html('<i class="fas fa-download"></i> Exporter les utilisateurs');
+        });
+    }
+    
 });

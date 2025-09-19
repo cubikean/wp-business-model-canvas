@@ -2149,6 +2149,38 @@ function wp_bmc_debug_create_todos_table_handler() {
     ));
 }
 
+// Handler pour réinitialiser toutes les données du plugin
+add_action('wp_ajax_wp_bmc_reset_all_data', 'wp_bmc_reset_all_data_handler');
+function wp_bmc_reset_all_data_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    // Vérifier que l'utilisateur est administrateur
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Vous devez être administrateur pour effectuer cette action.');
+    }
+    
+    // Confirmation requise
+    $confirm = isset($_POST['confirm']) ? sanitize_text_field($_POST['confirm']) : '';
+    if ($confirm !== 'RESET_ALL_DATA') {
+        wp_send_json_error('Confirmation requise. Envoyez "confirm: RESET_ALL_DATA" pour confirmer la suppression.');
+    }
+    
+    try {
+        // Réinitialiser toutes les données
+        $result = WP_BMC_Database::reset_all_data();
+        
+        wp_send_json_success(array(
+            'message' => 'Toutes les données ont été réinitialisées avec succès !',
+            'total_deleted' => $result['total_deleted'],
+            'details' => $result['details']
+        ));
+        
+    } catch (Exception $e) {
+        error_log('wp_bmc_reset_all_data - Erreur : ' . $e->getMessage());
+        wp_send_json_error('Erreur lors de la réinitialisation : ' . $e->getMessage());
+    }
+}
+
 // Fonction utilitaire pour récupérer l'ID du projet actuel
 function wp_bmc_get_current_project_id() {
     // Essayer de récupérer depuis les paramètres POST
