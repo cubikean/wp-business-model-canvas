@@ -380,12 +380,13 @@
 
 .action-buttons {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
+    gap: 6px;
 }
 
 .action-buttons .button {
-    padding: 8px 12px;
+    padding: 12px;
     border-radius: 99px;
     font-size: 26px;
     font-weight: 600;
@@ -671,4 +672,119 @@
     color: var(--dashboard-dark-blue);
     border-color: var(--dashboard-dark-blue);
     box-shadow: 0 4px 8px rgba(21, 60, 168, 0.3);
+}
+
+/* ========================================
+   STYLES POUR LES GROUPES D'ÉTUDIANTS
+   ======================================== */
+
+/* Statut de groupe */
+.group-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.group-status.managed-student {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.group-status.not-managed {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.group-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-left: 8px;
+}
+
+.group-badge.my-student-badge {
+    background: #007cba;
+    color: white;
+    border: 1px solid #005a87;
+}
+
+.action-disabled {
+    padding: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    border-radius: 99px;
+    cursor: not-allowed;
+    font-size: 14px;
+}
+
+.group-status i {
+    font-size: 14px;
+}
+
+/* Boutons d'action pour les groupes */
+.add-student-btn,
+.remove-student-btn {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-student-btn {
+    background: var(--dashboard-primary);
+    border: 1px solid var(--dashboard-primary);
+    color: white;
+}
+
+.add-student-btn:hover {
+    background: var(--dashboard-dark-blue);
+    border-color: var(--dashboard-dark-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.remove-student-btn {
+    background: var(--dashboard-primary);
+    border: 1px solid var(--dashboard-primary);
+    color: white;
+}   
+
+.remove-student-btn:hover {
+    background: var(--dashboard-primary);
+    border-color: var(--dashboard-primary);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Filtre par groupe */
+#users-filter-group {
+    margin-right: 10px;
+}
+
+/* Animation pour les changements de statut */
+.group-status {
+    transition: all 0.3s ease;
+}
+
+.user-group {
+    min-width: 120px;
 }

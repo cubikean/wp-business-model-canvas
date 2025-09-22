@@ -161,6 +161,20 @@ class WP_BMC_Database {
             KEY is_completed (is_completed)
         ) $charset_collate;";
         
+        // Table des relations admin-étudiant
+        $table_admin_students = $wpdb->prefix . 'bmc_admin_students';
+        $sql_admin_students = "CREATE TABLE $table_admin_students (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            admin_id bigint(20) NOT NULL,
+            student_id bigint(20) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY admin_student (admin_id, student_id),
+            KEY admin_id (admin_id),
+            KEY student_id (student_id)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -169,6 +183,7 @@ class WP_BMC_Database {
         dbDelta($sql_section_revisions);
         dbDelta($sql_admin_notifications);
         dbDelta($sql_todos);
+        dbDelta($sql_admin_students);
     }
     
         /**
@@ -197,21 +212,54 @@ class WP_BMC_Database {
     
     /**
      * Vérifier les identifiants de connexion
+     * Accepte soit l'email soit le pseudonyme WordPress
      */
-    public static function verify_login($email, $password) {
+    public static function verify_login($login, $password) {
         global $wpdb;
         
+        // D'abord, essayer de trouver l'utilisateur par email dans notre table BMC
         $table = $wpdb->prefix . 'bmc_users';
         
         $user = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM $table WHERE email = %s",
-                $email
+                $login
             )
         );
         
         if ($user && wp_check_password($password, $user->password)) {
             return $user;
+        }
+        
+        // Si pas trouvé par email, essayer par pseudonyme WordPress
+        $wp_user = get_user_by('login', $login);
+        if ($wp_user) {
+            // Vérifier le mot de passe WordPress
+            if (wp_check_password($password, $wp_user->user_pass)) {
+                // Chercher dans notre table BMC
+                $bmc_user = $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT * FROM $table WHERE user_id = %d",
+                        $wp_user->ID
+                    )
+                );
+                
+                if ($bmc_user) {
+                    return $bmc_user;
+                }
+                
+                // Si pas dans BMC mais admin WordPress, créer un objet virtuel
+                if (user_can($wp_user->ID, 'manage_options')) {
+                    return (object) array(
+                        'user_id' => $wp_user->ID,
+                        'email' => $wp_user->user_email,
+                        'first_name' => $wp_user->first_name ?: 'Admin',
+                        'last_name' => $wp_user->last_name ?: 'WordPress',
+                        'company' => 'Administration WordPress',
+                        'is_admin' => true
+                    );
+                }
+            }
         }
         
         return false;
@@ -293,6 +341,9 @@ class WP_BMC_Database {
     public static function save_canvas_data($project_id, $section, $content) {
         global $wpdb;
         
+        // Log de débogage
+        error_log('WP_BMC_Database::save_canvas_data - project_id: ' . $project_id . ', section: ' . $section . ', content length: ' . strlen($content));
+        
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
         // Vérifier si les données existent déjà
@@ -336,6 +387,9 @@ class WP_BMC_Database {
     public static function get_canvas_data($project_id) {
         global $wpdb;
         
+        // Log de débogage
+        error_log('WP_BMC_Database::get_canvas_data - project_id: ' . $project_id);
+        
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
         $results = $wpdb->get_results(
@@ -348,8 +402,10 @@ class WP_BMC_Database {
         $data = array();
         foreach ($results as $row) {
             $data[$row->section] = $row->content;
+            error_log('WP_BMC_Database::get_canvas_data - section: ' . $row->section . ', content length: ' . strlen($row->content));
         }
         
+        error_log('WP_BMC_Database::get_canvas_data - total sections found: ' . count($data));
         return $data;
     }
     
@@ -1265,5 +1321,137 @@ class WP_BMC_Database {
             'total_deleted' => $total_deleted,
             'details' => $results
         );
+    }
+    
+    // ========================================
+    // MÉTHODES POUR LA GESTION DES GROUPES ADMIN-ÉTUDIANT
+    // ========================================
+    
+    /**
+     * Assigner un étudiant à un admin
+     */
+    public static function assign_student_to_admin($admin_id, $student_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_students';
+        
+        // Vérifier si la relation existe déjà
+        $existing = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id FROM $table WHERE admin_id = %d AND student_id = %d",
+                $admin_id, $student_id
+            )
+        );
+        
+        if ($existing) {
+            return false; // Relation déjà existante
+        }
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'admin_id' => $admin_id,
+                'student_id' => $student_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result ? $wpdb->insert_id : false;
+    }
+    
+    /**
+     * Retirer un étudiant d'un admin
+     */
+    public static function remove_student_from_admin($admin_id, $student_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_students';
+        
+        $result = $wpdb->delete(
+            $table,
+            array(
+                'admin_id' => $admin_id,
+                'student_id' => $student_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir tous les étudiants d'un admin
+     */
+    public static function get_admin_students($admin_id) {
+        global $wpdb;
+        
+        $table_admin_students = $wpdb->prefix . 'bmc_admin_students';
+        $table_users = $wpdb->prefix . 'bmc_users';
+        
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT u.*, as_rel.created_at as assigned_at
+                 FROM $table_users u
+                 JOIN $table_admin_students as_rel ON u.user_id = as_rel.student_id
+                 WHERE as_rel.admin_id = %d
+                 ORDER BY as_rel.created_at DESC",
+                $admin_id
+            )
+        );
+    }
+    
+    /**
+     * Obtenir tous les admins d'un étudiant
+     */
+    public static function get_student_admins($student_id) {
+        global $wpdb;
+        
+        $table_admin_students = $wpdb->prefix . 'bmc_admin_students';
+        
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT as_rel.admin_id, as_rel.created_at as assigned_at
+                 FROM $table_admin_students as_rel
+                 WHERE as_rel.student_id = %d
+                 ORDER BY as_rel.created_at DESC",
+                $student_id
+            )
+        );
+    }
+    
+    /**
+     * Vérifier si un étudiant est assigné à un admin
+     */
+    public static function is_student_assigned_to_admin($admin_id, $student_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_students';
+        
+        $result = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE admin_id = %d AND student_id = %d",
+                $admin_id, $student_id
+            )
+        );
+        
+        return $result > 0;
+    }
+    
+    /**
+     * Obtenir les IDs des étudiants d'un admin
+     */
+    public static function get_admin_student_ids($admin_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_admin_students';
+        
+        $results = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT student_id FROM $table WHERE admin_id = %d",
+                $admin_id
+            )
+        );
+        
+        return $results ?: array();
     }
 }

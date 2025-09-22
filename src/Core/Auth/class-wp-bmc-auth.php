@@ -57,8 +57,19 @@ class WP_BMC_Auth {
             wp_send_json_error('Cette adresse email est déjà utilisée.');
         }
         
-        // Créer l'utilisateur WordPress
-        $user_id = wp_create_user($email, $password, $email);
+        // Générer un pseudonyme unique basé sur le prénom et nom
+        $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+        $original_username = $username;
+        $counter = 1;
+        
+        // Vérifier si le pseudonyme existe déjà et en créer un unique
+        while (username_exists($username)) {
+            $username = $original_username . $counter;
+            $counter++;
+        }
+        
+        // Créer l'utilisateur WordPress avec le pseudonyme généré
+        $user_id = wp_create_user($username, $password, $email);
         
         if (is_wp_error($user_id)) {
             wp_send_json_error('Erreur lors de la création du compte.');
@@ -102,16 +113,16 @@ class WP_BMC_Auth {
     public function handle_login() {
         check_ajax_referer('wp_bmc_nonce', 'nonce');
         
-        $email = sanitize_email($_POST['email']);
+        $login = sanitize_text_field($_POST['login']);
         $password = sanitize_text_field($_POST['password']);
         
         // Validation
-        if (empty($email) || empty($password)) {
-            wp_send_json_error('Email et mot de passe requis.');
+        if (empty($login) || empty($password)) {
+            wp_send_json_error('Email/nom d\'utilisateur et mot de passe requis.');
         }
         
-        // Vérifier les identifiants
-        $user = WP_BMC_Database::verify_login($email, $password);
+        // Vérifier les identifiants (accepte email ou pseudonyme)
+        $user = WP_BMC_Database::verify_login($login, $password);
         
         if ($user) {
             // Connecter l'utilisateur
@@ -123,7 +134,7 @@ class WP_BMC_Auth {
                 'redirect_url' => home_url('/dashboard/')
             ));
         } else {
-            wp_send_json_error('Email ou mot de passe incorrect.');
+            wp_send_json_error('Email/nom d\'utilisateur ou mot de passe incorrect.');
         }
     }
     

@@ -24,6 +24,18 @@ jQuery(document).ready(function($) {
     var isDirty = false; // Indique si des changements non sauvegardés existent
     var saveTimeout = null; // Timeout pour la sauvegarde automatique
     
+    // ========================================
+    // UTILITAIRES AJAX
+    // ========================================
+    
+    // Fonction utilitaire pour obtenir le bon nonce et URL AJAX
+    function getAjaxConfig() {
+        return {
+            nonce: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce,
+            url: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url
+        };
+    }
+    
     // Fonction pour marquer les données comme modifiées
     function markAsDirty() {
         isDirty = true;
@@ -331,7 +343,27 @@ jQuery(document).ready(function($) {
         
         // Sauvegarder le contenu
         $('#edit-save').on('click', function() {
-            saveBrickContent();
+            var $btn = $(this);
+            var originalText = $btn.text();
+            var originalHtml = $btn.html();
+            
+            // Désactiver le bouton et changer le texte
+            $btn.prop('disabled', true)
+                .html('<span class="wp-bmc-loader-inline"></span> Sauvegarde...');
+            
+            // Sauvegarder avec callback pour restaurer le bouton
+            saveBrickContent(function(success) {
+                // Restaurer le bouton après la sauvegarde
+                $btn.prop('disabled', false).html(originalHtml);
+                
+                if (success) {
+                    // Optionnel : afficher un toast de succès
+                    WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
+                } else {
+                    // Optionnel : afficher un toast d'erreur
+                    WP_BMC_Toast.error('Erreur lors de la sauvegarde');
+                }
+            });
         });
         
         // Demander notation
@@ -456,7 +488,9 @@ jQuery(document).ready(function($) {
      
      // Sauvegarder le contenu de la brique
     function saveBrickContent(callback) {
+        
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
+        
         var content = '';
         
         if (window.wysiwygEditor) {
@@ -470,6 +504,7 @@ jQuery(document).ready(function($) {
         
         // Si un callback est fourni, sauvegarder via AJAX et appeler le callback
         if (callback) {
+            
             var canvasData = {};
             $('.canvas-content').each(function() {
                 var section = $(this).closest('[data-section]').data('section');
@@ -478,34 +513,33 @@ jQuery(document).ready(function($) {
             
             var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
             
+            // Utiliser le nonce admin si disponible, sinon le nonce public
+            var nonce = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce;
+            var ajaxUrl = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url;
+            
             var formData = {
                 action: 'wp_bmc_save_canvas',
-                nonce: wp_bmc_ajax.nonce,
+                nonce: nonce,
                 project_id: projectId,
                 canvas_data: canvasData
             };
             
-            $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+            console.log('Sending formData:', formData);
+            
+            $.post(ajaxUrl, formData, function(response) {
                 if (response.success) {
                     updateLastSavedTime();
                     callback(true); // Indiquer que la sauvegarde a réussi
                 } else {
-                    console.error('saveBrickContent - Erreur:', response.data);
                     callback(false); // Indiquer que la sauvegarde a échoué
                 }
             }).fail(function(xhr, status, error) {
-                console.error('saveBrickContent - Échec AJAX:', error, xhr.responseText);
                 callback(false); // Indiquer que la sauvegarde a échoué
             });
         } else {
-            // Sauvegarder automatiquement (comportement par défaut)
             autoSaveCanvas();
-            
-            // Afficher un message de succès sans fermer la vue d'édition
-            WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
-            
-            // Masquer le message après 3 secondes
         }
+        
     }
     
     // Charger les fichiers de la section
@@ -974,13 +1008,17 @@ jQuery(document).ready(function($) {
             canvasData[section] = $(this).html();
         });
         
+        // Utiliser le nonce admin si disponible, sinon le nonce public
+        var nonce = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce;
+        var ajaxUrl = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url;
+        
         var formData = {
             action: 'wp_bmc_save_canvas',
-            nonce: wp_bmc_ajax.nonce,
+            nonce: nonce,
             canvas_data: canvasData
         };
         
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+        $.post(ajaxUrl, formData, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success('Canvas sauvegardé avec succès !');
                 updateLastSavedTime();
@@ -1015,25 +1053,63 @@ jQuery(document).ready(function($) {
     });
     
     function autoSaveCanvas() {
+        console.log('=== autoSaveCanvas called ===');
+        
         // Collecter toutes les données du canvas
         var canvasData = {};
         $('.canvas-content').each(function() {
             var section = $(this).closest('[data-section]').data('section');
             canvasData[section] = $(this).html();
+            console.log('Auto-save canvas data for section', section, 'length:', canvasData[section].length);
         });
+        
+        // Récupérer le project_id depuis le conteneur
+        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
+        console.log('Auto-save Project ID from dashboard:', $('.wp-bmc-dashboard').data('project-id'));
+        console.log('Auto-save Project ID from canvas-container:', $('.wp-bmc-canvas-container').data('project-id'));
+        console.log('Auto-save Final Project ID:', projectId);
+        
+        // Utiliser le nonce admin si disponible, sinon le nonce public
+        var nonce = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce;
+        var ajaxUrl = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url;
+        
+        console.log('Auto-save using nonce:', nonce ? 'admin' : 'public');
+        console.log('Auto-save AJAX URL:', ajaxUrl);
         
         var formData = {
             action: 'wp_bmc_save_canvas',
-            nonce: wp_bmc_ajax.nonce,
+            nonce: nonce,
+            project_id: projectId,
             canvas_data: canvasData
         };
         
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+        console.log('Auto-save sending formData:', formData);
+        
+        $.post(ajaxUrl, formData, function(response) {
+            console.log('=== Auto-save AJAX Response ===');
+            console.log('Auto-save response success:', response.success);
+            console.log('Auto-save response data:', response.data);
+            
             if (response.success) {
                 $('#auto-save-status').text('Sauvegarde automatique activée');
                 updateLastSavedTime();
+                // Afficher le toast de succès seulement après validation
+                WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
+            } else {
+                console.error('Auto-save failed:', response.data);
+                // Afficher le toast d'erreur
+                WP_BMC_Toast.error('Erreur lors de la sauvegarde : ' + (response.data || 'Erreur inconnue'));
             }
+        }).fail(function(xhr, status, error) {
+            console.error('=== Auto-save AJAX Request Failed ===');
+            console.error('Auto-save status:', status);
+            console.error('Auto-save error:', error);
+            console.error('Auto-save response text:', xhr.responseText);
+            // Afficher le toast d'erreur de connexion
+            WP_BMC_Toast.error('Erreur de connexion lors de la sauvegarde');
         });
+        
+        console.log('=== autoSaveCanvas finished ===');
     }
     
     // ========================================
@@ -1325,7 +1401,7 @@ jQuery(document).ready(function($) {
             project_id: projectId,
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
-            if (response.success) {
+            if (response.success && response.data && response.data.rating) {
                 console.log('data:', response.data);
                 // Restaurer la structure HTML de la section rating avant d'afficher
                 $('#rating-section').html(`
@@ -1345,8 +1421,8 @@ jQuery(document).ready(function($) {
                 `);
                 displaySectionRating(response.data.rating);
             } else {    
-                console.error('Erreur lors du chargement de la note:', response.data);
-                $('#rating-section').html('<div class="no-rating">Aucune note disponible</div>');
+                console.log('Aucune note trouvée pour cette section');
+                displayNoRating();
             }
         }).fail(function() {
             console.error('Erreur de connexion lors du chargement de la note');
@@ -1355,6 +1431,12 @@ jQuery(document).ready(function($) {
     }
 
     function displaySectionRating(rating) {
+        // Vérifier que rating existe et a les propriétés nécessaires
+        if (!rating || rating.rating === null || rating.rating === undefined) {
+            displayNoRating();
+            return;
+        }
+        
         $('#rating-score-number').text(rating.rating);
         console.log(rating.comment);
         if(rating.comment !== null && rating.comment !== undefined && rating.comment !== '') {
@@ -1365,6 +1447,24 @@ jQuery(document).ready(function($) {
         // Utiliser la date formatée selon les paramètres WordPress
         $('#rating-meta .rating-date').text('Noté le ' + (rating.formatted_date || rating.created_at));
         $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
+    }
+
+    function displayNoRating() {
+        $('#rating-section').html(`
+            <div class="rating-display" id="rating-display">
+                <div class="rating-score">
+                    <span class="rating-score-number" id="rating-score-number">-</span>
+                    <span class="rating-score-total">10</span>
+                </div>
+                <div class="rating-comment" id="rating-comment">
+                    <p class="no-rating">Aucune note attribuée</p>
+                </div>
+                <div class="rating-meta" id="rating-meta">
+                    <small class="rating-date"></small>
+                    <small class="rating-admin"></small>
+                </div>
+            </div>
+        `);
     }
 
     // Afficher les révisions dans la liste

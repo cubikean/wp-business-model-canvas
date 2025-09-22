@@ -169,7 +169,7 @@ function get_rating_number($project_ratings, $section_name){
             break;
         }
     } 
-    return $section_rating->rating;
+    return $section_rating ? $section_rating->rating : null;
 }
 
 /**

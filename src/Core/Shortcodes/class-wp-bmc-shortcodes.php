@@ -24,7 +24,7 @@ class WP_BMC_Shortcodes {
      */
     public function login_form() {
         if (WP_BMC_Auth::is_logged_in()) {
-            return '<div class="wp-bmc-message success">Vous êtes déjà connecté. <a href="' . home_url('/dashboard/') . '">Aller au tableau de bord</a></div>';
+            return '<div class="wp-bmc-message success wp-bmc-login-form">Vous êtes déjà connecté. <a href="' . home_url('/dashboard/') . '">Aller au tableau de bord</a></div>';
         }
         
         return WP_BMC_Template_Loader::get_template_content('public/login-form');
@@ -35,7 +35,7 @@ class WP_BMC_Shortcodes {
      */
     public function register_form() {
         if (WP_BMC_Auth::is_logged_in()) {
-            return '<div class="wp-bmc-message success">Vous êtes déjà connecté. <a href="' . home_url('/dashboard/') . '">Aller au tableau de bord</a></div>';
+            return '<div class="wp-bmc-message success wp-bmc-login-form">Vous êtes déjà connecté. <a href="' . home_url('/dashboard/') . '">Aller au tableau de bord</a></div>';
         }
         
         return WP_BMC_Template_Loader::get_template_content('public/register-form');

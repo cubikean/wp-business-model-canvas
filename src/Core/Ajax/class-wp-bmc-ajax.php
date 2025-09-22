@@ -7,6 +7,60 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Handler pour ajouter un étudiant à un admin
+add_action('wp_ajax_wp_bmc_add_student', 'wp_bmc_add_student_handler');
+function wp_bmc_add_student_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes.');
+    }
+    
+    $student_id = intval($_POST['student_id']);
+    $admin_id = get_current_user_id();
+    
+    if (!$student_id) {
+        wp_send_json_error('ID étudiant invalide.');
+    }
+    
+    $result = WP_BMC_Database::assign_student_to_admin($admin_id, $student_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Étudiant ajouté avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'ajout de l\'étudiant.');
+    }
+}
+
+// Handler pour retirer un étudiant d'un admin
+add_action('wp_ajax_wp_bmc_remove_student', 'wp_bmc_remove_student_handler');
+function wp_bmc_remove_student_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes.');
+    }
+    
+    $student_id = intval($_POST['student_id']);
+    $admin_id = get_current_user_id();
+    
+    if (!$student_id) {
+        wp_send_json_error('ID étudiant invalide.');
+    }
+    
+    $result = WP_BMC_Database::remove_student_from_admin($admin_id, $student_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Étudiant retiré avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la suppression de l\'étudiant.');
+    }
+}
+
 // Handler pour créer un nouveau projet
 add_action('wp_ajax_wp_bmc_create_project', 'wp_bmc_create_project_handler');
 function wp_bmc_create_project_handler() {
@@ -40,7 +94,24 @@ function wp_bmc_create_project_handler() {
 // Handler pour sauvegarder le canvas
 add_action('wp_ajax_wp_bmc_save_canvas', 'wp_bmc_save_canvas_handler');
 function wp_bmc_save_canvas_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    // Vérifier le nonce admin ou public selon le contexte
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+        error_log('wp_bmc_save_canvas_handler - Nonce admin validé');
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+        error_log('wp_bmc_save_canvas_handler - Nonce public validé');
+    }
+    
+    if (!$nonce_valid) {
+        error_log('wp_bmc_save_canvas_handler - Nonce invalide: ' . (isset($_POST['nonce']) ? $_POST['nonce'] : 'nonce manquant'));
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
     
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Vous devez être connecté pour sauvegarder le canvas.');
@@ -53,16 +124,34 @@ function wp_bmc_save_canvas_handler() {
     $canvas_data = $_POST['canvas_data'];
     $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : null;
     
+    // Log de débogage
+    error_log('wp_bmc_save_canvas_handler - project_id reçu: ' . $project_id);
+    error_log('wp_bmc_save_canvas_handler - canvas_data: ' . print_r($canvas_data, true));
+    
     // Si pas de project_id, utiliser le projet de l'utilisateur connecté
     if (!$project_id) {
         $user = WP_BMC_Auth::get_current_user();
         $projects = WP_BMC_Database::get_user_projects($user->user_id);
         
         if (empty($projects)) {
-            wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            // Si l'utilisateur est admin et n'a pas de projet personnel, utiliser le premier projet disponible
+            if (current_user_can('manage_options')) {
+                global $wpdb;
+                $projects_table = $wpdb->prefix . 'bmc_projects';
+                $first_project = $wpdb->get_row("SELECT id FROM $projects_table ORDER BY id ASC LIMIT 1");
+                
+                if ($first_project) {
+                    $project_id = $first_project->id;
+                    error_log('wp_bmc_save_canvas_handler - Admin sans projet personnel, utilisation du projet: ' . $project_id);
+                } else {
+                    wp_send_json_error('Aucun projet trouvé dans le système.');
+                }
+            } else {
+                wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            }
+        } else {
+            $project_id = $projects[0]->id;
         }
-        
-        $project_id = $projects[0]->id;
     }
     
     // Vérifier que l'utilisateur a le droit d'accéder à ce projet
@@ -78,6 +167,7 @@ function wp_bmc_save_canvas_handler() {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
+    // Les admins peuvent toujours sauvegarder sur tous les projets
     
     // Sauvegarder chaque section du canvas
     $sections = array(
@@ -162,21 +252,24 @@ function wp_bmc_get_canvas_handler() {
         wp_send_json_error('ID de projet invalide.');
     }
     
-    // Vérifier que l'utilisateur possède ce projet
-    $user = WP_BMC_Auth::get_current_user();
-    $projects = WP_BMC_Database::get_user_projects($user->user_id);
-    $user_has_project = false;
-    
-    foreach ($projects as $project) {
-        if ($project->id == $project_id) {
-            $user_has_project = true;
-            break;
+    // Vérifier que l'utilisateur possède ce projet (sauf pour les admins)
+    if (!current_user_can('manage_options')) {
+        $user = WP_BMC_Auth::get_current_user();
+        $projects = WP_BMC_Database::get_user_projects($user->user_id);
+        $user_has_project = false;
+        
+        foreach ($projects as $project) {
+            if ($project->id == $project_id) {
+                $user_has_project = true;
+                break;
+            }
+        }
+        
+        if (!$user_has_project) {
+            wp_send_json_error('Vous n\'avez pas accès à ce projet.');
         }
     }
-    
-    if (!$user_has_project) {
-        wp_send_json_error('Vous n\'avez pas accès à ce projet.');
-    }
+    // Les admins peuvent accéder à tous les projets
     
     $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
     
@@ -554,10 +647,23 @@ function wp_bmc_delete_file_handler() {
         $projects = WP_BMC_Database::get_user_projects($user->user_id);
         
         if (empty($projects)) {
-            wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            // Si l'utilisateur est admin et n'a pas de projet personnel, utiliser le premier projet disponible
+            if (current_user_can('manage_options')) {
+                global $wpdb;
+                $projects_table = $wpdb->prefix . 'bmc_projects';
+                $first_project = $wpdb->get_row("SELECT id FROM $projects_table ORDER BY id ASC LIMIT 1");
+                
+                if ($first_project) {
+                    $project_id = $first_project->id;
+                } else {
+                    wp_send_json_error('Aucun projet trouvé dans le système.');
+                }
+            } else {
+                wp_send_json_error('Aucun projet trouvé pour cet utilisateur.');
+            }
+        } else {
+            $project_id = $projects[0]->id;
         }
-        
-        $project_id = $projects[0]->id;
     }
     
     // Vérifier que l'utilisateur a le droit d'accéder à ce projet
@@ -1866,6 +1972,15 @@ function wp_bmc_get_section_todos_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
+    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    if (!current_user_can('manage_options')) {
+        $user = WP_BMC_Auth::get_current_user();
+        if ($project->user_id != $user->user_id) {
+            wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
+        }
+    }
+    // Les admins peuvent accéder à tous les projets
+    
     // S'assurer que la table des todos existe
     WP_BMC_Database::ensure_todos_table_exists();
     
@@ -1908,6 +2023,21 @@ function wp_bmc_toggle_todo_handler() {
     
     $project_id = $todo->project_id;
     
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    if (!current_user_can('manage_options')) {
+        $user = WP_BMC_Auth::get_current_user();
+        if ($project->user_id != $user->user_id) {
+            wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
+        }
+    }
+    // Les admins peuvent modifier les tâches de tous les projets
+    
     $result = WP_BMC_Database::toggle_todo($todo_id, $project_id);
     
     if ($result) {
@@ -1948,6 +2078,21 @@ function wp_bmc_delete_todo_handler() {
     }
     
     $project_id = $todo->project_id;
+    
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    if (!current_user_can('manage_options')) {
+        $user = WP_BMC_Auth::get_current_user();
+        if ($project->user_id != $user->user_id) {
+            wp_send_json_error('Vous n\'avez pas les droits pour supprimer cette tâche.');
+        }
+    }
+    // Les admins peuvent supprimer les tâches de tous les projets
     
     $result = WP_BMC_Database::delete_todo($todo_id, $project_id);
     
@@ -1990,6 +2135,21 @@ function wp_bmc_update_todo_text_handler() {
     }
     
     $project_id = $todo->project_id;
+    
+    // Vérifier que l'utilisateur a accès à ce projet
+    $project = WP_BMC_Database::get_project($project_id);
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé.');
+    }
+    
+    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    if (!current_user_can('manage_options')) {
+        $user = WP_BMC_Auth::get_current_user();
+        if ($project->user_id != $user->user_id) {
+            wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
+        }
+    }
+    // Les admins peuvent modifier les tâches de tous les projets
     
     $result = WP_BMC_Database::update_todo_text($todo_id, $project_id, $new_text);
     
@@ -2206,6 +2366,16 @@ function wp_bmc_get_current_project_id() {
         $projects = WP_BMC_Database::get_user_projects($user->user_id);
         if (!empty($projects)) {
             return $projects[0]->id;
+        }
+        
+        // Si l'utilisateur est admin et n'a pas de projet personnel, utiliser le premier projet disponible
+        if (current_user_can('manage_options')) {
+            global $wpdb;
+            $projects_table = $wpdb->prefix . 'bmc_projects';
+            $first_project = $wpdb->get_row("SELECT id FROM $projects_table ORDER BY id ASC LIMIT 1");
+            if ($first_project) {
+                return $first_project->id;
+            }
         }
     }
     

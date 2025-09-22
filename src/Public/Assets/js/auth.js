@@ -20,7 +20,7 @@ jQuery(document).ready(function($) {
         var formData = {
             action: 'wp_bmc_login',
             nonce: wp_bmc_ajax.nonce,
-            email: $('#email').val(),
+            login: $('#login').val(),
             password: $('#password').val()
         };
         

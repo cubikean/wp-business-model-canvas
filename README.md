@@ -7,6 +7,13 @@
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/license-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
+## TODO
+- Bug Cannot read properties of null (reading 'rating') dashboard.js => 1358:47
+- Admin cannot save content (maybe link with previus bug)
+- All files be add on all Canvas
+- Missing redirects on unauthorised pages
+- Change Placeholder of single canvas
+
 ## 🚀 Nouveautés v2.0
 
 ### ✨ Structure complètement réorganisée

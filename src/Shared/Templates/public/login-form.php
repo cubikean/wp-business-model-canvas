@@ -15,8 +15,8 @@ if (!defined('ABSPATH')) {
         <?php wp_nonce_field('wp_bmc_login_nonce', 'wp_bmc_login_nonce'); ?>
         
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
+            <label for="login">Email ou nom d'utilisateur</label>
+            <input type="text" id="login" name="login" required>
         </div>
         
         <div class="form-group">
