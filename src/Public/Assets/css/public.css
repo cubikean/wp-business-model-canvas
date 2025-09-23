@@ -1194,8 +1194,7 @@
 }
 .edit-brick-btn {
   position: relative;
-  width: 46px;
-  height: 46px;
+  padding: 16px;
   border: none;
   border-radius: 50%;
   background: currentColor;
@@ -1230,8 +1229,7 @@
 /* Bouton de notation pour les admins */
 .rate-brick-btn {
   position: relative;
-  width: 46px;
-  height: 46px;
+  padding: 16px;
   border: none;
   border-radius: 50%;
   background: var(--edit-view-color);
@@ -1443,6 +1441,133 @@
   margin-bottom: 10px;
   font-weight: 600;
   color: var(--text-color);
+}
+
+/* Grading modal */
+.grading-modal .popup-content{
+  width: 500px;
+}
+
+.grading-modal .popup-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0px;
+}
+
+.grading-modal .popup-close{
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+
+.grading-modal .section-title{
+  font-weight: 600;
+  color: #aaaaaa;
+  font-size: 20px;
+}
+
+.grading-modal :is(#rating, #comment){
+  width: 100%;
+}
+
+.grading-modal #rating{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 4px;
+  background: #e0e0e0;
+  outline: none;
+  position: relative;
+}
+
+.grading-modal #rating::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid var(--edit-view-color);
+  cursor: pointer;
+  box-shadow: none;
+  position: relative;
+  z-index: 2;
+}
+
+.grading-modal #rating::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid var(--edit-view-color);
+  cursor: pointer;
+  box-shadow: none;
+  border: none;
+  position: relative;
+  z-index: 2;
+}
+
+.grading-modal #rating::-webkit-slider-track {
+  height: 10px;
+  border-radius: 4px;
+  background: #e0e0e0;
+}
+
+.grading-modal #rating::-moz-range-track {
+  height: 10px;
+  border-radius: 4px;
+  background: #e0e0e0;
+  border: none;
+}
+
+/* Conteneur du slider avec progression */
+.grading-modal .rating-slider-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Wrapper pour le slider pour calculer sa largeur */
+.grading-modal .rating-slider-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.grading-modal .rating-slider-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  height: 10px;
+  border-radius: 4px;
+  background: var(--edit-view-color);
+  width: var(--slider-progress, 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grading-modal #comment{
+  padding: 16px;
+  background-color: #fafafa;
+  border: none;
+  border-radius: 20px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.grading-modal .grading-actions{
+  display: flex;
+  justify-content: flex-end;
+}
+
+.grading-modal .rating-display{
+  flex-wrap: nowrap;
 }
 
 /* Éditeur WYSIWYG */

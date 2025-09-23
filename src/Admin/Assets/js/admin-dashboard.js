@@ -240,6 +240,14 @@ jQuery(document).ready(function ($) {
     );
   });
 
+  $(document).on("click", "#inner-rate-brick-btn", function () {
+    openGradingModal(
+      $(".wp-bmc-dashboard").data("project-id"),
+      $("#wp-bmc-edit-view").data("section"),
+      $("#wp-bmc-edit-view #edit-section-title").text()
+    );
+  });
+
   // ========================================
   // ACTIONS SUR LES UTILISATEURS
   // ========================================
@@ -726,11 +734,11 @@ jQuery(document).ready(function ($) {
   // Fonction pour ouvrir la modal de notation
   function openGradingModal(projectId, section, sectionTitle) {
     var modal = $(
-      '<div class="wp-bmc-popup grading-modal">' +
+      '<div class="wp-bmc-popup grading-modal" data-section="' + section + '">' +
         '<div class="popup-overlay"></div>' +
         '<div class="popup-content">' +
         '<div class="popup-header">' +
-        "<h3>Noter la section</h3>" +
+        "<h3>Score de maturité</h3>" +
         '<span class="section-title">' +
         sectionTitle +
         "</span>" +
@@ -741,21 +749,20 @@ jQuery(document).ready(function ($) {
         projectId +
         '">' +
         '<div class="grading-field">' +
-        '<label for="rating">Note (0-10) :</label>' +
         '<div class="rating-slider-container">' +
+        '<div class="rating-slider-wrapper">' +
         '<input type="range" id="rating" name="rating" min="0" max="10" value="5" step="1" required>' +
+        "</div>" +
         '<div class="rating-display">' +
-        '<span id="rating-value">5</span>/10' +
+        '<span id="rating-value">5</span>' +
         "</div>" +
         "</div>" +
         "</div>" +
         '<div class="grading-field">' +
-        '<label for="comment">Commentaire :</label>' +
-        '<textarea id="comment" name="comment" rows="4" placeholder="Commentaires sur cette section..."></textarea>' +
+        '<textarea id="comment" name="comment" rows="7" placeholder="Commentaires sur cette section..."></textarea>' +
         "</div>" +
         '<div class="grading-actions">' +
-        '<button type="submit" class="button button-primary">Sauvegarder la note</button>' +
-        '<button type="button" class="button popup-close button-secondary">Annuler</button>' +
+        '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary btn-solid">Enregistrer</button>' +
         "</div>" +
         "</form>" +
         "</div>" +
@@ -770,7 +777,16 @@ jQuery(document).ready(function ($) {
     modal.find("#rating").on("input", function () {
       var value = $(this).val();
       modal.find("#rating-value").text(value);
+      
+      // Mettre à jour la couleur de progression du slider
+      var progress = (value / 10) * 100;
+      modal.find(".rating-slider-wrapper").css('--slider-progress', progress + '%');
     });
+    
+    // Initialiser la couleur de progression au chargement
+    var initialValue = modal.find("#rating").val();
+    var initialProgress = (initialValue / 10) * 100;
+    modal.find(".rating-slider-wrapper").css('--slider-progress', initialProgress + '%');
 
     // Gérer la soumission du formulaire
     modal.find("#grading-form").on("submit", function (e) {

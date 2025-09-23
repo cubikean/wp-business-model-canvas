@@ -15,7 +15,9 @@ if (!defined('ABSPATH')) {
     <div class="edit-view-container">
         <div class="edit-header">
             <button class="back-to-dashboard-btn" id="back-to-dashboard">
-                <i class="fas fa-arrow-left"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42a.996.996 0 0 0-1.41 0l-6.59 6.59a.996.996 0 0 0 0 1.41l6.59 6.59a.996.996 0 1 0 1.41-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1" />
+                </svg>
             </button>
             <h2 id="edit-section-title">Éditer la brique</h2>
         </div>
@@ -23,7 +25,7 @@ if (!defined('ABSPATH')) {
         <div class="edit-content">
             <!-- Section éditeur -->
             <div class="sub-section">
-                <p>Placeholder pour le contenu de la brique</p>
+                <p id="edit-section-placeholder">Placeholder pour le contenu de la brique</p>
                 <button type="button" class="view-documents-btn btn-outline --icon" id="view-documents-btn">
                     <i class="fa fa-file-lines"></i>Ressources pédagogiques
                 </button>
@@ -51,7 +53,7 @@ if (!defined('ABSPATH')) {
 
         <!-- Actions d'édition -->
         <div class="edit-actions">
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button>
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="inner-rate-brick-btn">Score de maturité</button>
             <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
         </div>
 

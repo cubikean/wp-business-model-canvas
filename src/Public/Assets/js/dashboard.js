@@ -224,9 +224,10 @@ jQuery(document).ready(function($) {
             
             var sectionName = $(this).data('section');
             var sectionTitle = getSectionTitle(sectionName);
+            var sectionPlaceholder = getSectionPlaceholder(sectionName);
             var currentContent = $('[data-section="' + sectionName + '"] .canvas-content').html();
             
-            openEditView(sectionName, sectionTitle, currentContent);
+            openEditView(sectionName, sectionTitle, sectionPlaceholder, currentContent);
         });
     }
     
@@ -241,13 +242,14 @@ jQuery(document).ready(function($) {
         
         var sectionName = $(this).data('section');
         var sectionTitle = getSectionTitle(sectionName);
+        var sectionPlaceholder = getSectionPlaceholder(sectionName);
         var currentContent = $('[data-section="' + sectionName + '"] .canvas-content').html();
         
-        openEditView(sectionName, sectionTitle, currentContent);
+        openEditView(sectionName, sectionTitle, sectionPlaceholder, currentContent);
     });
     
     // Ouvrir la vue d'édition
-    function openEditView(sectionName, sectionTitle, content) {
+    function openEditView(sectionName, sectionTitle, sectionPlaceholder, content) {
         // Sauvegarder les todos de la section actuelle avant de changer
         forceSave();
         
@@ -262,6 +264,7 @@ jQuery(document).ready(function($) {
         
         // Mettre à jour le contenu de la vue d'édition
         $('#edit-section-title').text(sectionTitle);
+        $('#edit-section-placeholder').text(sectionPlaceholder);
         $('#wp-bmc-edit-view').attr('data-section', sectionName);
         
         // Mettre à jour le titre des révisions pour cette brique spécifique
@@ -971,7 +974,22 @@ jQuery(document).ready(function($) {
         
         return titles[sectionName] || sectionName;
     }
-    
+
+    function getSectionPlaceholder(sectionName) {
+        var placeholders = {
+            'key_partners': 'Quelles sont mes principales dépenses ?',
+            'key_activities': 'Quels sont les caractéristiques de ton client idéal ?',
+            'key_resources': 'Quels sont les caractéristiques de ton client idéal ?',
+            'value_proposition': 'Pourquoi un client choisirait-il ton offre plutôt qu’une autre ?',
+            'customer_relationships': 'Quels sont les caractéristiques de ton client idéal ?',
+            'channels': 'Quels sont les caractéristiques de ton client idéal ?',
+            'customer_segments': 'Comment mon projet génère-t-il de l’argent ?',
+            'cost_structure': 'Quelles sont mes principales dépenses ?',
+            'revenue_streams': 'Comment mon projet génère-t-il de l’argent ?'
+        };
+        
+        return placeholders[sectionName] || sectionName;
+    }
          function getFileIcon(fileType) {
          if (!fileType) return 'file';
          
