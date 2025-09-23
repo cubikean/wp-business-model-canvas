@@ -32,6 +32,9 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
     if ($section_key === 'value_proposition') {
         $section_class .= ' value-proposition';
     }
+    if ($is_admin && in_array($section_key, $pending_grading_requests)) {
+        $section_class .= ' need-grading';
+    }
 
     ob_start();
 ?>
@@ -47,11 +50,6 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         <div class="canvas-section-header">
             <h3>
                 <?php echo esc_html($section_config['title']); ?>
-                <!-- <?php if ($is_admin && in_array($section_key, $pending_grading_requests)): ?>
-                    <span class="grading-request-indicator" title="Cette brique nécessite une notation">
-                        <i class="fas fa-star-half-alt"></i>
-                    </span>
-                <?php endif; ?> -->
             </h3>
         </div>
         <h4>

@@ -1511,29 +1511,35 @@ jQuery(document).ready(function($) {
             var ratingInfo = '';
             if (revision.rating !== null && revision.rating !== undefined) {
                 ratingInfo = `
-                    <div class="revision-rating">
-                        <span class="revision-score">${revision.rating}/10</span>
-                        <span class="revision-admin">Par ${revision.admin_name || 'Admin'}</span>
-                    </div>
+                    
+                    <div class="rating-score">
+                            <span class="rating-score-number" id="rating-score-number">${revision.rating}</span>
+                            <span class="rating-score-total">10</span>
+                        </div>
                 `;
             }
+
             
             html += `
                 <div class="revision-item" data-revision-id="${revision.id}">
-                    <div class="revision-header">
-                        <div class="revision-info">
-                            <span class="revision-number">Révision ${revisions.length - index}</span>
-                            <span class="revision-date">${formattedDate}</span>
-                        </div>
-                        <div class="revision-reason">
-                            <span class="reason-badge reason-${revision.revision_reason}">${revision.rating_comment}</span>
-                        </div>
-                        ${ratingInfo}
-                    </div>
+
                     <div class="revision-actions">
                         <button class="btn-outline --small view-revision-btn" data-revision-id="${revision.id}">
-                            <i class="fas fa-eye"></i> Voir
+                            Lire cette version
                         </button>
+                    </div>
+
+                    <div class="revision-header">
+                        ${ratingInfo}
+                        <div class="revision-reason">
+                            <span class="reason-badge reason-${revision.revision_reason}">${revision.rating_comment || 'Aucun commentaire'}</span>
+                        </div>
+                    </div>
+
+                   
+                    <div class="revision-meta">
+                        <span class="revision-admin">Par ${revision.admin_name || 'Admin'} </span>
+                        <span class="revision-date">Le ${formattedDate}</span>
                     </div>
                 </div>
             `;
