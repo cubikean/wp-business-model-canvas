@@ -1896,6 +1896,8 @@ body.popup-open {
   color: white;
   flex: 1;
   text-align: left;
+  line-break: anywhere;
+
 }
 
 #rating-comment:focus {
@@ -2368,6 +2370,7 @@ body.popup-open {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+  line-break: anywhere;
 }
 
 .reason-grading_request {

@@ -6,53 +6,62 @@ jQuery(document).ready(function ($) {
   // ========================================
   // AUTO-OUVERTURE DE LA POPUP DE NOTATION
   // ========================================
-  
+
   // Vérifier si on doit auto-ouvrir une popup de notation
   function checkAutoGradeSection() {
     var urlParams = new URLSearchParams(window.location.search);
-    var autoGradeSection = urlParams.get('auto_grade_section');
-    
+    var autoGradeSection = urlParams.get("auto_grade_section");
+
     if (autoGradeSection) {
       // Attendre que la page soit entièrement chargée
-      setTimeout(function() {
-        var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        var userId = urlParams.get('user_id');
-        
+      setTimeout(function () {
+        var projectId =
+          $(".wp-bmc-dashboard").data("project-id") ||
+          $(".wp-bmc-canvas-container").data("project-id");
+        var userId = urlParams.get("user_id");
+
         if (projectId && autoGradeSection) {
           // Obtenir le titre de la section
           var sectionTitle = getSectionTitle(autoGradeSection);
-          
+
           // Ouvrir la popup de notation
           openGradingModal(projectId, autoGradeSection, sectionTitle);
-          
+
           // Nettoyer l'URL pour éviter de ré-ouvrir la popup au refresh
-          var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + 
-                      "?admin_view=true&view=global&user_id=" + userId + "&project_id=" + projectId;
+          var newUrl =
+            window.location.protocol +
+            "//" +
+            window.location.host +
+            window.location.pathname +
+            "?admin_view=true&view=global&user_id=" +
+            userId +
+            "&project_id=" +
+            projectId;
           window.history.replaceState({}, document.title, newUrl);
         }
       }, 1000); // Délai pour s'assurer que tout est chargé
     }
   }
-  
+
   // Fonction pour obtenir le titre d'une section
   function getSectionTitle(sectionKey) {
     var titles = {
-      'key_partners': 'Partenaires clés',
-      'key_activities': 'Activités clés',
-      'key_resources': 'Ressources clés',
-      'value_propositions': 'Propositions de valeur',
-      'customer_relationships': 'Relations clients',
-      'channels': 'Canaux',
-      'customer_segments': 'Segments clients',
-      'cost_structure': 'Structure des coûts',
-      'revenue_streams': 'Sources de revenus'
+      key_partners: "Partenaires clés",
+      key_activities: "Activités clés",
+      key_resources: "Ressources clés",
+      value_propositions: "Propositions de valeur",
+      customer_relationships: "Relations clients",
+      channels: "Canaux",
+      customer_segments: "Segments clients",
+      cost_structure: "Structure des coûts",
+      revenue_streams: "Sources de revenus",
     };
     return titles[sectionKey] || sectionKey;
   }
-  
+
   // Exécuter la vérification
   checkAutoGradeSection();
-  
+
   // ========================================
   // RECHERCHE D'UTILISATEURS
   // ========================================
@@ -277,26 +286,32 @@ jQuery(document).ready(function ($) {
     var $btn = $(this);
     var userId = $btn.data("user-id");
     var userName = $btn.data("user-name");
-    
+
     $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-    
-    $.post(wp_bmc_admin_ajax.ajax_url, {
-      action: 'wp_bmc_add_student',
-      student_id: userId,
-      nonce: wp_bmc_admin_ajax.nonce
-    }, function(response) {
-      if (response.success) {
-        WP_BMC_Toast.success(response.data.message);
-        // Mettre à jour l'interface
-        updateStudentGroupStatus(userId, true);
-      } else {
-        WP_BMC_Toast.error(response.data);
+
+    $.post(
+      wp_bmc_admin_ajax.ajax_url,
+      {
+        action: "wp_bmc_add_student",
+        student_id: userId,
+        nonce: wp_bmc_admin_ajax.nonce,
+      },
+      function (response) {
+        if (response.success) {
+          WP_BMC_Toast.success(response.data.message);
+          // Mettre à jour l'interface
+          updateStudentGroupStatus(userId, true);
+        } else {
+          WP_BMC_Toast.error(response.data);
+        }
       }
-    }).fail(function() {
-      WP_BMC_Toast.error('Erreur lors de l\'ajout de l\'étudiant.');
-    }).always(function() {
-      $btn.prop("disabled", false).html('<i class="fas fa-user-plus"></i>');
-    });
+    )
+      .fail(function () {
+        WP_BMC_Toast.error("Erreur lors de l'ajout de l'étudiant.");
+      })
+      .always(function () {
+        $btn.prop("disabled", false).html('<i class="fas fa-user-plus"></i>');
+      });
   });
 
   // Retirer un étudiant de mes étudiants
@@ -304,37 +319,46 @@ jQuery(document).ready(function ($) {
     var $btn = $(this);
     var userId = $btn.data("user-id");
     var userName = $btn.data("user-name");
-    
+
     // Demander confirmation
-    if (!confirm('Êtes-vous sûr de vouloir retirer ' + userName + ' de vos étudiants ?')) {
+    if (
+      !confirm(
+        "Êtes-vous sûr de vouloir retirer " + userName + " de vos étudiants ?"
+      )
+    ) {
       return;
     }
-    
+
     $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-    
-    $.post(wp_bmc_admin_ajax.ajax_url, {
-      action: 'wp_bmc_remove_student',
-      student_id: userId,
-      nonce: wp_bmc_admin_ajax.nonce
-    }, function(response) {
-      if (response.success) {
-        WP_BMC_Toast.success(response.data.message);
-        // Mettre à jour l'interface
-        updateStudentGroupStatus(userId, false);
-      } else {
-        WP_BMC_Toast.error(response.data);
+
+    $.post(
+      wp_bmc_admin_ajax.ajax_url,
+      {
+        action: "wp_bmc_remove_student",
+        student_id: userId,
+        nonce: wp_bmc_admin_ajax.nonce,
+      },
+      function (response) {
+        if (response.success) {
+          WP_BMC_Toast.success(response.data.message);
+          // Mettre à jour l'interface
+          updateStudentGroupStatus(userId, false);
+        } else {
+          WP_BMC_Toast.error(response.data);
+        }
       }
-    }).fail(function() {
-      WP_BMC_Toast.error('Erreur lors de la suppression de l\'étudiant.');
-    }).always(function() {
-      $btn.prop("disabled", false).html('<i class="fas fa-user-minus"></i>');
-    });
+    )
+      .fail(function () {
+        WP_BMC_Toast.error("Erreur lors de la suppression de l'étudiant.");
+      })
+      .always(function () {
+        $btn.prop("disabled", false).html('<i class="fas fa-user-minus"></i>');
+      });
   });
 
   // ========================================
   // EXPORT DES DONNÉES
   // ========================================
- 
 
   // ========================================
   // FONCTIONS UTILITAIRES
@@ -422,11 +446,20 @@ jQuery(document).ready(function ($) {
 
       if (groupFilter === "") {
         $row.show();
-      } else if (groupFilter === "my-students" && groupText === "Mon étudiant") {
+      } else if (
+        groupFilter === "my-students" &&
+        groupText === "Mon étudiant"
+      ) {
         $row.show();
-      } else if (groupFilter === "managed-students" && $groupStatus.hasClass("managed-student")) {
+      } else if (
+        groupFilter === "managed-students" &&
+        $groupStatus.hasClass("managed-student")
+      ) {
         $row.show();
-      } else if (groupFilter === "unmanaged-students" && $groupStatus.hasClass("not-managed")) {
+      } else if (
+        groupFilter === "unmanaged-students" &&
+        $groupStatus.hasClass("not-managed")
+      ) {
         $row.show();
       } else {
         $row.hide();
@@ -439,46 +472,60 @@ jQuery(document).ready(function ($) {
   // Mettre à jour le statut de groupe d'un utilisateur
   function updateStudentGroupStatus(userId, isMyStudent) {
     var $row = $('.user-row[data-user-id="' + userId + '"]');
-    var $groupCell = $row.find('.user-group');
-    var $actionCell = $row.find('.user-actions');
-    var userName = $actionCell.find('.add-student-btn').data('user-name') || $actionCell.find('.remove-student-btn').data('user-name');
-    
+    var $groupCell = $row.find(".user-group");
+    var $actionCell = $row.find(".user-actions");
+    var userName =
+      $actionCell.find(".add-student-btn").data("user-name") ||
+      $actionCell.find(".remove-student-btn").data("user-name");
+
     if (isMyStudent) {
       // Mettre à jour le statut de groupe
       $groupCell.html(
         '<span class="group-status managed-student">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>' +
-        '<span>Mon étudiant</span>' +
-        '</span>'
+          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>' +
+          "<span>Mon étudiant</span>" +
+          "</span>"
       );
-      
+
       // Mettre à jour le bouton d'action
-      $actionCell.find('.add-student-btn').replaceWith(
-        '<button class="button action-button button-small button-secondary remove-student-btn" ' +
-        'data-user-id="' + userId + '" ' +
-        'data-user-name="' + userName + '" ' +
-        'title="Retirer de mes étudiants">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-        '</button>'
-      );
+      $actionCell
+        .find(".add-student-btn")
+        .replaceWith(
+          '<button class="button action-button button-small button-secondary remove-student-btn" ' +
+            'data-user-id="' +
+            userId +
+            '" ' +
+            'data-user-name="' +
+            userName +
+            '" ' +
+            'title="Retirer de mes étudiants">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
+            "</button>"
+        );
     } else {
       // Mettre à jour le statut de groupe
       $groupCell.html(
         '<span class="group-status not-managed">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9"/></svg>' +
-        '<span>Non assigné</span>' +
-        '</span>'
+          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9"/></svg>' +
+          "<span>Non assigné</span>" +
+          "</span>"
       );
-      
+
       // Mettre à jour le bouton d'action
-      $actionCell.find('.remove-student-btn').replaceWith(
-        '<button class="button action-button button-small button-primary add-student-btn" ' +
-        'data-user-id="' + userId + '" ' +
-        'data-user-name="' + userName + '" ' +
-        'title="Ajouter à mes étudiants">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-        '</button>'
-      );
+      $actionCell
+        .find(".remove-student-btn")
+        .replaceWith(
+          '<button class="button action-button button-small button-primary add-student-btn" ' +
+            'data-user-id="' +
+            userId +
+            '" ' +
+            'data-user-name="' +
+            userName +
+            '" ' +
+            'title="Ajouter à mes étudiants">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
+            "</button>"
+        );
     }
   }
 
@@ -566,7 +613,7 @@ jQuery(document).ready(function ($) {
     $("#users-count").text(visibleCount + " utilisateur(s) sur " + totalCount);
   }
 
-   // Fonction pour mettre à jour le compteur de notifications
+  // Fonction pour mettre à jour le compteur de notifications
   function updateNotificationCount() {
     var remainingNotifications = $(".notification-item").length;
     var $badge = $(".notification-badge");
@@ -734,7 +781,9 @@ jQuery(document).ready(function ($) {
   // Fonction pour ouvrir la modal de notation
   function openGradingModal(projectId, section, sectionTitle) {
     var modal = $(
-      '<div class="wp-bmc-popup grading-modal" data-section="' + section + '">' +
+      '<div class="wp-bmc-popup grading-modal" data-section="' +
+        section +
+        '">' +
         '<div class="popup-overlay"></div>' +
         '<div class="popup-content">' +
         '<div class="popup-header">' +
@@ -777,16 +826,20 @@ jQuery(document).ready(function ($) {
     modal.find("#rating").on("input", function () {
       var value = $(this).val();
       modal.find("#rating-value").text(value);
-      
+
       // Mettre à jour la couleur de progression du slider
       var progress = (value / 10) * 100;
-      modal.find(".rating-slider-wrapper").css('--slider-progress', progress + '%');
+      modal
+        .find(".rating-slider-wrapper")
+        .css("--slider-progress", progress + "%");
     });
-    
+
     // Initialiser la couleur de progression au chargement
     var initialValue = modal.find("#rating").val();
     var initialProgress = (initialValue / 10) * 100;
-    modal.find(".rating-slider-wrapper").css('--slider-progress', initialProgress + '%');
+    modal
+      .find(".rating-slider-wrapper")
+      .css("--slider-progress", initialProgress + "%");
 
     // Gérer la soumission du formulaire
     modal.find("#grading-form").on("submit", function (e) {
@@ -825,24 +878,19 @@ jQuery(document).ready(function ($) {
           updateGradingRequestsCount();
 
           let params = new URLSearchParams(window.location.search);
-          let view = params.get('view');
-          if(view === 'synthetic') {
-            window.WP_BMC_Dashboard.loadCanvasView('synthetic');
+          let view = params.get("view");
+          // Recharger la section rating en AJAX
+          loadSectionRating(projectId, section);
+          
+          if (view === "synthetic") {
+            window.WP_BMC_Dashboard.loadCanvasView("synthetic");
           } else {
-            window.WP_BMC_Dashboard.loadCanvasView('global');
+            window.WP_BMC_Dashboard.loadCanvasView("global");
           }
-
-        //   // Mettre à jour dynamiquement l'affichage de la note sur la section du canvas sans recharger la page entière
-        //   var $ratingDisplay = $("#rating-display-" + section);
-        //   if ($ratingDisplay.length) {
-        //     // Met à jour la note affichée
-        //     $ratingDisplay.find(".rating-score-number").text(ratingValue);
-        //   }
+          
         } else {
           console.log(response);
-          WP_BMC_Toast.error(
-            "Erreur lors de la sauvegarde : " + response.data
-          );
+          WP_BMC_Toast.error("Erreur lors de la sauvegarde : " + response.data);
         }
       }).always(function () {
         $submitBtn.prop("disabled", false).text(originalText);
@@ -860,48 +908,57 @@ jQuery(document).ready(function ($) {
   // ========================================
   // CHARGEMENT DES NOTES DE SECTION
   // ========================================
-  
+
   // Fonction pour charger la note d'une section
   function loadSectionRating(projectId, section) {
-    $.post(wp_bmc_admin_ajax.ajax_url, {
-      action: 'wp_bmc_get_section_rating',
-      project_id: projectId,
-      section: section,
-      nonce: wp_bmc_admin_ajax.nonce
-    }, function(response) {
-      if (response.success && response.data.rating) {
-        displaySectionRating(response.data.rating);
-      } else {
-        displayNoRating();
+    $.post(
+      wp_bmc_ajax.ajax_url,
+      {
+        action: "wp_bmc_get_section_rating",
+        project_id: projectId,
+        section: section,
+        nonce: wp_bmc_ajax.nonce,
+      },
+      function (response) {
+        if (response.success && response.data.rating) {
+          displaySectionRating(response.data.rating);
+        } else {
+          displayNoRating();
+        }
       }
-    }).fail(function() {
+    ).fail(function () {
       displayNoRating();
     });
   }
-  
+
   // Afficher la note d'une section
   function displaySectionRating(rating) {
-    $('#rating-score-number').text(rating.rating);
-    
+    console.log(rating);
+    $("#rating-score-number").text(rating.rating);
+
     if (rating.comment) {
-      $('#rating-comment').html('<p>' + rating.comment + '</p>');
+      $("#rating-comment").html("<p>" + rating.comment + "</p>");
     } else {
-      $('#rating-comment').html('<p class="no-comment">Aucun commentaire</p>');
+      $("#rating-comment").html('<p class="no-comment">Aucun commentaire</p>');
     }
-    
+
     // Utiliser la date formatée selon les paramètres WordPress
-    $('#rating-meta .rating-date').text('Noté le ' + (rating.formatted_date || rating.created_at));
-    $('#rating-meta .rating-admin').text('Par ' + (rating.admin_name || 'Admin'));
-    
-    $('#rating-section').removeClass('no-rating').addClass('has-rating');
+    $("#rating-meta .rating-date").text(
+      "Noté le " + (rating.formatted_date || rating.created_at)
+    );
+    $("#rating-meta .rating-admin").text(
+      "Par " + (rating.admin_name || "Admin")
+    );
+
+    $("#rating-section").removeClass("no-rating").addClass("has-rating");
   }
-  
+
   // Afficher l'absence de note
   function displayNoRating() {
-    $('#rating-score-number').text('-');
-    $('#rating-comment').html('<p class="no-rating">Aucune note attribuée</p>');
-    $('#rating-meta .rating-date, #rating-meta .rating-admin').text('');
-    $('#rating-section').removeClass('has-rating').addClass('no-rating');
+    $("#rating-score-number").text("-");
+    $("#rating-comment").html('<p class="no-rating">Aucune note attribuée</p>');
+    $("#rating-meta .rating-date, #rating-meta .rating-admin").text("");
+    $("#rating-section").removeClass("has-rating").addClass("no-rating");
   }
 
   // ========================================

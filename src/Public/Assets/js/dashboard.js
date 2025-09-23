@@ -2056,7 +2056,10 @@ jQuery(document).ready(function($) {
         addNewTodo: addNewTodo,
         toggleTodo: toggleTodo,
         editTodo: editTodo,
-        deleteTodo: deleteTodo
+        deleteTodo: deleteTodo,
+        displaySectionRating: displaySectionRating,
+        loadSectionRating: loadSectionRating,
+
     };
     
     // Initialiser les événements du canvas au chargement
