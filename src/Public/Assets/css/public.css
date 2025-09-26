@@ -1897,7 +1897,10 @@ body.popup-open {
   flex: 1;
   text-align: left;
   line-break: anywhere;
+}
 
+#rating-comment p {
+  margin: 0;
 }
 
 #rating-comment:focus {

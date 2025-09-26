@@ -2152,6 +2152,42 @@ jQuery(document).ready(function($) {
         }
     }, 30000);
     
+    // ========================================
+    // AUTO-OUVERTURE DES SECTIONS
+    // ========================================
+    
+    // Fonction pour ouvrir automatiquement une section
+    function autoOpenSection() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var openSection = urlParams.get("open_section");
+        
+        if (openSection) {
+            console.log('Auto-ouverture de la section:', openSection);
+            
+            // Attendre que le DOM soit prêt
+            setTimeout(function() {
+                // Chercher le bouton d'édition de la section
+                var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
+                
+                if ($editBtn.length > 0) {
+                    console.log('Bouton d\'édition trouvé pour la section:', openSection);
+                    // Simuler un clic sur le bouton d'édition
+                    $editBtn.trigger('click');
+                    
+                    // Nettoyer l'URL en supprimant le paramètre open_section
+                    var newUrl = new URL(window.location);
+                    newUrl.searchParams.delete('open_section');
+                    window.history.replaceState({}, document.title, newUrl.toString());
+                } else {
+                    console.log('Bouton d\'édition non trouvé pour la section:', openSection);
+                }
+            }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
+        }
+    }
+    
+    // Exécuter l'auto-ouverture au chargement
+    autoOpenSection();
+    
 });
 
 // Fonction pour initialiser le graphique de progression du projet

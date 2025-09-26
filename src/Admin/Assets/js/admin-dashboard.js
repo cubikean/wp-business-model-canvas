@@ -3,65 +3,7 @@
  */
 
 jQuery(document).ready(function ($) {
-  // ========================================
-  // AUTO-OUVERTURE DE LA POPUP DE NOTATION
-  // ========================================
-
-  // Vérifier si on doit auto-ouvrir une popup de notation
-  function checkAutoGradeSection() {
-    var urlParams = new URLSearchParams(window.location.search);
-    var autoGradeSection = urlParams.get("auto_grade_section");
-
-    if (autoGradeSection) {
-      // Attendre que la page soit entièrement chargée
-      setTimeout(function () {
-        var projectId =
-          $(".wp-bmc-dashboard").data("project-id") ||
-          $(".wp-bmc-canvas-container").data("project-id");
-        var userId = urlParams.get("user_id");
-
-        if (projectId && autoGradeSection) {
-          // Obtenir le titre de la section
-          var sectionTitle = getSectionTitle(autoGradeSection);
-
-          // Ouvrir la popup de notation
-          openGradingModal(projectId, autoGradeSection, sectionTitle);
-
-          // Nettoyer l'URL pour éviter de ré-ouvrir la popup au refresh
-          var newUrl =
-            window.location.protocol +
-            "//" +
-            window.location.host +
-            window.location.pathname +
-            "?admin_view=true&view=global&user_id=" +
-            userId +
-            "&project_id=" +
-            projectId;
-          window.history.replaceState({}, document.title, newUrl);
-        }
-      }, 1000); // Délai pour s'assurer que tout est chargé
-    }
-  }
-
-  // Fonction pour obtenir le titre d'une section
-  function getSectionTitle(sectionKey) {
-    var titles = {
-      key_partners: "Partenaires clés",
-      key_activities: "Activités clés",
-      key_resources: "Ressources clés",
-      value_propositions: "Propositions de valeur",
-      customer_relationships: "Relations clients",
-      channels: "Canaux",
-      customer_segments: "Segments clients",
-      cost_structure: "Structure des coûts",
-      revenue_streams: "Sources de revenus",
-    };
-    return titles[sectionKey] || sectionKey;
-  }
-
-  // Exécuter la vérification
-  checkAutoGradeSection();
-
+ 
   // ========================================
   // RECHERCHE D'UTILISATEURS
   // ========================================
@@ -236,7 +178,7 @@ jQuery(document).ready(function ($) {
       userId +
       "&project_id=" +
       projectId +
-      "&auto_grade_section=" +
+      "&open_section=" +
       encodeURIComponent(section);
     window.open(url, "_blank");
   });
@@ -250,11 +192,14 @@ jQuery(document).ready(function ($) {
   });
 
   $(document).on("click", "#inner-rate-brick-btn", function () {
-    openGradingModal(
-      $(".wp-bmc-dashboard").data("project-id"),
-      $("#wp-bmc-edit-view").data("section"),
-      $("#wp-bmc-edit-view #edit-section-title").text()
-    );
+      let projectId = $(".wp-bmc-dashboard").data("project-id");
+      let section = $("#wp-bmc-edit-view").data("section");
+      let defSection = $("#wp-bmc-edit-view")
+      console.log('Section:', section);
+      let sectionTitle = $("#wp-bmc-edit-view #edit-section-title").text();
+        
+      openGradingModal(projectId, section, sectionTitle);
+   
   });
 
   // ========================================
@@ -780,6 +725,15 @@ jQuery(document).ready(function ($) {
 
   // Fonction pour ouvrir la modal de notation
   function openGradingModal(projectId, section, sectionTitle) {
+    
+    console.log('=== openGradingModal appelée ===');
+    console.log('Project ID reçu:', projectId);
+    console.log('Section reçue:', section);
+    console.log('Section Title reçu:', sectionTitle);
+    
+    // Supprimer les modals de notation existants pour éviter les conflits
+    $('.grading-modal').remove();
+    
     var modal = $(
       '<div class="wp-bmc-popup grading-modal" data-section="' +
         section +
@@ -933,10 +887,11 @@ jQuery(document).ready(function ($) {
 
   // Afficher la note d'une section
   function displaySectionRating(rating) {
-    console.log(rating);
+    console.log("rating:", rating);
     $("#rating-score-number").text(rating.rating);
 
     if (rating.comment) {
+      console.log("rating.comment:", rating.comment);
       $("#rating-comment").html("<p>" + rating.comment + "</p>");
     } else {
       $("#rating-comment").html('<p class="no-comment">Aucun commentaire</p>');
@@ -960,6 +915,42 @@ jQuery(document).ready(function ($) {
     $("#rating-meta .rating-date, #rating-meta .rating-admin").text("");
     $("#rating-section").removeClass("has-rating").addClass("no-rating");
   }
+
+  // ========================================
+  // AUTO-OUVERTURE DES SECTIONS
+  // ========================================
+  
+  // Fonction pour ouvrir automatiquement une section
+  function autoOpenSection() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var openSection = urlParams.get("open_section");
+    
+    if (openSection) {
+      console.log('Auto-ouverture de la section:', openSection);
+      
+      // Attendre que le DOM soit prêt
+      setTimeout(function() {
+        // Chercher le bouton d'édition de la section
+        var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
+        
+        if ($editBtn.length > 0) {
+          console.log('Bouton d\'édition trouvé pour la section:', openSection);
+          // Simuler un clic sur le bouton d'édition
+          $editBtn.trigger('click');
+          
+          // Nettoyer l'URL en supprimant le paramètre open_section
+          var newUrl = new URL(window.location);
+          newUrl.searchParams.delete('open_section');
+          window.history.replaceState({}, document.title, newUrl.toString());
+        } else {
+          console.log('Bouton d\'édition non trouvé pour la section:', openSection);
+        }
+      }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
+    }
+  }
+  
+  // Exécuter l'auto-ouverture au chargement
+  autoOpenSection();
 
   // ========================================
   // RACCOURCIS CLAVIER

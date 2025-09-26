@@ -28,6 +28,7 @@ $current_admin_id = get_current_user_id();
 $all_users = $wpdb->get_results("
     SELECT u.*, 
            p.title as project_name,
+           p.description as project_description,
            COUNT(DISTINCT p.id) as project_count,
            MAX(p.created_at) as last_project_date,
            COUNT(DISTINCT gr.id) as total_grading_requests_count,
@@ -213,7 +214,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                     data-section="<?php echo $request->section; ?>"
                                     data-section-title="<?php echo esc_attr($request->section_title); ?>"
                                     title="Noter cette section">
-                                    <i class="fas fa-star"></i> Noter
+                                    <i class="fas fa-star"></i> Évaluer
                                 </button>
                             </div>
                         </div>
@@ -296,7 +297,16 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                             <?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?>
                         </td> -->
                         <td class="user-project-name">
-                            <?php echo $user->project_name; ?>
+                            <div class="project-info">
+                                <div class="project-title">
+                                    <?php echo esc_html($user->project_name); ?>
+                                </div>
+                                <?php if (!empty($user->project_description)): ?>
+                                    <div class="project-description">
+                                        <?php echo esc_html($user->project_description); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td class="user-grading-status">
                             <?php
