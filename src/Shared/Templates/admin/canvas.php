@@ -32,6 +32,26 @@ $is_admin = current_user_can('manage_options');
 $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
 $project_ratings = WP_BMC_Database::get_project_ratings($project_id);
 
+// Récupérer les informations de l'utilisateur propriétaire du projet
+$project_owner = WP_BMC_Database::get_user($project->user_id);
+$user_name = '';
+if ($project_owner) {
+    $user_name = trim($project_owner->first_name . ' ' . $project_owner->last_name);
+    // Si pas de prénom/nom, utiliser l'email
+    if (empty($user_name)) {
+        $user_name = $project_owner->email;
+    }
+} else {
+    // Fallback vers les utilisateurs WordPress
+    $wp_user = get_user_by('ID', $project->user_id);
+    if ($wp_user) {
+        $user_name = trim($wp_user->first_name . ' ' . $wp_user->last_name);
+        if (empty($user_name)) {
+            $user_name = $wp_user->display_name ?: $wp_user->user_login;
+        }
+    }
+}
+
 // Récupérer les demandes de notation en attente pour ce projet
 $pending_grading_requests = array();
 if ($is_admin) {
@@ -75,6 +95,7 @@ if ($admin_view && $is_admin) {
 <div class="wp-bmc-canvas-container wp-bmc-dashboard" data-project-id="<?php echo $project_id; ?>">
     <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
         <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
+        <h3 class="dashboard-header-subtitle">Projet de <?php echo $user_name ? esc_html($user_name) : ""; ?></h3>
 
         <div class="canvas-actions">
             <a href="/dashboard" class="wp-bmc-btn wp-bmc-btn-secondary">

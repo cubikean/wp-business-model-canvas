@@ -197,6 +197,34 @@ jQuery(document).ready(function($) {
             $(this).after('<span class="password-strength-indicator" style="font-size: 12px; color: ' + strengthColor + ';">Force : ' + strengthText + '</span>');
         }
     });
+
+    // ========================================
+    // PASSWORD TOGGLE  
+    // ========================================
+
+    // Gestion souris
+    $('.show-password').on('mousedown', function() {
+        console.log('show-password');
+        $(this).parent().find('#password').attr('type', 'text');
+    });
+    $('.show-password').on('mouseup', function() {
+        $(this).parent().find('#password').attr('type', 'password');
+    });
+
+    // Gestion clavier (Entrée et Espace)
+    $('.show-password').on('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            console.log('show-password keyboard');
+            $(this).parent().find('#password').attr('type', 'text');
+        }
+    });
+    $('.show-password').on('keyup', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            $(this).parent().find('#password').attr('type', 'password');
+        }
+    });
     
     // ========================================
     // ANIMATIONS ET UX
