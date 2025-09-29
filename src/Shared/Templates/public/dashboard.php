@@ -20,12 +20,14 @@ if (!$current_user) {
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
 $view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';
 
-// Récupération des données du projet
+// Récupération des données du projet (v2.0)
 if ($project_id) {
     // Mode canvas spécifique - vérifier les permissions
     $project = WP_BMC_Database::get_project($project_id);
-    if (!$project || $current_user->user_id != $project->user_id) {
-        wp_redirect(home_url('/login/'));
+    
+    // Vérifier si l'utilisateur a accès à ce projet (v2.0)
+    if (!$project || !WP_BMC_Database::user_has_project_access($current_user->user_id, $project_id)) {
+        wp_redirect(home_url('/dashboard/'));
         exit;
     }
 } else {
@@ -41,36 +43,19 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
 
 <div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project_id; ?>" <?php endif; ?>>
     <?php if (!$project): ?>
-        <!-- Aucun projet créé - Créer le premier canvas -->
+        <!-- Aucun projet assigné (v2.0) -->
         <div class="no-project-section">
             <div class="welcome-message">
-                <h2>Bienvenue dans votre espace Business Model Canvas !</h2>
-                <p>Vous n'avez pas encore créé votre canvas. Commencez dès maintenant à structurer votre modèle économique.</p>
+                <h2>Bienvenue, <?php echo esc_html($current_user->first_name); ?> !</h2>
+                <p>Vous n'avez pas encore de projet assigné. Contactez votre administrateur pour qu'il vous assigne un projet.</p>
             </div>
 
-            <div class="create-first-canvas">
-                <h3>Créer mon premier Business Model Canvas</h3>
-                <form id="wp-bmc-create-first-canvas-form">
-                    <?php wp_nonce_field('wp_bmc_project_nonce', 'wp_bmc_project_nonce'); ?>
-
-                    <div class="form-group">
-                        <label for="project_title">Nom de votre projet/entreprise</label>
-                        <input type="text" id="project_title" name="project_title" required
-                            placeholder="Ex: Mon Startup, Mon Entreprise, Mon Projet">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="project_description">Description (optionnel)</label>
-                        <textarea id="project_description" name="project_description" rows="3"
-                            placeholder="Décrivez brièvement votre projet..."></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="wp-bmc-btn wp-bmc-btn-primary">
-                            Créer mon canvas
-                        </button>
-                    </div>
-                </form>
+            <div class="no-projects-info">
+                <div class="info-card">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Comment obtenir un projet ?</h3>
+                    <p>Dans la version 2.0, les projets sont créés et assignés par les administrateurs. Contactez votre responsable pour qu'il vous assigne un projet Business Model Canvas.</p>
+                </div>
             </div>
         </div>
 

@@ -21,29 +21,29 @@ $users_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_users");
 $projects_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_projects");
 $canvas_data_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}bmc_canvas_data");
 
-// Obtenir tous les utilisateurs (pour la liste complète)
-$all_users = $wpdb->get_results("
-    SELECT u.*, 
-           COUNT(p.id) as project_count,
-           MAX(p.created_at) as last_project_date
-    FROM {$wpdb->prefix}bmc_users u
-    LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.user_id = p.user_id
-    GROUP BY u.user_id
-    ORDER BY u.created_at DESC
-");
+// Obtenir tous les utilisateurs (pour la liste complète) - v2.0
+$all_users = WP_BMC_Database::get_all_users();
 
-// Obtenir les derniers projets
-$recent_projects = $wpdb->get_results("
-    SELECT p.*, u.first_name, u.last_name 
-    FROM {$wpdb->prefix}bmc_projects p
-    JOIN {$wpdb->prefix}bmc_users u ON p.user_id = u.user_id
-    ORDER BY p.created_at DESC 
-    LIMIT 10
-");
+// Obtenir tous les projets - v2.0
+$all_projects = WP_BMC_Database::get_all_projects();
+$recent_projects = array_slice($all_projects, 0, 10);
 ?>
 
 <div class="wrap wp-bmc-admin-dashboard">
-    <h1>👑 Administration - Business Model Canvas</h1>
+    <h1>👑 Administration - Business Model Canvas v2.0</h1>
+    
+    <!-- Navigation rapide -->
+    <div class="wp-bmc-admin-nav">
+        <a href="admin.php?page=wp-business-model-canvas&tab=projects" class="button button-primary">
+            <i class="fas fa-folder"></i> Gérer les Projets
+        </a>
+        <a href="admin.php?page=wp-business-model-canvas&tab=users" class="button button-secondary">
+            <i class="fas fa-users"></i> Gérer les Utilisateurs
+        </a>
+        <a href="admin.php?page=wp-business-model-canvas&tab=dashboard" class="button button-secondary">
+            <i class="fas fa-chart-bar"></i> Dashboard
+        </a>
+    </div>
     
     <?php if (isset($message)): ?>
         <div class="notice notice-success">
@@ -121,6 +121,9 @@ $recent_projects = $wpdb->get_results("
                     <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
                         <td class="user-name">
                             <strong><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></strong>
+                            <?php if ($user->custom_id): ?>
+                                <br><small class="custom-id">ID: <?php echo esc_html($user->custom_id); ?></small>
+                            <?php endif; ?>
                         </td>
                         <td class="user-email">
                             <a href="mailto:<?php echo esc_attr($user->email); ?>">
@@ -131,8 +134,12 @@ $recent_projects = $wpdb->get_results("
                             <?php echo esc_html($user->company); ?>
                         </td>
                         <td class="user-projects">
-                            <span class="project-count"><?php echo $user->project_count; ?></span>
-                            <?php if ($user->project_count > 0): ?>
+                            <?php
+                            $user_projects = WP_BMC_Database::get_user_projects($user->user_id);
+                            $project_count = count($user_projects);
+                            ?>
+                            <span class="project-count"><?php echo $project_count; ?></span>
+                            <?php if ($project_count > 0): ?>
                                 <a href="#" class="view-projects-btn" data-user-id="<?php echo $user->user_id; ?>">
                                     Voir les projets
                                 </a>
@@ -142,8 +149,8 @@ $recent_projects = $wpdb->get_results("
                             <?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?>
                         </td>
                         <td class="user-last-project">
-                            <?php if ($user->last_project_date): ?>
-                                <?php echo date('d/m/Y H:i', strtotime($user->last_project_date)); ?>
+                            <?php if ($project_count > 0): ?>
+                                <?php echo date('d/m/Y H:i', strtotime($user_projects[0]->assigned_at)); ?>
                             <?php else: ?>
                                 <span class="no-project">Aucun projet</span>
                             <?php endif; ?>
@@ -205,7 +212,13 @@ $recent_projects = $wpdb->get_results("
                 <?php foreach ($recent_projects as $project): ?>
                     <tr>
                         <td><?php echo esc_html($project->title); ?></td>
-                        <td><?php echo esc_html($project->first_name . ' ' . $project->last_name); ?></td>
+                        <td>
+                            <?php if ($project->first_name && $project->last_name): ?>
+                                <?php echo esc_html($project->first_name . ' ' . $project->last_name); ?>
+                            <?php else: ?>
+                                <em>Admin WordPress</em>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <span class="status-badge status-<?php echo $project->status; ?>">
                                 <?php echo ucfirst($project->status); ?>

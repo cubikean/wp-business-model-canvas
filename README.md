@@ -1,18 +1,20 @@
 # 🎯 WP Business Model Canvas v2.0
 
-> Plugin WordPress professionnel pour construire, suivre et enrichir un Business Model Canvas directement depuis le front-end
+> Plugin WordPress professionnel pour construire, suivre et enrichir un Business Model Canvas avec gestion centralisée par les administrateurs
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/your-repo/wp-business-model-canvas)
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/license-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-## TODO
-- Bug Cannot read properties of null (reading 'rating') dashboard.js => 1358:47
-- Admin cannot save content (maybe link with previus bug)
-- All files be add on all Canvas
-- Missing redirects on unauthorised pages
-- Change Placeholder of single canvas
+## 🚀 Nouveautés v2.0 - Architecture Centralisée
+
+### ✨ Changements majeurs
+- **Projets créés par les admins** : Les administrateurs créent et gèrent tous les projets
+- **Utilisateurs avec ID personnalisé** : Chaque utilisateur a un identifiant unique assigné par l'admin
+- **Association projet-utilisateur** : Un projet peut être assigné à plusieurs utilisateurs
+- **Gestion centralisée** : Interface d'administration complète pour la gestion des projets et utilisateurs
+- **Migration automatique** : Script de migration pour les données existantes
 
 ## 🚀 Nouveautés v2.0
 
@@ -115,17 +117,20 @@ wp-business-model-canvas/
 composer require your-vendor/wp-business-model-canvas
 ```
 
-## 🎯 Utilisation
+## 🎯 Utilisation v2.0
 
 ### Pour les administrateurs
 1. Connectez-vous à l'admin WordPress
-2. Accédez au menu "BMC" dans la barre latérale
-3. Gérez les utilisateurs et consultez les statistiques
+2. Accédez au menu "BMC v2.0" dans la barre latérale
+3. **Gestion des utilisateurs** : Créez des utilisateurs avec des ID personnalisés
+4. **Gestion des projets** : Créez des projets et assignez-les aux utilisateurs
+5. **Migration** : Utilisez l'outil de migration pour les données existantes
 
 ### Pour les utilisateurs
-1. Inscrivez-vous via le formulaire d'inscription
-2. Connectez-vous à votre tableau de bord
-3. Créez et éditez votre Business Model Canvas
+1. Connectez-vous avec vos identifiants (créés par l'admin)
+2. Accédez à votre tableau de bord
+3. Éditez les projets qui vous ont été assignés
+4. **Note** : Les utilisateurs ne peuvent plus créer de projets directement
 
 ## 🔧 Configuration
 
@@ -200,12 +205,14 @@ composer test:integration
 
 ## 📋 Changelog
 
-### v2.0.0 (2024-01-XX)
-- ✨ Structure complètement réorganisée
-- 🎨 Interfaces admin/public séparées
-- 🔧 Autoloader intégré
-- 📱 Design responsive amélioré
-- 🚀 Performance optimisée
+### v2.0.0 (2024-01-XX) - Architecture Centralisée
+- 🏗️ **Architecture centralisée** : Projets créés et gérés par les administrateurs
+- 👥 **Gestion des utilisateurs** : Création d'utilisateurs avec ID personnalisé
+- 🔗 **Association projet-utilisateur** : Un projet peut être assigné à plusieurs utilisateurs
+- 🛠️ **Interface d'administration** : Pages dédiées pour la gestion des projets et utilisateurs
+- 🔄 **Migration automatique** : Script de migration pour les données existantes
+- 🚫 **Création de projets désactivée** : Les utilisateurs ne peuvent plus créer de projets directement
+- 🔐 **Contrôle d'accès** : Vérification des permissions pour l'accès aux projets
 
 ### v1.0.0 (2023-XX-XX)
 - 🎉 Version initiale

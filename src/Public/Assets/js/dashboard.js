@@ -118,40 +118,10 @@ jQuery(document).ready(function($) {
     }
     
     // ========================================
-    // CRÉATION DU PREMIER CANVAS
+    // CRÉATION DU PREMIER CANVAS (v2.0 - désactivé)
     // ========================================
-    $('#wp-bmc-create-first-canvas-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        var $form = $(this);
-        var $submitBtn = $form.find('button[type="submit"]');
-        
-        // Désactiver le bouton pendant la soumission
-        $submitBtn.prop('disabled', true).text('Création en cours...');
-        
-        var formData = {
-            action: 'wp_bmc_create_project',
-            nonce: wp_bmc_ajax.nonce,
-            title: $('#project_title').val(),
-            description: $('#project_description').val()
-        };
-        
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            if (response.success) {
-                WP_BMC_Toast.success(response.data.message);
-                setTimeout(function() {
-                    window.location.reload(); // Recharger pour afficher le canvas
-                }, 1500);
-            } else {
-                WP_BMC_Toast.error(response.data);
-            }
-        }).fail(function() {
-            WP_BMC_Toast.error('Erreur lors de la création du projet. Veuillez réessayer.');
-        }).always(function() {
-            // Réactiver le bouton
-            $submitBtn.prop('disabled', false).text('Créer mon canvas');
-        });
-    });
+    // La création de projets est maintenant gérée par les admins
+    // Les utilisateurs ne peuvent plus créer de projets directement
     
     // ========================================
     // CHANGEMENT DE VUE (SYNTHÉTIQUE/GLOBALE)
@@ -684,6 +654,35 @@ jQuery(document).ready(function($) {
     function getProjectIdFromUrl() {
         var urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('project_id');
+    }
+    
+    // ========================================
+    // VÉRIFICATION D'ACCÈS AU PROJET (v2.0)
+    // ========================================
+    function checkProjectAccess(projectId) {
+        if (!projectId) {
+            return false;
+        }
+        
+        // Vérifier si l'utilisateur a accès à ce projet
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_check_project_access',
+            project_id: projectId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (!response.success) {
+                WP_BMC_Toast.error('Vous n\'avez pas accès à ce projet.');
+                // Rediriger vers le dashboard
+                setTimeout(function() {
+                    window.location.href = home_url('/dashboard/');
+                }, 2000);
+                return false;
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de vérification d\'accès.');
+        });
+        
+        return true;
     }
     
     // Ouvrir l'uploader de fichiers

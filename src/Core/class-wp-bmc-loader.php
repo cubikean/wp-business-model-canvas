@@ -67,13 +67,50 @@ class WP_BMC_Loader {
      */
     public function add_admin_menu() {
         add_menu_page(
-            'WP Business Model Canvas',
-            'BMC',
+            'WP Business Model Canvas v2.0',
+            'BMC v2.0',
             'manage_options',
             'wp-business-model-canvas',
             array($this, 'admin_page'),
             'dashicons-chart-area',
             30
+        );
+        
+        add_submenu_page(
+            'wp-business-model-canvas',
+            'Dashboard',
+            'Dashboard',
+            'manage_options',
+            'wp-business-model-canvas',
+            array($this, 'admin_page')
+        );
+        
+        add_submenu_page(
+            'wp-business-model-canvas',
+            'Gestion des Projets',
+            'Projets',
+            'manage_options',
+            'wp-business-model-canvas-projects',
+            array($this, 'admin_projects_page')
+        );
+        
+        add_submenu_page(
+            'wp-business-model-canvas',
+            'Gestion des Utilisateurs',
+            'Utilisateurs',
+            'manage_options',
+            'wp-business-model-canvas-users',
+            array($this, 'admin_users_page')
+        );
+        
+        // Ajouter un sous-menu pour la migration v2.0
+        add_submenu_page(
+            'wp-business-model-canvas',
+            'Migration v2.0',
+            'Migration v2.0',
+            'manage_options',
+            'wp-business-model-canvas-migration',
+            array($this, 'migration_page')
         );
         
         // Ajouter un sous-menu pour la vérification
@@ -91,7 +128,67 @@ class WP_BMC_Loader {
      * Page d'administration
      */
     public function admin_page() {
-        include WP_BMC_ADMIN_DIR . 'Controllers/admin-page.php';
+        include WP_BMC_ADMIN_DIR . 'Controllers/admin-dashboard.php';
+    }
+    
+    /**
+     * Page de gestion des projets
+     */
+    public function admin_projects_page() {
+        include WP_BMC_ADMIN_DIR . 'Controllers/admin-projects.php';
+    }
+    
+    /**
+     * Page de gestion des utilisateurs
+     */
+    public function admin_users_page() {
+        include WP_BMC_ADMIN_DIR . 'Controllers/admin-users-v2.php';
+    }
+    
+    /**
+     * Page de migration v2.0
+     */
+    public function migration_page() {
+        include WP_BMC_CORE_DIR . 'class-wp-bmc-migration-v2.php';
+        
+        // Vérifier l'état de la migration
+        $status = WP_BMC_Migration_V2::check_migration_status();
+        
+        echo '<div class="wrap">';
+        echo '<h1>Migration vers la v2.0</h1>';
+        
+        if ($status['needs_migration']) {
+            echo '<div class="notice notice-warning">';
+            echo '<h3>Migration nécessaire</h3>';
+            echo '<p>Votre installation nécessite une migration vers la version 2.0. Les problèmes suivants ont été détectés :</p>';
+            echo '<ul>';
+            foreach ($status['issues'] as $issue) {
+                echo '<li>' . esc_html($issue) . '</li>';
+            }
+            echo '</ul>';
+            echo '</div>';
+            
+            echo '<form method="post" action="">';
+            wp_nonce_field('wp_bmc_migration_v2', 'wp_bmc_migration_nonce');
+            echo '<input type="hidden" name="action" value="run_migration_v2">';
+            echo '<p><button type="submit" class="button button-primary">Lancer la migration</button></p>';
+            echo '</form>';
+        } else {
+            echo '<div class="notice notice-success">';
+            echo '<h3>Migration terminée</h3>';
+            echo '<p>Votre installation est déjà à jour avec la version 2.0.</p>';
+            echo '</div>';
+        }
+        
+        // Traitement de la migration
+        if (isset($_POST['action']) && $_POST['action'] === 'run_migration_v2' && 
+            check_admin_referer('wp_bmc_migration_v2', 'wp_bmc_migration_nonce')) {
+            
+            $results = WP_BMC_Migration_V2::migrate_to_v2();
+            WP_BMC_Migration_V2::display_migration_results($results);
+        }
+        
+        echo '</div>';
     }
     
     /**

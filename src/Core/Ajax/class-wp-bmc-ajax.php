@@ -62,12 +62,13 @@ function wp_bmc_remove_student_handler() {
 }
 
 // Handler pour créer un nouveau projet
+// Handler pour créer un projet (v2.0 - admin seulement)
 add_action('wp_ajax_wp_bmc_create_project', 'wp_bmc_create_project_handler');
 function wp_bmc_create_project_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
     
-    if (!WP_BMC_Auth::is_logged_in()) {
-        wp_send_json_error('Vous devez être connecté pour créer un projet.');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
     }
     
     $title = sanitize_text_field($_POST['title']);
@@ -77,17 +78,158 @@ function wp_bmc_create_project_handler() {
         wp_send_json_error('Le titre du projet est obligatoire.');
     }
     
-    $user = WP_BMC_Auth::get_current_user();
-    $project_id = WP_BMC_Database::create_project($user->user_id, $title, $description);
+    $admin_id = get_current_user_id();
+    $project_id = WP_BMC_Database::create_project($admin_id, $title, $description);
     
     if ($project_id) {
         wp_send_json_success(array(
             'message' => 'Projet créé avec succès !',
-            'project_id' => $project_id,
-            'redirect_url' => home_url('/dashboard/')
+            'project_id' => $project_id
         ));
     } else {
         wp_send_json_error('Erreur lors de la création du projet.');
+    }
+}
+
+// Handler pour créer un utilisateur (v2.0 - admin seulement)
+add_action('wp_ajax_wp_bmc_create_user', 'wp_bmc_create_user_handler');
+function wp_bmc_create_user_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $custom_id = sanitize_text_field($_POST['custom_id']);
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+    $company = sanitize_text_field($_POST['company']);
+    
+    if (empty($custom_id) || empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
+        wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
+    }
+    
+    // Vérifier si l'email existe déjà
+    if (email_exists($email)) {
+        wp_send_json_error('Cette adresse email est déjà utilisée.');
+    }
+    
+    // Vérifier si l'ID personnalisé existe déjà
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_users';
+    $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+    if ($existing_custom_id) {
+        wp_send_json_error('Cet ID personnalisé est déjà utilisé.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $user_data = array(
+        'custom_id' => $custom_id,
+        'email' => $email,
+        'password' => $password,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'company' => $company
+    );
+    
+    $result = WP_BMC_Database::create_user($admin_id, $user_data);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Utilisateur créé avec succès !',
+            'user_id' => $result
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la création de l\'utilisateur.');
+    }
+}
+
+// Handler pour associer un utilisateur à un projet
+add_action('wp_ajax_wp_bmc_assign_user_to_project', 'wp_bmc_assign_user_to_project_handler');
+function wp_bmc_assign_user_to_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $user_id = intval($_POST['user_id']);
+    
+    if (empty($project_id) || empty($user_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $result = WP_BMC_Database::assign_user_to_project($project_id, $user_id, $admin_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Utilisateur associé au projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'association de l\'utilisateur au projet.');
+    }
+}
+
+// Handler pour retirer un utilisateur d'un projet
+add_action('wp_ajax_wp_bmc_remove_user_from_project', 'wp_bmc_remove_user_from_project_handler');
+function wp_bmc_remove_user_from_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $user_id = intval($_POST['user_id']);
+    
+    if (empty($project_id) || empty($user_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::remove_user_from_project($project_id, $user_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Utilisateur retiré du projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors du retrait de l\'utilisateur du projet.');
+    }
+}
+
+// Handler pour vérifier l'accès d'un utilisateur à un projet (v2.0)
+add_action('wp_ajax_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');
+add_action('wp_ajax_nopriv_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');
+function wp_bmc_check_project_access_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    // Si c'est un admin, il a accès à tous les projets
+    if (current_user_can('manage_options')) {
+        wp_send_json_success(array('has_access' => true));
+    }
+    
+    // Vérifier si l'utilisateur connecté a accès au projet
+    $user = WP_BMC_Auth::get_current_user();
+    if (!$user) {
+        wp_send_json_error('Utilisateur non connecté.');
+    }
+    
+    $has_access = WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if ($has_access) {
+        wp_send_json_success(array('has_access' => true));
+    } else {
+        wp_send_json_error('Accès refusé à ce projet.');
     }
 }
 
@@ -2380,4 +2522,39 @@ function wp_bmc_get_current_project_id() {
     }
     
     return null;
+}
+
+// ========================================
+// GESTION DES UTILISATEURS DISPONIBLES (v2.0)
+// ========================================
+
+add_action('wp_ajax_wp_bmc_get_available_users', 'wp_bmc_get_available_users_handler');
+function wp_bmc_get_available_users_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $project_id = intval($_POST['project_id']);
+
+    if (!$project_id) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+
+    // Obtenir tous les utilisateurs actifs
+    $all_users = WP_BMC_Database::get_all_users();
+    
+    // Obtenir les utilisateurs déjà assignés à ce projet
+    $assigned_users = WP_BMC_Database::get_project_users($project_id);
+    $assigned_user_ids = array_column($assigned_users, 'user_id');
+    
+    // Filtrer les utilisateurs non assignés
+    $available_users = array_filter($all_users, function($user) use ($assigned_user_ids) {
+        return !in_array($user->user_id, $assigned_user_ids);
+    });
+
+    wp_send_json_success(array(
+        'users' => array_values($available_users)
+    ));
 }

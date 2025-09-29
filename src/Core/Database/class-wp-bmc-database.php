@@ -52,30 +52,37 @@ class WP_BMC_Database {
         $sql_users = "CREATE TABLE $table_users (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             user_id bigint(20) NOT NULL,
+            custom_id varchar(50) DEFAULT NULL,
             email varchar(100) NOT NULL,
             password varchar(255) NOT NULL,
             first_name varchar(50) NOT NULL,
             last_name varchar(50) NOT NULL,
             company varchar(100),
+            is_active tinyint(1) DEFAULT 1,
+            created_by_admin bigint(20) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY email (email),
-            KEY user_id (user_id)
+            UNIQUE KEY custom_id (custom_id),
+            KEY user_id (user_id),
+            KEY is_active (is_active),
+            KEY created_by_admin (created_by_admin)
         ) $charset_collate;";
         
         // Table des projets BMC
         $table_projects = $wpdb->prefix . 'bmc_projects';
         $sql_projects = "CREATE TABLE $table_projects (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            user_id bigint(20) NOT NULL,
             title varchar(255) NOT NULL,
             description text,
             status varchar(20) DEFAULT 'draft',
+            created_by_admin bigint(20) NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            KEY user_id (user_id)
+            KEY created_by_admin (created_by_admin),
+            KEY status (status)
         ) $charset_collate;";
         
         // Table des données BMC
@@ -175,6 +182,23 @@ class WP_BMC_Database {
             KEY student_id (student_id)
         ) $charset_collate;";
         
+        // Table de liaison projet-utilisateurs (nouvelle pour v2.0)
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        $sql_project_users = "CREATE TABLE $table_project_users (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            user_id bigint(20) NOT NULL,
+            assigned_by_admin bigint(20) NOT NULL,
+            assigned_at datetime DEFAULT CURRENT_TIMESTAMP,
+            is_active tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            UNIQUE KEY project_user (project_id, user_id),
+            KEY project_id (project_id),
+            KEY user_id (user_id),
+            KEY assigned_by_admin (assigned_by_admin),
+            KEY is_active (is_active)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -184,6 +208,7 @@ class WP_BMC_Database {
         dbDelta($sql_admin_notifications);
         dbDelta($sql_todos);
         dbDelta($sql_admin_students);
+        dbDelta($sql_project_users);
     }
     
         /**
@@ -266,9 +291,9 @@ class WP_BMC_Database {
     }
     
     /**
-     * Créer un nouveau projet
+     * Créer un nouveau projet (v2.0 - créé par admin)
      */
-    public static function create_project($user_id, $title, $description = '') {
+    public static function create_project($admin_id, $title, $description = '') {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_projects';
@@ -276,31 +301,191 @@ class WP_BMC_Database {
         $result = $wpdb->insert(
             $table,
             array(
-                'user_id' => $user_id,
                 'title' => $title,
                 'description' => $description,
-                'status' => 'draft'
+                'status' => 'draft',
+                'created_by_admin' => $admin_id
             ),
-            array('%d', '%s', '%s', '%s')
+            array('%s', '%s', '%s', '%d')
         );
         
         return $result ? $wpdb->insert_id : false;
     }
     
     /**
-     * Obtenir les projets d'un utilisateur
+     * Créer un nouvel utilisateur (v2.0 - créé par admin)
+     */
+    public static function create_user($admin_id, $data) {
+        global $wpdb;
+        
+        // Créer l'utilisateur WordPress
+        $user_id = wp_create_user($data['email'], $data['password'], $data['email']);
+        
+        if (is_wp_error($user_id)) {
+            return false;
+        }
+        
+        // Mettre à jour les informations utilisateur WordPress
+        wp_update_user(array(
+            'ID' => $user_id,
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'display_name' => $data['first_name'] . ' ' . $data['last_name']
+        ));
+        
+        // Insérer dans la table BMC
+        $table = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'custom_id' => $data['custom_id'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'company' => $data['company'],
+                'created_by_admin' => $admin_id
+            ),
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
+        );
+        
+        if ($result) {
+            return $wpdb->insert_id;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Associer un utilisateur à un projet
+     */
+    public static function assign_user_to_project($project_id, $user_id, $admin_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'user_id' => $user_id,
+                'assigned_by_admin' => $admin_id
+            ),
+            array('%d', '%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Retirer un utilisateur d'un projet
+     */
+    public static function remove_user_from_project($project_id, $user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        $result = $wpdb->update(
+            $table,
+            array('is_active' => 0),
+            array(
+                'project_id' => $project_id,
+                'user_id' => $user_id
+            ),
+            array('%d'),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Vérifier si un utilisateur a accès à un projet
+     */
+    public static function user_has_project_access($user_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        $result = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table 
+            WHERE project_id = %d AND user_id = %d AND is_active = 1
+        ", $project_id, $user_id));
+        
+        return $result > 0;
+    }
+    
+    /**
+     * Obtenir les projets d'un utilisateur (v2.0 - via table de liaison)
      */
     public static function get_user_projects($user_id) {
         global $wpdb;
         
-        $table = $wpdb->prefix . 'bmc_projects';
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
         
-        return $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM $table WHERE user_id = %d ORDER BY created_at DESC",
-                $user_id
-            )
-        );
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT p.*, pu.assigned_at, pu.is_active as assignment_active
+            FROM $table_projects p
+            JOIN $table_project_users pu ON p.id = pu.project_id
+            WHERE pu.user_id = %d AND pu.is_active = 1
+            ORDER BY pu.assigned_at DESC
+        ", $user_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir les utilisateurs d'un projet
+     */
+    public static function get_project_users($project_id) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT u.*, pu.assigned_at, pu.assigned_by_admin, pu.is_active as assignment_active
+            FROM $table_users u
+            JOIN $table_project_users pu ON u.user_id = pu.user_id
+            WHERE pu.project_id = %d AND pu.is_active = 1
+            ORDER BY pu.assigned_at DESC
+        ", $project_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir tous les projets (pour l'admin)
+     */
+    public static function get_all_projects() {
+        global $wpdb;
+        
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_users = $wpdb->prefix . 'bmc_users';
+        
+        $results = $wpdb->get_results("
+            SELECT p.*, u.first_name, u.last_name, u.company
+            FROM $table_projects p
+            LEFT JOIN $table_users u ON p.created_by_admin = u.user_id
+            ORDER BY p.created_at DESC
+        ");
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir tous les utilisateurs (pour l'admin)
+     */
+    public static function get_all_users() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $results = $wpdb->get_results("
+            SELECT * FROM $table 
+            WHERE is_active = 1
+            ORDER BY created_at DESC
+        ");
+        
+        return $results;
     }
     
     /**
@@ -902,20 +1087,8 @@ class WP_BMC_Database {
     }
     
     /**
-     * Obtenir tous les projets
+     * Obtenir tous les projets (méthode supprimée - doublon)
      */
-    public static function get_all_projects() {
-        global $wpdb;
-        
-        $table = $wpdb->prefix . 'bmc_projects';
-        
-        return $wpdb->get_results(
-            "SELECT p.*, u.display_name as user_name, u.user_email
-             FROM $table p
-             JOIN {$wpdb->users} u ON p.user_id = u.ID
-             ORDER BY p.created_at DESC"
-        );
-    }
     
     /**
      * Obtenir toutes les notifications
