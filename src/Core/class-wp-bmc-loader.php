@@ -281,7 +281,7 @@ class WP_BMC_Loader {
 
         // Script de gestion des utilisateurs (v2.0)
         wp_enqueue_script(
-            'wp-bmc-admin-users',
+            'wp-bmc-admin-users-v2',
             WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users-v2.js',
             array('jquery', 'wp-bmc-toast'),
             WP_BMC_VERSION,
@@ -302,7 +302,7 @@ class WP_BMC_Loader {
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
         
-        wp_localize_script('wp-bmc-admin-users', 'wp_bmc_admin_ajax', array(
+        wp_localize_script('wp-bmc-admin-users-v2', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));

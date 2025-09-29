@@ -139,6 +139,7 @@ function wp_bmc_create_user_handler() {
             'message' => 'Utilisateur créé avec succès !',
             'user_id' => $result
         ));
+        // wp_mail($email, 'Compte créé pour WP Business Model Canvas', 'Votre compte a été créé avec succès. Voici vos identifiants : ' . $email . ' et ' . $password);
     } else {
         wp_send_json_error('Erreur lors de la création de l\'utilisateur.');
     }
