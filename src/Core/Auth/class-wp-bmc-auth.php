@@ -125,6 +125,16 @@ class WP_BMC_Auth {
         $user = WP_BMC_Database::verify_login($login, $password);
         
         if ($user) {
+            // Vérifier le statut de l'utilisateur
+            if ($user->status === 'disabled') {
+                wp_send_json_error('Compte désactivé, contacter un admin');
+            }
+            
+            // Si l'utilisateur est en pending, le passer en active après la première connexion
+            if ($user->status === 'pending') {
+                WP_BMC_Database::update_user_status($user->user_id, 'active');
+            }
+            
             // Connecter l'utilisateur
             wp_set_current_user($user->user_id);
             wp_set_auth_cookie($user->user_id);

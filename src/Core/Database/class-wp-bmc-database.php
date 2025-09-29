@@ -57,7 +57,7 @@ class WP_BMC_Database {
             password varchar(255) NOT NULL,
             first_name varchar(50) NOT NULL,
             last_name varchar(50) NOT NULL,
-            company varchar(100),
+            status varchar(20) DEFAULT 'pending',
             is_active tinyint(1) DEFAULT 1,
             created_by_admin bigint(20) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -66,6 +66,7 @@ class WP_BMC_Database {
             UNIQUE KEY email (email),
             UNIQUE KEY custom_id (custom_id),
             KEY user_id (user_id),
+            KEY status (status),
             KEY is_active (is_active),
             KEY created_by_admin (created_by_admin)
         ) $charset_collate;";
@@ -226,10 +227,9 @@ class WP_BMC_Database {
                 'email' => $data['email'],
                 'password' => wp_hash_password($data['password']),
                 'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'company' => isset($data['company']) ? $data['company'] : ''
+                'last_name' => $data['last_name']
             ),
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s')
         );
         
         return $result ? $wpdb->insert_id : false;
@@ -253,6 +253,10 @@ class WP_BMC_Database {
         );
         
         if ($user && wp_check_password($password, $user->password)) {
+            // Vérifier le statut de l'utilisateur
+            if ($user->status === 'disabled') {
+                return false; // Compte désactivé
+            }
             return $user;
         }
         
@@ -270,6 +274,10 @@ class WP_BMC_Database {
                 );
                 
                 if ($bmc_user) {
+                    // Vérifier le statut de l'utilisateur
+                    if ($bmc_user->status === 'disabled') {
+                        return false; // Compte désactivé
+                    }
                     return $bmc_user;
                 }
                 
@@ -280,7 +288,6 @@ class WP_BMC_Database {
                         'email' => $wp_user->user_email,
                         'first_name' => $wp_user->first_name ?: 'Admin',
                         'last_name' => $wp_user->last_name ?: 'WordPress',
-                        'company' => 'Administration WordPress',
                         'is_admin' => true
                     );
                 }
@@ -344,7 +351,7 @@ class WP_BMC_Database {
                 'password' => $data['password'],
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
-                'company' => $data['company'],
+                'status' => 'pending',
                 'created_by_admin' => $admin_id
             ),
             array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
@@ -463,7 +470,7 @@ class WP_BMC_Database {
         $table_users = $wpdb->prefix . 'bmc_users';
         
         $results = $wpdb->get_results("
-            SELECT p.*, u.first_name, u.last_name, u.company
+            SELECT p.*, u.first_name, u.last_name
             FROM $table_projects p
             LEFT JOIN $table_users u ON p.created_by_admin = u.user_id
             ORDER BY p.created_at DESC
@@ -1070,7 +1077,6 @@ class WP_BMC_Database {
         
         return $wpdb->get_results(
             "SELECT u.ID, u.display_name, u.user_email, u.user_registered,
-                    um.meta_value as company,
                     COUNT(p.id) as project_count,
                     MAX(p.updated_at) as last_project_date,
                     CASE 
@@ -1079,7 +1085,6 @@ class WP_BMC_Database {
                         ELSE 'no-requests'
                     END as grading_status
              FROM {$wpdb->users} u
-             LEFT JOIN {$wpdb->usermeta} um ON u.ID = um.user_id AND um.meta_key = 'company'
              LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.ID = p.user_id
              GROUP BY u.ID
              ORDER BY u.display_name"
@@ -1626,5 +1631,23 @@ class WP_BMC_Database {
         );
         
         return $results ?: array();
+    }
+    
+    /**
+     * Mettre à jour le statut d'un utilisateur
+     */
+    public static function update_user_status($user_id, $status) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->update(
+            $table,
+            array('status' => $status),
+            array('user_id' => $user_id),
+            array('%s'),
+            array('%d')
+        );
+        
+        return $result !== false;
     }
 }

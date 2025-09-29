@@ -105,7 +105,6 @@ function wp_bmc_create_user_handler() {
     $password = $_POST['password'];
     $first_name = sanitize_text_field($_POST['first_name']);
     $last_name = sanitize_text_field($_POST['last_name']);
-    $company = sanitize_text_field($_POST['company']);
     
     if (empty($custom_id) || empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
         wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
@@ -130,8 +129,7 @@ function wp_bmc_create_user_handler() {
         'email' => $email,
         'password' => $password,
         'first_name' => $first_name,
-        'last_name' => $last_name,
-        'company' => $company
+        'last_name' => $last_name
     );
     
     $result = WP_BMC_Database::create_user($admin_id, $user_data);
@@ -1300,14 +1298,13 @@ function wp_bmc_export_users_handler() {
     $file = fopen($filepath, 'w');
     
     // En-têtes CSV
-    fputcsv($file, array('Nom', 'Email', 'Entreprise', 'Projets', 'Dernière activité', 'Demandes de notation'));
+    fputcsv($file, array('Nom', 'Email', 'Projets', 'Dernière activité', 'Demandes de notation'));
     
     // Données
     foreach ($users as $user) {
         fputcsv($file, array(
             $user->display_name,
             $user->user_email,
-            $user->company,
             $user->project_count,
             $user->last_project_date,
             $user->grading_status
@@ -1484,7 +1481,6 @@ function wp_bmc_export_all_data_handler() {
             'last_name' => $user->last_name,
             'full_name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
-            'company' => $user->company
         ),
         'canvas' => array(
             'sections' => $sections_data,
@@ -1634,7 +1630,6 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
             'last_name' => $user->last_name,
             'full_name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
-            'company' => $user->company
         ),
         'canvas' => array(
             'sections' => array()
@@ -1972,7 +1967,6 @@ function compile_handlebars_template($template, $data) {
         '{{project.title}}' => $data['project']['title'],
         '{{project.description}}' => $data['project']['description'],
         '{{user.full_name}}' => $data['user']['full_name'],
-        '{{user.company}}' => $data['user']['company'],
         '{{statistics.content.completion_percentage}}' => $data['statistics']['content']['completion_percentage'],
         '{{statistics.content.sections_with_content}}' => $data['statistics']['content']['sections_with_content'],
         '{{statistics.content.total_characters}}' => $data['statistics']['content']['total_characters'],
@@ -2557,4 +2551,40 @@ function wp_bmc_get_available_users_handler() {
     wp_send_json_success(array(
         'users' => array_values($available_users)
     ));
+}
+
+// ========================================
+// GESTION DES STATUTS UTILISATEUR (v2.0)
+// ========================================
+
+add_action('wp_ajax_wp_bmc_update_user_status', 'wp_bmc_update_user_status_handler');
+function wp_bmc_update_user_status_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $user_id = intval($_POST['user_id']);
+    $status = sanitize_text_field($_POST['status']);
+
+    if (!$user_id || !in_array($status, array('active', 'pending', 'disabled'))) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+
+    $result = WP_BMC_Database::update_user_status($user_id, $status);
+
+    if ($result) {
+        $status_labels = array(
+            'active' => 'Actif',
+            'pending' => 'En attente',
+            'disabled' => 'Désactivé'
+        );
+        
+        wp_send_json_success(array(
+            'message' => 'Statut mis à jour : ' . $status_labels[$status]
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour du statut.');
+    }
 }
