@@ -212,7 +212,16 @@ class WP_BMC_Loader {
      * Charger les scripts d'administration
      */
     public function enqueue_admin_scripts($hook) {
-        if ($hook != 'toplevel_page_wp-business-model-canvas') {
+        // Vérifier si on est sur une page du plugin BMC
+        $bmc_pages = array(
+            'toplevel_page_wp-business-model-canvas',
+            'bmc-v2_page_wp-business-model-canvas-projects',
+            'bmc-v2_page_wp-business-model-canvas-users',
+            'bmc-v2_page_wp-business-model-canvas-migration',
+            'bmc-v2_page_wp-business-model-canvas-check'
+        );
+        
+        if (!in_array($hook, $bmc_pages)) {
             return;
         }
         
@@ -250,6 +259,23 @@ class WP_BMC_Loader {
             true
         );
         
+        // Script de gestion des projets (v2.0)
+        wp_enqueue_script(
+            'wp-bmc-admin-projects',
+            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-projects.js',
+            array('jquery', 'wp-bmc-toast'),
+            WP_BMC_VERSION,
+            true
+        );
+        
+        // Styles pour la page des projets (v2.0)
+        wp_enqueue_style(
+            'wp-bmc-admin-projects-css',
+            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-projects.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
         // Variables AJAX pour les scripts admin
         wp_localize_script('wp-bmc-admin', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -257,6 +283,11 @@ class WP_BMC_Loader {
         ));
         
         wp_localize_script('wp-bmc-admin-users', 'wp_bmc_admin_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+        ));
+        
+        wp_localize_script('wp-bmc-admin-projects', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
