@@ -68,7 +68,7 @@ class WP_BMC_Migration_V2 {
         }
         
         if (!in_array('is_active', $columns)) {
-            $wpdb->query("ALTER TABLE $users_table ADD COLUMN is_active tinyint(1) DEFAULT 1 AFTER company");
+            $wpdb->query("ALTER TABLE $users_table ADD COLUMN is_active tinyint(1) DEFAULT 1 AFTER status");
         }
         
         if (!in_array('created_by_admin', $columns)) {

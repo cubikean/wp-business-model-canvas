@@ -31,7 +31,6 @@ class WP_BMC_Auth {
         $password = sanitize_text_field($_POST['password']);
         $first_name = sanitize_text_field($_POST['first_name']);
         $last_name = sanitize_text_field($_POST['last_name']);
-        $company = sanitize_text_field($_POST['company']);
         
         // Validation
         if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
@@ -90,7 +89,6 @@ class WP_BMC_Auth {
             'password' => $password,
             'first_name' => $first_name,
             'last_name' => $last_name,
-            'company' => $company
         ));
         
         if ($bmc_user_id) {
@@ -188,7 +186,6 @@ class WP_BMC_Auth {
                     'email' => $wp_user->user_email,
                     'first_name' => $wp_user->first_name ?: 'Admin',
                     'last_name' => $wp_user->last_name ?: 'WordPress',
-                    'company' => 'Administration WordPress',
                     'is_admin' => true
                 );
             }

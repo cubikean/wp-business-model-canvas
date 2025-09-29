@@ -13,16 +13,15 @@ jQuery(document).ready(function ($) {
 
     var formData = {
       action: "wp_bmc_create_user",
-      nonce: $form.find('[name="wp_bmc_admin_nonce"]').val(),
+      nonce: wp_bmc_admin_ajax.nonce,
       custom_id: $("#user_custom_id").val(),
       email: $("#user_email").val(),
       password: $("#user_password").val(),
       first_name: $("#user_first_name").val(),
       last_name: $("#user_last_name").val(),
-      company: $("#user_company").val(),
     };
 
-    $.post(ajaxurl, formData, function (response) {
+    $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
       if (response.success) {
         WP_BMC_Toast.success(response.data.message);
         setTimeout(function () {
@@ -90,13 +89,11 @@ jQuery(document).ready(function ($) {
       var customId = $row.find(".user-custom-id").text().toLowerCase();
       var name = $row.find(".user-name").text().toLowerCase();
       var email = $row.find(".user-email").text().toLowerCase();
-      var company = $row.find(".user-company").text().toLowerCase();
 
       if (
         customId.includes(searchTerm) ||
         name.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        company.includes(searchTerm)
+        email.includes(searchTerm)
       ) {
         $row.show();
       } else {
@@ -131,11 +128,7 @@ jQuery(document).ready(function ($) {
         case "email":
           aVal = $(a).find(".user-email").text().trim();
           bVal = $(b).find(".user-email").text().trim();
-          break;
-        case "company":
-          aVal = $(a).find(".user-company").text().trim();
-          bVal = $(b).find(".user-company").text().trim();
-          break;
+          break;  
         case "created_at":
           aVal = new Date($(a).find(".user-created").text());
           bVal = new Date($(b).find(".user-created").text());
@@ -210,11 +203,11 @@ jQuery(document).ready(function ($) {
     var actionText = status === 'disabled' ? 'désactiver' : 'activer';
     
     if (confirm('Êtes-vous sûr de vouloir ' + actionText + ' cet utilisateur ?')) {
-      $.post(ajaxurl, {
+      $.post(wp_bmc_admin_ajax.ajax_url, {
         action: 'wp_bmc_update_user_status',
         user_id: userId,
         status: status,
-        nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        nonce: wp_bmc_admin_ajax.nonce
       }, function(response) {
         if (response.success) {
           WP_BMC_Toast.success(response.data.message);

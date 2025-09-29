@@ -73,7 +73,6 @@ jQuery(document).ready(function($) {
             first_name: $('#first_name').val(),
             last_name: $('#last_name').val(),
             email: $('#email').val(),
-            company: $('#company').val(),
             password: password
         };
         

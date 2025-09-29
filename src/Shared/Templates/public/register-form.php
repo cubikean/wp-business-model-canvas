@@ -28,11 +28,7 @@ if (!defined('ABSPATH')) {
             <label for="email">Email</label>
             <input type="email" id="email" name="email" required>
         </div>
-        
-        <div class="form-group">
-            <label for="company">Entreprise</label>
-            <input type="text" id="company" name="company" required>
-        </div>
+      
         
         <div class="form-group">
             <label for="password">Mot de passe</label>

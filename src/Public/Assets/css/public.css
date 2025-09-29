@@ -795,11 +795,6 @@
   color: var(--text-color);
 }
 
-.company-info {
-  color: var(--text-muted) !important;
-  font-style: italic;
-}
-
 /* Section sans projet */
 .no-project-section {
   text-align: center;

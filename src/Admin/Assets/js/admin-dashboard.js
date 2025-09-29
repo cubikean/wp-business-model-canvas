@@ -315,13 +315,10 @@ jQuery(document).ready(function ($) {
       var $row = $(this);
       var name = $row.find(".user-name").text().toLowerCase();
       var email = $row.find(".user-email").text().toLowerCase();
-      var company = $row.find(".user-company").text().toLowerCase();
 
       if (
         name.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        company.includes(searchTerm)
-      ) {
+        email.includes(searchTerm)      ) {
         $row.show();
       } else {
         $row.hide();
@@ -490,10 +487,6 @@ jQuery(document).ready(function ($) {
         case "email":
           aVal = $(a).find(".user-email").text().trim();
           bVal = $(b).find(".user-email").text().trim();
-          break;
-        case "company":
-          aVal = $(a).find(".user-company").text().trim();
-          bVal = $(b).find(".user-company").text().trim();
           break;
         case "project_count":
           aVal = parseInt($(a).find(".project-count").text()) || 0;

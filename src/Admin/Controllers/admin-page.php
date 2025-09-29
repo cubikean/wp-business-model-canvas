@@ -380,7 +380,7 @@ $categories = array(
         
         <?php
         $projects = $wpdb->get_results("
-            SELECT p.*, u.first_name, u.last_name, u.company 
+            SELECT p.*, u.first_name, u.last_name 
             FROM $projects_table p 
             LEFT JOIN $users_table u ON p.user_id = u.user_id 
             ORDER BY p.created_at DESC
@@ -408,9 +408,7 @@ $categories = array(
                             <td>
                                 <strong><?php echo esc_html($project->first_name . ' ' . $project->last_name); ?></strong>
                             </td>
-                            <td>
-                                <?php echo esc_html($project->company); ?>
-                            </td>
+                            
                             <td>
                                 <strong><?php echo esc_html($project->title); ?></strong>
                             </td>

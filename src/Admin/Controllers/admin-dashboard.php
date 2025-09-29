@@ -101,9 +101,7 @@ $recent_projects = array_slice($all_projects, 0, 10);
                     <th class="sortable" data-sort="email">
                         Email <span class="sort-indicator"></span>
                     </th>
-                    <th class="sortable" data-sort="company">
-                        Entreprise <span class="sort-indicator"></span>
-                    </th>
+                    
                     <th class="sortable" data-sort="project_count">
                         Projets <span class="sort-indicator"></span>
                     </th>
@@ -130,9 +128,7 @@ $recent_projects = array_slice($all_projects, 0, 10);
                                 <?php echo esc_html($user->email); ?>
                             </a>
                         </td>
-                        <td class="user-company">
-                            <?php echo esc_html($user->company); ?>
-                        </td>
+                       
                         <td class="user-projects">
                             <?php
                             $user_projects = WP_BMC_Database::get_user_projects($user->user_id);
