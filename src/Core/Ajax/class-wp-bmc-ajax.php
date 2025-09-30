@@ -1142,9 +1142,9 @@ function wp_bmc_load_canvas_view_handler() {
             wp_send_json_error('Projet non trouvé.');
         }
         
-        // Vérifier si c'est un mode admin ou si l'utilisateur est le propriétaire
+        // Vérifier si c'est un mode admin ou si l'utilisateur a accès au projet
         $is_admin = current_user_can('manage_options');
-        if (!$is_admin && $current_user->user_id != $project->user_id) {
+        if (!$is_admin && !WP_BMC_Database::user_has_project_access($current_user->user_id, $project_id)) {
             wp_send_json_error('Accès non autorisé à ce projet.');
         }
     } else {
