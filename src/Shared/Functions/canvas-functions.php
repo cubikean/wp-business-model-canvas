@@ -221,6 +221,11 @@ function wp_bmc_get_synthetic_order()
  */
 function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin = false, $pending_grading_requests = array(), $include_progress_chart = false)
 {
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
     // Configuration des sections du canvas (utiliser les valeurs par défaut du fichier)
     $canvas_sections = wp_bmc_get_canvas_sections($view_mode, false);
 
@@ -373,7 +378,12 @@ function wp_bmc_get_all_project_todos($project_id)
  */
 function wp_bmc_get_section_display_name($section_key)
 {
-    $sections = wp_bmc_get_canvas_sections();
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
+    $sections = wp_bmc_get_canvas_sections('global', false);
 
     if (isset($sections[$section_key])) {
         return $sections[$section_key]['title'];
