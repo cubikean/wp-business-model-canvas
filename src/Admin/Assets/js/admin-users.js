@@ -10,6 +10,12 @@ jQuery(document).ready(function($) {
     // ========================================
     $("#create-user-form").on("submit", function (e) {
         e.preventDefault();
+        
+        // Debug: vérifier que les variables AJAX sont disponibles
+        if (typeof wp_bmc_admin_ajax === 'undefined') {
+            WP_BMC_Toast.error('Variables AJAX non chargées. Rechargez la page.');
+            return;
+        }
 
         var $form = $(this);
         var $submitBtn = $form.find('button[type="submit"]');
@@ -29,7 +35,10 @@ jQuery(document).ready(function($) {
             last_name: $("#user_last_name").val(),
         };
 
+        console.log('Envoi AJAX:', formData); // Debug
+
         $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
+            console.log('Réponse AJAX:', response); // Debug
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
                 setTimeout(function () {
@@ -39,8 +48,9 @@ jQuery(document).ready(function($) {
                 WP_BMC_Toast.error(response.data);
             }
         })
-            .fail(function () {
-                WP_BMC_Toast.error("Erreur lors de la création de l'utilisateur.");
+            .fail(function (xhr, status, error) {
+                console.error('Erreur AJAX:', xhr, status, error); // Debug
+                WP_BMC_Toast.error("Erreur lors de la création de l'utilisateur: " + error);
             })
             .always(function () {
                 $submitBtn.prop("disabled", false).html(originalText);
@@ -68,16 +78,11 @@ jQuery(document).ready(function($) {
     // ========================================
     $('.sortable').on('click', function() {
         var column = $(this).data('sort');
-        var currentOrder = $(this).hasClass('asc') ? 'desc' : 'asc';
+        var $this = $(this);
         
-        // Réinitialiser tous les indicateurs de tri
-        $('.sortable').removeClass('asc desc');
+        var newOrder = $this.hasClass('asc') ? 'desc' : 'asc';
         
-        // Ajouter la classe de tri à la colonne cliquée
-        $(this).addClass(currentOrder);
-        
-        // Trier le tableau
-        sortUsersTable(column, currentOrder);
+        sortUsersTable(column, newOrder);
     });
     
     // ========================================
@@ -160,26 +165,16 @@ jQuery(document).ready(function($) {
     
     // Filtrer les utilisateurs par statut
     function filterUsersByStatus(status) {
-        $('.user-row').each(function() {
-            var $row = $(this);
-            var projectCount = parseInt($row.find('.project-count').text());
-            
-            if (status === '') {
-                $row.show();
-            } else if (status === 'active' && projectCount > 0) {
-                $row.show();
-            } else if (status === 'inactive' && projectCount === 0) {
-                $row.show();
-            } else {
-                $row.hide();
-            }
-        });
-        
+        $('.user-row').hide();
+        status 
+            ? $('.user-row .user-status span.' + status).closest('.user-row').show()
+            : $('.user-row').show();
         updateUsersCount();
     }
     
     // Trier le tableau des utilisateurs
     function sortUsersTable(column, order) {
+        console.log('sortUsersTable appelée:', column, order); // Debug
         var $tbody = $('#users-table tbody');
         var $rows = $tbody.find('.user-row').toArray();
         
@@ -187,41 +182,70 @@ jQuery(document).ready(function($) {
             var aVal, bVal;
             
             switch(column) {
-                case 'custom_id':
-                    aVal = $(a).find('.user-custom-id').text().trim();
-                    bVal = $(b).find('.user-custom-id').text().trim();
-                    break;
                 case 'name':
-                    aVal = $(a).find('.user-name').text().trim();
-                    bVal = $(b).find('.user-name').text().trim();
+                    // Trier par nom complet (prénom + nom)
+                    aVal = $(a).find('.user-name strong').text().trim().toLowerCase();
+                    bVal = $(b).find('.user-name strong').text().trim().toLowerCase();
                     break;
                 case 'email':
-                    aVal = $(a).find('.user-email').text().trim();
-                    bVal = $(b).find('.user-email').text().trim();
+                    // Trier par email
+                    aVal = $(a).find('.user-email').text().trim().toLowerCase();
+                    bVal = $(b).find('.user-email').text().trim().toLowerCase();
                     break;
-                case 'project_count':
-                    aVal = parseInt($(a).find('.project-count').text()) || 0;
-                    bVal = parseInt($(b).find('.project-count').text()) || 0;
+                case 'project':
+                    // Trier par projet (avec projet vs sans projet)
+                    var aHasProject = $(a).find('.no-project').length === 0;
+                    var bHasProject = $(b).find('.no-project').length === 0;
+                    
+                    if (aHasProject && !bHasProject) {
+                        aVal = 1; // Avec projet
+                        bVal = 0; // Sans projet
+                    } else if (!aHasProject && bHasProject) {
+                        aVal = 0; // Sans projet
+                        bVal = 1; // Avec projet
+                    } else {
+                        // Même statut, trier par nom de projet
+                        aVal = $(a).find('.project-name').text().trim().toLowerCase();
+                        bVal = $(b).find('.project-name').text().trim().toLowerCase();
+                    }
+                    break;
+                case 'status':
+                    // Trier par statut
+                    aVal = $(a).find('.user-status .status-badge').text().trim().toLowerCase();
+                    bVal = $(b).find('.user-status .status-badge').text().trim().toLowerCase();
                     break;
                 case 'created_at':
-                    aVal = new Date($(a).find('.user-registration').text());
-                    bVal = new Date($(b).find('.user-registration').text());
-                    break;
-                case 'last_project_date':
-                    var aText = $(a).find('.user-last-project').text().trim();
-                    var bText = $(b).find('.user-last-project').text().trim();
-                    aVal = aText === 'Aucun projet' ? new Date(0) : new Date(aText);
-                    bVal = bText === 'Aucun projet' ? new Date(0) : new Date(bText);
+                    // Trier par date de création (année)
+                    aVal = parseInt($(a).find('.user-created').text()) || 0;
+                    bVal = parseInt($(b).find('.user-created').text()) || 0;
                     break;
                 default:
                     return 0;
             }
             
-            if (order === 'asc') {
-                return aVal > bVal ? 1 : -1;
+            // Comparaison pour le tri
+            var result;
+            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                if (order === 'asc') {
+                    result = aVal.localeCompare(bVal);
+                } else {
+                    result = bVal.localeCompare(aVal);
+                }
             } else {
-                return aVal < bVal ? 1 : -1;
+                // Comparaison numérique
+                if (order === 'asc') {
+                    result = aVal > bVal ? 1 : (aVal < bVal ? -1 : 0);
+                } else {
+                    result = aVal < bVal ? 1 : (aVal > bVal ? -1 : 0);
+                }
             }
+            
+            // Debug pour les 2 premiers éléments
+            if ($rows.indexOf(a) < 2 && $rows.indexOf(b) < 2) {
+                console.log('Comparaison:', aVal, 'vs', bVal, 'ordre:', order, 'résultat:', result);
+            }
+            
+            return result;
         });
         
         // Réorganiser les lignes dans le DOM

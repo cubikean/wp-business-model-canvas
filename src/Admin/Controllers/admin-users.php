@@ -22,7 +22,7 @@ $all_users = WP_BMC_Database::get_all_users();
 ?>
 
 <div class="wrap wp-bmc-admin-users">
-    <h1>👥 Gestion des Utilisateurs - Business Model Canvas v2.0</h1>
+    <h1>Gestion des Utilisateurs</h1>
 
     <!-- Statistiques -->
     <div class="wp-bmc-stats-section">
@@ -98,8 +98,9 @@ $all_users = WP_BMC_Database::get_all_users();
             <div class="users-filters">
                 <select id="users-filter-status">
                     <option value="">Tous les statuts</option>
-                    <option value="active">Actifs</option>
-                    <option value="inactive">Inactifs</option>
+                    <option value="status-active">Actifs</option>
+                    <option value="status-pending">En attente</option>
+                    <option value="status-disabled">Désactivé</option>
                 </select>
             </div>
         </div>
@@ -110,20 +111,22 @@ $all_users = WP_BMC_Database::get_all_users();
             <table class="wp-list-table widefat fixed striped" id="users-table">
                 <thead>
                     <tr>
-                        <th class="sortable" data-sort="custom_id">
-                            ID personnalisé <span class="sort-indicator"></span>
-                        </th>
+                       
                         <th class="sortable" data-sort="name">
                             Nom <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="email">
                             Email <span class="sort-indicator"></span>
                         </th>
+
+                        <th class="sortable" data-sort="project">
+                            Projet <span class="sort-indicator"></span>
+                        </th>
                         <th class="sortable" data-sort="status">
                             Statut <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="created_at">
-                            Créé le <span class="sort-indicator"></span>
+                            Créé en <span class="sort-indicator"></span>
                         </th>
                         <th>Actions</th>
                     </tr>
@@ -131,16 +134,25 @@ $all_users = WP_BMC_Database::get_all_users();
                 <tbody>
                     <?php foreach ($all_users as $user): ?>
                         <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
-                            <td class="user-custom-id">
-                                <strong><?php echo esc_html($user->custom_id); ?></strong>
-                            </td>
                             <td class="user-name">
                                 <strong><?php echo esc_html($user->first_name . ' ' . $user->last_name); ?></strong>
+                                <small><?php echo esc_html($user->custom_id); ?></small>
                             </td>
                             <td class="user-email">
                                 <a href="mailto:<?php echo esc_attr($user->email); ?>">
                                     <?php echo esc_html($user->email); ?>
                                 </a>
+                            </td>
+
+                            <td class="user-project">
+                            <?php $user_projects = WP_BMC_Database::get_user_projects($user->user_id); ?>
+                            <?php if (empty($user_projects)): ?>
+                                <span class="no-project">Aucun projet assigné</span>
+                            <?php else: ?>
+                                <?php foreach ($user_projects as $project): ?>
+                                    <span class="project-name"><strong><?php echo esc_html($project->title); ?></strong></span>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             </td>
                             <td class="user-status">
                                 <span class="status-badge status-<?php echo esc_attr($user->status); ?>">
@@ -155,7 +167,7 @@ $all_users = WP_BMC_Database::get_all_users();
                                 </span>
                             </td>
                             <td class="user-created">
-                                <?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?>
+                                <?php echo date('Y', strtotime($user->created_at)); ?>
                             </td>
                             <td class="user-actions">
                                 <div class="action-buttons">

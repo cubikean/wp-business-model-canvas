@@ -258,7 +258,7 @@ class WP_BMC_Loader {
             wp_enqueue_script(
                 'wp-bmc-admin-users',
                 WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users.js',
-                array('jquery', 'wp-bmc-toast'),
+                array('jquery', 'wp-bmc-toast', 'wp-bmc-admin'),
                 WP_BMC_VERSION,
                 true
             );
@@ -282,21 +282,12 @@ class WP_BMC_Loader {
             );
         }
 
-        // Variables AJAX pour les scripts admin
+        // Variables AJAX pour les scripts admin (une seule fois)
         wp_localize_script('wp-bmc-admin', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
-        
-        // Variables AJAX pour les scripts spécifiques
-        if (strpos($hook, 'wp-business-model-canvas-users') !== false) {
-            wp_localize_script('wp-bmc-admin-users', 'wp_bmc_admin_ajax', array(
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'admin_url' => admin_url(),
-                'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
-            ));
-        }
         
         if (strpos($hook, 'wp-business-model-canvas-projects') !== false) {
             wp_localize_script('wp-bmc-admin-projects', 'wp_bmc_admin_ajax', array(
