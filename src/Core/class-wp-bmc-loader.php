@@ -122,6 +122,16 @@ class WP_BMC_Loader {
             'wp-business-model-canvas-check',
             array($this, 'check_page')
         );
+        
+        // Ajouter un sous-menu pour la configuration du canvas
+        add_submenu_page(
+            'wp-business-model-canvas',
+            'Configuration du Canvas',
+            'Config Canvas',
+            'manage_options',
+            'wp-business-model-canvas-config',
+            array($this, 'canvas_config_page')
+        );
     }
     
     /**
@@ -209,6 +219,13 @@ class WP_BMC_Loader {
     }
     
     /**
+     * Page de configuration du canvas
+     */
+    public function canvas_config_page() {
+        include WP_BMC_PLUGIN_DIR . 'src/Admin/Controllers/admin-canvas-config.php';
+    }
+    
+    /**
      * Charger les scripts d'administration
      */
     public function enqueue_admin_scripts($hook) {
@@ -219,7 +236,8 @@ class WP_BMC_Loader {
             'bmc-v2-0_page_wp-business-model-canvas-projects',
             'bmc-v2-0_page_wp-business-model-canvas-users',
             'bmc-v2-0_page_wp-business-model-canvas-migration',
-            'bmc-v2-0_page_wp-business-model-canvas-check'
+            'bmc-v2-0_page_wp-business-model-canvas-check',
+            'bmc-v2-0_page_wp-business-model-canvas-config'
         );
         
         if (!in_array($hook, $bmc_pages)) {

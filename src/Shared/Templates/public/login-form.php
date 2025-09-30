@@ -41,6 +41,5 @@ if (!defined('ABSPATH')) {
             <p>Mot de passe oublié ? Contactez Votre référent</p>
         </div>
     </form>
-    
-    <div id="wp-bmc-login-message" class="wp-bmc-message" style="display: none;"></div>
+
 </div>

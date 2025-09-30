@@ -2816,3 +2816,104 @@ function wp_bmc_edit_project_handler() {
         wp_send_json_error('Erreur lors de l\'édition du projet.');
     }
 }
+
+// ========================================
+// GESTION DES CONFIGURATIONS DU CANVAS
+// ========================================
+
+// Handler pour récupérer les configurations des sections du canvas
+add_action('wp_ajax_wp_bmc_get_canvas_configs', 'wp_bmc_get_canvas_configs_handler');
+function wp_bmc_get_canvas_configs_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    // S'assurer que la table des configurations existe
+    WP_BMC_Database::create_tables();
+    
+    $configs = WP_BMC_Database::get_all_canvas_configs();
+    
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
+    $sections = wp_bmc_get_canvas_sections();
+    
+    // Préparer les données pour l'interface admin
+    $formatted_configs = array();
+    foreach ($sections as $section_key => $section_config) {
+        $formatted_configs[$section_key] = array(
+            'title' => isset($configs[$section_key]['title']) ? $configs[$section_key]['title'] : $section_config['title'],
+            'placeholder' => isset($configs[$section_key]['placeholder']) ? $configs[$section_key]['placeholder'] : $section_config['placeholder'],
+            'default_title' => $section_config['title'],
+            'default_placeholder' => $section_config['placeholder']
+        );
+    }
+    
+    wp_send_json_success(array(
+        'configs' => $formatted_configs
+    ));
+}
+
+// Handler pour sauvegarder les configurations des sections du canvas
+add_action('wp_ajax_wp_bmc_save_canvas_configs', 'wp_bmc_save_canvas_configs_handler');
+function wp_bmc_save_canvas_configs_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    // S'assurer que la table des configurations existe
+    WP_BMC_Database::create_tables();
+    
+    $configs = $_POST['configs'];
+    
+    if (!is_array($configs)) {
+        wp_send_json_error('Format de données invalide');
+    }
+    
+    $success_count = 0;
+    $error_count = 0;
+    
+    foreach ($configs as $section_key => $section_configs) {
+        // Sauvegarder le titre
+        if (isset($section_configs['title'])) {
+            $result = WP_BMC_Database::save_canvas_section_config(
+                $section_key,
+                'title',
+                sanitize_text_field($section_configs['title'])
+            );
+            if ($result) {
+                $success_count++;
+            } else {
+                $error_count++;
+            }
+        }
+        
+        // Sauvegarder le placeholder
+        if (isset($section_configs['placeholder'])) {
+            $result = WP_BMC_Database::save_canvas_section_config(
+                $section_key,
+                'placeholder',
+                sanitize_textarea_field($section_configs['placeholder'])
+            );
+            if ($result) {
+                $success_count++;
+            } else {
+                $error_count++;
+            }
+        }
+    }
+    
+    if ($error_count === 0) {
+        wp_send_json_success(array(
+            'message' => 'Configurations sauvegardées avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la sauvegarde de certaines configurations.');
+    }
+}

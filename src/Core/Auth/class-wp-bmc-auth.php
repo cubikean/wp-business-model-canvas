@@ -122,12 +122,9 @@ class WP_BMC_Auth {
         // Vérifier les identifiants (accepte email ou pseudonyme)
         $user = WP_BMC_Database::verify_login($login, $password);
         
-        if ($user) {
-            // Vérifier le statut de l'utilisateur
-            if ($user->status === 'disabled') {
-                wp_send_json_error('Compte désactivé, contacter un admin');
-            }
-            
+        if ($user === 'account_disabled') {
+            wp_send_json_error('Votre compte a été désactivé. Veuillez contacter un administrateur pour plus d\'informations.');
+        } elseif ($user) {
             // Si l'utilisateur est en pending, marquer qu'il doit changer son mot de passe
             if ($user->status === 'pending') {
                 // Marquer que l'utilisateur doit changer son mot de passe

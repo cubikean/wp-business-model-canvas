@@ -200,6 +200,21 @@ class WP_BMC_Database {
             KEY is_active (is_active)
         ) $charset_collate;";
         
+        // Table des configurations du canvas
+        $table_canvas_config = $wpdb->prefix . 'bmc_canvas_config';
+        $sql_canvas_config = "CREATE TABLE $table_canvas_config (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            section_key varchar(50) NOT NULL,
+            config_type varchar(20) NOT NULL,
+            config_value text NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY section_config (section_key, config_type),
+            KEY section_key (section_key),
+            KEY config_type (config_type)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -210,6 +225,7 @@ class WP_BMC_Database {
         dbDelta($sql_todos);
         dbDelta($sql_admin_students);
         dbDelta($sql_project_users);
+        dbDelta($sql_canvas_config);
     }
     
         /**
@@ -238,6 +254,7 @@ class WP_BMC_Database {
     /**
      * Vérifier les identifiants de connexion
      * Accepte soit l'email soit le pseudonyme WordPress
+     * Retourne l'utilisateur ou un code d'erreur spécifique
      */
     public static function verify_login($login, $password) {
         global $wpdb;
@@ -255,7 +272,7 @@ class WP_BMC_Database {
         if ($user && wp_check_password($password, $user->password)) {
             // Vérifier le statut de l'utilisateur
             if ($user->status === 'disabled') {
-                return false; // Compte désactivé
+                return 'account_disabled'; // Code spécifique pour compte désactivé
             }
             return $user;
         }
@@ -276,7 +293,7 @@ class WP_BMC_Database {
                 if ($bmc_user) {
                     // Vérifier le statut de l'utilisateur
                     if ($bmc_user->status === 'disabled') {
-                        return false; // Compte désactivé
+                        return 'account_disabled'; // Code spécifique pour compte désactivé
                     }
                     return $bmc_user;
                 }
@@ -1683,6 +1700,64 @@ class WP_BMC_Database {
         );
         
         return $result !== false;
+    }
+    
+    /**
+     * Obtenir la configuration d'une section du canvas
+     */
+    public static function get_canvas_section_config($section_key, $config_type) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $result = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT config_value FROM $table WHERE section_key = %s AND config_type = %s",
+                $section_key,
+                $config_type
+            )
+        );
+        
+        return $result ? $result : null;
+    }
+    
+    /**
+     * Sauvegarder la configuration d'une section du canvas
+     */
+    public static function save_canvas_section_config($section_key, $config_type, $config_value) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $result = $wpdb->replace(
+            $table,
+            array(
+                'section_key' => $section_key,
+                'config_type' => $config_type,
+                'config_value' => $config_value
+            ),
+            array('%s', '%s', '%s')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir toutes les configurations des sections du canvas
+     */
+    public static function get_all_canvas_configs() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $results = $wpdb->get_results("SELECT * FROM $table ORDER BY section_key, config_type");
+        
+        $configs = array();
+        foreach ($results as $result) {
+            $configs[$result->section_key][$result->config_type] = $result->config_value;
+        }
+        
+        return $configs;
     }
 
 }

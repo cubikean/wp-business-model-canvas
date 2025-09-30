@@ -8,7 +8,7 @@
 
     // Configuration par défaut
     const defaultConfig = {
-        duration: 4000,
+        duration: 7000,
         position: 'bottom-right',
         closeButton: true,
         progress: true
