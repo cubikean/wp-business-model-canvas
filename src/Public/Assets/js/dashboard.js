@@ -2187,6 +2187,156 @@ jQuery(document).ready(function($) {
     // Exécuter l'auto-ouverture au chargement
     autoOpenSection();
     
+    // ========================================
+    // GESTION DU CHANGEMENT DE MOT DE PASSE
+    // ========================================
+    
+    // Vérifier si l'utilisateur doit changer son mot de passe
+    checkPasswordChangeRequired();
+    
+    // Fonction pour vérifier si un changement de mot de passe est requis
+    function checkPasswordChangeRequired() {
+        // Vérifier si c'est une première connexion (utilisateur avec statut 'pending' qui vient de se connecter)
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_check_password_change_required',
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (response.success && response.data.required) {
+                showChangePasswordPopup();
+            }
+        }).fail(function() {
+            console.error('Erreur lors de la vérification du changement de mot de passe');
+        });
+    }
+    
+    // Afficher le popup de changement de mot de passe
+    function showChangePasswordPopup() {
+        // Ajouter le popup au DOM s'il n'existe pas
+        if (!$('#wp-bmc-change-password-popup').length) {
+            // Charger le template du popup
+            $.get(wp_bmc_ajax.ajax_url, {
+                action: 'wp_bmc_get_change_password_popup',
+                nonce: wp_bmc_ajax.nonce
+            }, function(response) {
+                if (response.success) {
+                    $('body').append(response.data.html);
+                    initChangePasswordEvents();
+                    $('#wp-bmc-change-password-popup').fadeIn(300);
+                }
+            });
+        } else {
+            $('#wp-bmc-change-password-popup').fadeIn(300);
+        }
+    }
+    
+    // Initialiser les événements du popup de changement de mot de passe
+    function initChangePasswordEvents() {
+        // Fermer le popup
+        $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
+            // Ne pas permettre de fermer le popup - c'est obligatoire
+            WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+        });
+        
+        // Gestion de l'affichage/masquage des mots de passe
+        $('.show-password').on('click', function() {
+            var target = $(this).data('target');
+            var $input = $('#' + target);
+            var $icon = $(this).find('svg');
+            
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $icon.html('<path fill="currentColor" d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7M2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27M7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2m4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01"/>');
+            } else {
+                $input.attr('type', 'password');
+                $icon.html('<path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5s5 2.24 5 5s-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3s3-1.34 3-3s-1.34-3-3-3"/>');
+            }
+        });
+        
+        // Soumission du formulaire
+        $('#wp-bmc-change-password-form').on('submit', function(e) {
+            e.preventDefault();
+            changePassword();
+        });
+        
+        // Validation en temps réel
+        $('#new-password, #confirm-password').on('input', function() {
+            validatePasswordMatch();
+        });
+    }
+    
+    // Valider que les mots de passe correspondent
+    function validatePasswordMatch() {
+        var newPassword = $('#new-password').val();
+        var confirmPassword = $('#confirm-password').val();
+        var $submitBtn = $('#change-password-submit');
+        
+        if (confirmPassword && newPassword !== confirmPassword) {
+            $('#confirm-password').addClass('error');
+            $submitBtn.prop('disabled', true);
+        } else {
+            $('#confirm-password').removeClass('error');
+            $submitBtn.prop('disabled', false);
+        }
+    }
+    
+    // Changer le mot de passe
+    function changePassword() {
+        var $form = $('#wp-bmc-change-password-form');
+        var $submitBtn = $('#change-password-submit');
+        var $btnText = $submitBtn.find('.btn-text');
+        var $btnLoader = $submitBtn.find('.btn-loader');
+        
+        // Validation côté client
+        var currentPassword = $('#current-password').val();
+        var newPassword = $('#new-password').val();
+        var confirmPassword = $('#confirm-password').val();
+        
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            WP_BMC_Toast.error('Tous les champs sont obligatoires');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            WP_BMC_Toast.error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            WP_BMC_Toast.error('Les mots de passe ne correspondent pas');
+            return;
+        }
+        
+        // Désactiver le bouton et afficher le loader
+        $submitBtn.prop('disabled', true);
+        $btnText.hide();
+        $btnLoader.show();
+        
+        // Envoyer la requête
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_change_password',
+            nonce: wp_bmc_ajax.nonce,
+            current_password: currentPassword,
+            new_password: newPassword,
+            confirm_password: confirmPassword
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('Mot de passe changé avec succès !');
+                $('#wp-bmc-change-password-popup').fadeOut(300, function() {
+                    $(this).remove();
+                });
+            } else {
+                WP_BMC_Toast.error(response.data || 'Erreur lors du changement de mot de passe');
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion. Veuillez réessayer.');
+        }).always(function() {
+            // Réactiver le bouton
+            $submitBtn.prop('disabled', false);
+            $btnText.show();
+            $btnLoader.hide();
+        });
+    }
+    
 });
 
 // Fonction pour initialiser le graphique de progression du projet

@@ -2589,3 +2589,130 @@ function wp_bmc_update_user_status_handler() {
         wp_send_json_error('Erreur lors de la mise à jour du statut.');
     }
 }
+
+// ========================================
+// GESTION DU CHANGEMENT DE MOT DE PASSE
+// ========================================
+
+// Handler pour vérifier si un changement de mot de passe est requis
+add_action('wp_ajax_wp_bmc_check_password_change_required', 'wp_bmc_check_password_change_required_handler');
+function wp_bmc_check_password_change_required_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Connexion requise');
+    }
+    
+    $current_user = WP_BMC_Auth::get_current_user();
+    
+    if (!$current_user) {
+        wp_send_json_error('Utilisateur non trouvé');
+    }
+    
+    // Vérifier si l'utilisateur a le statut 'pending' (première connexion)
+    // ou s'il a un flag de changement de mot de passe requis
+    $required = false;
+    
+    if (isset($current_user->status) && $current_user->status === 'pending') {
+        $required = true;
+    }
+    
+    // Vérifier aussi dans les meta utilisateur WordPress
+    $password_change_required = get_user_meta($current_user->user_id, 'wp_bmc_password_change_required', true);
+    if ($password_change_required) {
+        $required = true;
+    }
+    
+    wp_send_json_success(array(
+        'required' => $required
+    ));
+}
+
+// Handler pour obtenir le template du popup de changement de mot de passe
+add_action('wp_ajax_wp_bmc_get_change_password_popup', 'wp_bmc_get_change_password_popup_handler');
+function wp_bmc_get_change_password_popup_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Connexion requise');
+    }
+    
+    // Charger le template du popup
+    ob_start();
+    include WP_BMC_PLUGIN_DIR . 'src/Shared/Templates/public/change-password-popup.php';
+    $html = ob_get_clean();
+    
+    wp_send_json_success(array(
+        'html' => $html
+    ));
+}
+
+// Handler pour changer le mot de passe
+add_action('wp_ajax_wp_bmc_change_password', 'wp_bmc_change_password_handler');
+function wp_bmc_change_password_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Connexion requise');
+    }
+    
+    $current_user = WP_BMC_Auth::get_current_user();
+    
+    if (!$current_user) {
+        wp_send_json_error('Utilisateur non trouvé');
+    }
+    
+    $current_password = sanitize_text_field($_POST['current_password']);
+    $new_password = sanitize_text_field($_POST['new_password']);
+    $confirm_password = sanitize_text_field($_POST['confirm_password']);
+    
+    // Validation
+    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+        wp_send_json_error('Tous les champs sont obligatoires');
+    }
+    
+    if (strlen($new_password) < 6) {
+        wp_send_json_error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+    }
+    
+    if ($new_password !== $confirm_password) {
+        wp_send_json_error('Les mots de passe ne correspondent pas');
+    }
+    
+    // Vérifier le mot de passe actuel
+    $user = WP_BMC_Database::verify_login($current_user->email, $current_password);
+    
+    if (!$user) {
+        wp_send_json_error('Mot de passe actuel incorrect');
+    }
+    
+    // Changer le mot de passe dans WordPress
+    wp_set_password($new_password, $current_user->user_id);
+    
+    // Mettre à jour le mot de passe dans la table BMC
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_users';
+    $result = $wpdb->update(
+        $table,
+        array('password' => $new_password),
+        array('user_id' => $current_user->user_id),
+        array('%s'),
+        array('%d')
+    );
+    
+    if ($result !== false) {
+        // Supprimer le flag de changement de mot de passe requis
+        delete_user_meta($current_user->user_id, 'wp_bmc_password_change_required');
+        
+        // Mettre à jour le statut de l'utilisateur s'il était en 'pending'
+        if (isset($current_user->status) && $current_user->status === 'pending') {
+            WP_BMC_Database::update_user_status($current_user->user_id, 'active');
+        }
+        
+        wp_send_json_success(array(
+            'message' => 'Mot de passe changé avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour du mot de passe');
+    }
+}

@@ -17,6 +17,7 @@ class WP_BMC_Shortcodes {
         add_shortcode('wp_bmc_register', array($this, 'register_form'));
         add_shortcode('wp_bmc_dashboard', array($this, 'dashboard'));
         add_shortcode('wp_bmc_canvas', array($this, 'canvas'));
+        add_shortcode('wp_bmc_change_password', array($this, 'change_password'));
     }
     
     /**
@@ -84,6 +85,15 @@ class WP_BMC_Shortcodes {
         
         wp_redirect($redirect_url);
         exit;
+    }
+    
+    /**
+     * Page de changement de mot de passe obligatoire
+     */
+    public function change_password() {
+        WP_BMC_Auth::require_login();
+        
+        return WP_BMC_Template_Loader::get_template_content('public/change-password');
     }
 }
 

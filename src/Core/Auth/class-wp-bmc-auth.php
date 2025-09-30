@@ -128,18 +128,20 @@ class WP_BMC_Auth {
                 wp_send_json_error('Compte désactivé, contacter un admin');
             }
             
-            // Si l'utilisateur est en pending, le passer en active après la première connexion
+            // Si l'utilisateur est en pending, marquer qu'il doit changer son mot de passe
             if ($user->status === 'pending') {
-                WP_BMC_Database::update_user_status($user->user_id, 'active');
+                // Marquer que l'utilisateur doit changer son mot de passe
+                update_user_meta($user->user_id, 'wp_bmc_password_change_required', true);
             }
-            
+
             // Connecter l'utilisateur
             wp_set_current_user($user->user_id);
             wp_set_auth_cookie($user->user_id);
             
             wp_send_json_success(array(
                 'message' => 'Connexion réussie !',
-                'redirect_url' => home_url('/dashboard/')
+                'redirect_url' => home_url('/dashboard/'),
+                'password_change_required' => ($user->status === 'pending')
             ));
         } else {
             wp_send_json_error('Email/nom d\'utilisateur ou mot de passe incorrect.');

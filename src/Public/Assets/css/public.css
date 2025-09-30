@@ -1115,6 +1115,237 @@
 .canvas-files h4 {
   margin: 0 0 10px 0;
   font-size: 12px;
+}
+
+/* ========================================
+   POPUP DE CHANGEMENT DE MOT DE PASSE
+   ======================================== */
+
+#wp-bmc-change-password-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wp-bmc-change-password-popup .popup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+#wp-bmc-change-password-popup .popup-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: popupSlideIn 0.3s ease-out;
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#wp-bmc-change-password-popup .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+  margin-bottom: 24px;
+}
+
+#wp-bmc-change-password-popup .popup-header h3 {
+  margin: 0;
+  color: var(--dashboard-text);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+#wp-bmc-change-password-popup .popup-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--dashboard-text-light);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+#wp-bmc-change-password-popup .popup-close:hover {
+  background: var(--dashboard-light-grey);
+  color: var(--dashboard-text);
+}
+
+#wp-bmc-change-password-popup .popup-body {
+  padding: 0 24px 24px 24px;
+}
+
+.change-password-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--dashboard-light-blue);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid var(--dashboard-blue);
+}
+
+.change-password-info .info-icon {
+  color: var(--dashboard-blue);
+  font-size: 24px;
+  margin-top: 2px;
+}
+
+.change-password-info p {
+  margin: 0;
+  color: var(--dashboard-text);
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.change-password-form .form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.change-password-form .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dashboard-text);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.change-password-form .form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--dashboard-border);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.change-password-form .form-group input:focus {
+  outline: none;
+  border-color: var(--dashboard-blue);
+  box-shadow: 0 0 0 3px rgba(98, 170, 221, 0.1);
+}
+
+.change-password-form .form-group input.error {
+  border-color: var(--dashboard-primary);
+  box-shadow: 0 0 0 3px rgba(255, 75, 107, 0.1);
+}
+
+.change-password-form .form-group .show-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--dashboard-text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.change-password-form .form-group .show-password:hover {
+  color: var(--dashboard-text);
+}
+
+.change-password-form .form-group .password-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--dashboard-text-light);
+  font-size: 12px;
+}
+
+.change-password-form .form-actions {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.change-password-form .wp-bmc-btn {
+  min-width: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.change-password-form .btn-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.change-password-form .loader-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #wp-bmc-change-password-popup .popup-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  #wp-bmc-change-password-popup .popup-header,
+  #wp-bmc-change-password-popup .popup-body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  .change-password-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .change-password-form .wp-bmc-btn {
+    width: 100%;
+    min-width: auto;
+  }
+}
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
