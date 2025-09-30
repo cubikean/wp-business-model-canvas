@@ -171,8 +171,30 @@ jQuery(document).ready(function ($) {
         "Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?"
       )
     ) {
-      // Implémentation de la réinitialisation du mot de passe
-      WP_BMC_Toast.info("Fonctionnalité de réinitialisation à implémenter");
+      // Vérifier que l'ID est valide
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        WP_BMC_Toast.error('ID utilisateur invalide');
+        return;
+      }
+      
+      // Récupérer l'ID utilisateur WordPress par défaut
+      $.post(wp_bmc_admin_ajax.ajax_url, {
+        action: 'wp_bmc_get_wp_user_id',
+        nonce: wp_bmc_admin_ajax.nonce,
+        bmc_user_id: userId
+      }, function(response) {
+        if (response.success && response.data.wp_user_id) {
+          // Rediriger vers la page de réinitialisation WordPress
+          var adminUrl = wp_bmc_admin_ajax.admin_url || window.location.origin + '/wp-admin/';
+          var resetUrl = adminUrl + 'user-edit.php?user_id=' + response.data.wp_user_id + '&action=edit';
+          window.open(resetUrl, '_blank');
+          WP_BMC_Toast.success('Redirection vers la page d\'édition de l\'utilisateur');
+        } else {
+          WP_BMC_Toast.error('Erreur lors de la récupération de l\'ID utilisateur WordPress: ' + (response.data || 'Erreur inconnue'));
+        }
+      }).fail(function(xhr, status, error) {
+        WP_BMC_Toast.error('Erreur de connexion: ' + error);
+      });
     }
   }
 

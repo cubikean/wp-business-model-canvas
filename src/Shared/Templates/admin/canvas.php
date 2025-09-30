@@ -95,7 +95,26 @@ if ($admin_view && $is_admin) {
 <div class="wp-bmc-canvas-container wp-bmc-dashboard" data-project-id="<?php echo $project_id; ?>">
     <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
         <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
-        <h3 class="dashboard-header-subtitle">Projet de <?php echo $user_name ? esc_html($user_name) : ""; ?></h3>
+        <h3 class="dashboard-header-subtitle">
+            <?php
+            // Récupérer les utilisateurs liés au projet
+            $project_users = WP_BMC_Database::get_project_users($project_id);
+            if (!empty($project_users)) {
+                echo 'Projet de ';
+                $user_names = array();
+                foreach ($project_users as $user) {
+                    $name = trim($user->first_name . ' ' . $user->last_name);
+                    if (empty($name)) {
+                        $name = $user->display_name ?: $user->user_login;
+                    }
+                    $user_names[] = esc_html($name);
+                }
+                echo implode(', ', $user_names);
+            } else {
+                echo 'Aucun utilisateur lié';
+            }
+            ?>
+        </h3>
 
         <div class="canvas-actions">
             <a href="/dashboard" class="wp-bmc-btn wp-bmc-btn-secondary">

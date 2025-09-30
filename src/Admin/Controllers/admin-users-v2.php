@@ -172,7 +172,7 @@ $all_users = WP_BMC_Database::get_all_users();
                                     </button>
 
                                     <button class="button button-small button-secondary reset-password-btn"
-                                        data-user-id="<?php echo $user->user_id; ?>"
+                                        data-user-id="<?php echo $user->id; ?>"
                                         title="Réinitialiser le mot de passe">
                                         <i class="fas fa-key"></i>
                                     </button>

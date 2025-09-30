@@ -2716,3 +2716,103 @@ function wp_bmc_change_password_handler() {
         wp_send_json_error('Erreur lors de la mise à jour du mot de passe');
     }
 }
+
+// ========================================
+// GESTION ADMINISTRATEUR - UTILISATEURS
+// ========================================
+
+// Handler pour récupérer l'ID utilisateur WordPress depuis l'ID BMC
+add_action('wp_ajax_wp_bmc_get_wp_user_id', 'wp_bmc_get_wp_user_id_handler');
+function wp_bmc_get_wp_user_id_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $bmc_user_id = intval($_POST['bmc_user_id']);
+    
+    if (!$bmc_user_id) {
+        wp_send_json_error('ID utilisateur BMC invalide');
+    }
+    
+    // Récupérer l'utilisateur BMC
+    $bmc_user = WP_BMC_Database::get_user_by_id($bmc_user_id);
+    
+    if (!$bmc_user) {
+        wp_send_json_error('Utilisateur BMC non trouvé');
+    }
+    
+    $wp_user_id = $bmc_user->user_id;
+    
+    // Vérifier que l'utilisateur WordPress existe
+    $wp_user = get_user_by('id', $wp_user_id);
+    
+    if (!$wp_user) {
+        wp_send_json_error('Utilisateur WordPress non trouvé');
+    }
+    
+    // Générer le nonce pour la réinitialisation de mot de passe
+    $reset_nonce = wp_create_nonce('reset-password_' . $wp_user_id);
+    
+    wp_send_json_success(array(
+        'wp_user_id' => $wp_user_id,
+        'nonce' => $reset_nonce,
+        'user_email' => $wp_user->user_email,
+        'display_name' => $wp_user->display_name
+    ));
+}
+
+// Handler pour récupérer les données d'un projet pour édition
+add_action('wp_ajax_wp_bmc_get_project_data', 'wp_bmc_get_project_data_handler');
+function wp_bmc_get_project_data_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide');
+    }
+    
+    $project = WP_BMC_Database::get_project($project_id);
+    
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé');
+    }
+    
+    wp_send_json_success(array(
+        'project' => $project
+    ));
+}
+
+// Handler pour éditer un projet
+add_action('wp_ajax_wp_bmc_edit_project', 'wp_bmc_edit_project_handler');
+function wp_bmc_edit_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $project_id = intval($_POST['project_id']); 
+    $title = sanitize_text_field($_POST['title']);
+    $description = sanitize_textarea_field($_POST['description']);
+
+    if (empty($project_id) || empty($title) || empty($description)) {
+        wp_send_json_error('Paramètres invalides');
+    }
+    
+    $result = WP_BMC_Database::edit_project($project_id, $title, $description);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Projet édité avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'édition du projet.');
+    }
+}

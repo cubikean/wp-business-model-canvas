@@ -37,6 +37,73 @@ jQuery(document).ready(function($) {
         });
     });
     
+
+    $('.edit-project-btn').on('click', function() {
+        var projectId = $(this).data('project-id');
+        // Stocker l'ID du projet pour l'utiliser dans le formulaire
+        $('#edit-project-form').data('project-id', projectId);
+        editProject(projectId);
+    });
+
+    function editProject(projectId) {
+        var $modal = $('#edit-project-modal');
+        
+        // Charger les données du projet
+        $.post(ajaxurl, {
+            action: 'wp_bmc_get_project_data',
+            project_id: projectId,
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        }, function(response) {
+            if (response.success) {
+                var project = response.data.project;
+                $('#edit_project_title').val(project.title);
+                $('#edit_project_description').val(project.description);
+                
+                // Afficher la modale
+                $modal.show();
+                $modal.css('display', 'flex');
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors du chargement des données du projet.');
+        });
+    }
+    
+    // Gérer la soumission du formulaire d'édition
+    $('#edit-project-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var $form = $(this);
+        var $submitBtn = $form.find('button[type="submit"]');
+        var originalText = $submitBtn.html();
+        var projectId = $('#edit-project-form').data('project-id');
+        
+        $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enregistrement...');
+        
+        var formData = {
+            action: 'wp_bmc_edit_project',
+            project_id: projectId,
+            title: $('#edit_project_title').val(),
+            description: $('#edit_project_description').val(),
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        };
+        
+        $.post(ajaxurl, formData, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                $('#edit-project-modal').hide();
+                location.reload();
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors de l\'édition du projet.');
+        }).always(function() {
+            $submitBtn.prop('disabled', false).html(originalText);
+        });
+    });
+
     // Gestion des utilisateurs
     $('.manage-users-btn').on('click', function() {
         var projectId = $(this).data('project-id');
@@ -60,6 +127,7 @@ jQuery(document).ready(function($) {
     
     function openManageUsersModal(projectId) {
         $('#manage-users-modal').show();
+        $('#manage-users-modal').css('display', 'flex');
         loadAvailableUsers(projectId);
     }
     

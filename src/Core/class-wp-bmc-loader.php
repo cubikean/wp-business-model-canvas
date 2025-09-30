@@ -299,16 +299,19 @@ class WP_BMC_Loader {
         // Variables AJAX pour les scripts admin
         wp_localize_script('wp-bmc-admin', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
         
         wp_localize_script('wp-bmc-admin-users-v2', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
         
         wp_localize_script('wp-bmc-admin-projects', 'wp_bmc_admin_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
     }
@@ -413,6 +416,7 @@ class WP_BMC_Loader {
             // Localiser les variables AJAX pour les admins
             wp_localize_script('wp-bmc-admin-dashboard', 'wp_bmc_admin_ajax', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
+                'admin_url' => admin_url(),
                 'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
             ));
         }

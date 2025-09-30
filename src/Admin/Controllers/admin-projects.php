@@ -163,4 +163,48 @@ $all_users = WP_BMC_Database::get_all_users();
     </div>
 </div>
 
+<!-- Modal d'édition de projet -->
+<div id="edit-project-modal" class="wp-bmc-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Éditer le projet</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <form id="edit-project-form">
+                <div class="form-field">
+                    <label for="edit_project_title">Titre du projet *</label>
+                    <input type="text" id="edit_project_title" name="title" required>
+                </div>
+                <div class="form-field">
+                    <label for="edit_project_description">Description *</label>
+                    <textarea id="edit_project_description" name="description" rows="5" required></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="submit" form="edit-project-form" class="wp-bmc-btn button-primary btn-solid">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+            <button type="button" class="button button-secondary modal-close">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de gestion des projets -->
+<div id="manage-projects-modal" class="wp-bmc-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Gérer les projets</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
 

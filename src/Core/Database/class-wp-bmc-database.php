@@ -318,6 +318,24 @@ class WP_BMC_Database {
         
         return $result ? $wpdb->insert_id : false;
     }
+
+    /**
+     * Mettre à jour un projet
+     */
+    public static function edit_project($project_id, $title, $description) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_projects';
+        $result = $wpdb->update(
+            $table,
+            array('title' => $title, 'description' => $description),
+            array('id' => $project_id),
+            array('%s', '%s'),
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
     
     /**
      * Créer un nouvel utilisateur (v2.0 - créé par admin)
@@ -523,6 +541,22 @@ class WP_BMC_Database {
             $wpdb->prepare(
                 "SELECT * FROM $table WHERE user_id = %d",
                 $user_id
+            )
+        );
+    }
+    
+    /**
+     * Obtenir un utilisateur BMC par son ID BMC
+     */
+    public static function get_user_by_id($bmc_user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE id = %d",
+                $bmc_user_id
             )
         );
     }
@@ -1650,4 +1684,5 @@ class WP_BMC_Database {
         
         return $result !== false;
     }
+
 }
