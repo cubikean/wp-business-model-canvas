@@ -1,10 +1,52 @@
 /**
  * JavaScript pour la gestion des utilisateurs dans l'admin
- * Fonctionnalités : recherche, tri, actions sur les utilisateurs
+ * Fonctionnalités : recherche, tri, actions sur les utilisateurs, création, gestion des statuts
  */
 
 jQuery(document).ready(function($) {
     
+    // ========================================
+    // CRÉATION D'UTILISATEUR
+    // ========================================
+    $("#create-user-form").on("submit", function (e) {
+        e.preventDefault();
+
+        var $form = $(this);
+        var $submitBtn = $form.find('button[type="submit"]');
+        var originalText = $submitBtn.html();
+
+        $submitBtn
+            .prop("disabled", true)
+            .html('<i class="fas fa-spinner fa-spin"></i> Création...');
+
+        var formData = {
+            action: "wp_bmc_create_user",
+            nonce: wp_bmc_admin_ajax.nonce,
+            custom_id: $("#user_custom_id").val(),
+            email: $("#user_email").val(),
+            password: $("#user_password").val(),
+            first_name: $("#user_first_name").val(),
+            last_name: $("#user_last_name").val(),
+        };
+
+        $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                setTimeout(function () {
+                    location.reload();
+                }, 1500);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        })
+            .fail(function () {
+                WP_BMC_Toast.error("Erreur lors de la création de l'utilisateur.");
+            })
+            .always(function () {
+                $submitBtn.prop("disabled", false).html(originalText);
+            });
+    });
+
     // ========================================
     // RECHERCHE D'UTILISATEURS
     // ========================================
@@ -65,6 +107,34 @@ jQuery(document).ready(function($) {
         var userId = $(this).data('user-id');
         viewUserProjects(userId);
     });
+
+    // Réinitialiser le mot de passe
+    $(document).on('click', '.reset-password-btn', function() {
+        var userId = $(this).data('user-id');
+        resetUserPassword(userId);
+    });
+
+    // Désactiver l'utilisateur
+    $(document).on('click', '.deactivate-user-btn', function() {
+        var userId = $(this).data('user-id');
+        deactivateUser(userId);
+    });
+
+    // Gestion des statuts utilisateur
+    $(document).on('click', '.disable-user-btn', function() {
+        var userId = $(this).data('user-id');
+        updateUserStatus(userId, 'disabled');
+    });
+
+    $(document).on('click', '.enable-user-btn', function() {
+        var userId = $(this).data('user-id');
+        updateUserStatus(userId, 'active');
+    });
+
+    $(document).on('click', '.activate-user-btn', function() {
+        var userId = $(this).data('user-id');
+        updateUserStatus(userId, 'active');
+    });
     
     // ========================================
     // FONCTIONS UTILITAIRES
@@ -74,10 +144,11 @@ jQuery(document).ready(function($) {
     function filterUsers(searchTerm) {
         $('.user-row').each(function() {
             var $row = $(this);
+            var customId = $row.find('.user-custom-id').text().toLowerCase();
             var name = $row.find('.user-name').text().toLowerCase();
             var email = $row.find('.user-email').text().toLowerCase();
             
-            if (name.includes(searchTerm) || email.includes(searchTerm)) {
+            if (customId.includes(searchTerm) || name.includes(searchTerm) || email.includes(searchTerm)) {
                 $row.show();
             } else {
                 $row.hide();
@@ -116,6 +187,10 @@ jQuery(document).ready(function($) {
             var aVal, bVal;
             
             switch(column) {
+                case 'custom_id':
+                    aVal = $(a).find('.user-custom-id').text().trim();
+                    bVal = $(b).find('.user-custom-id').text().trim();
+                    break;
                 case 'name':
                     aVal = $(a).find('.user-name').text().trim();
                     bVal = $(b).find('.user-name').text().trim();
@@ -186,7 +261,7 @@ jQuery(document).ready(function($) {
         popup.fadeIn(300);
         
         // Charger les données utilisateur via AJAX
-        $.post(ajaxurl, {
+        $.post(wp_bmc_admin_ajax.ajax_url, {
             action: 'wp_bmc_get_user_profile',
             user_id: userId,
             nonce: wp_bmc_admin_ajax.nonce
@@ -208,8 +283,8 @@ jQuery(document).ready(function($) {
     
     // Éditer l'utilisateur
     function editUser(userId) {
-        // Rediriger vers une page d'édition ou ouvrir une popup
-        window.location.href = 'admin.php?page=wp-business-model-canvas&action=edit_user&user_id=' + userId;
+        // Implémentation de l'édition d'utilisateur
+        WP_BMC_Toast.info("Fonctionnalité d'édition à implémenter");
     }
     
     // Voir le canvas de l'utilisateur
@@ -238,7 +313,7 @@ jQuery(document).ready(function($) {
         popup.fadeIn(300);
         
         // Charger les projets via AJAX
-        $.post(ajaxurl, {
+        $.post(wp_bmc_admin_ajax.ajax_url, {
             action: 'wp_bmc_get_user_projects',
             user_id: userId,
             nonce: wp_bmc_admin_ajax.nonce
@@ -256,6 +331,69 @@ jQuery(document).ready(function($) {
                 popup.remove();
             });
         });
+    }
+
+    // Réinitialiser le mot de passe
+    function resetUserPassword(userId) {
+        if (confirm("Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?")) {
+            // Vérifier que l'ID est valide
+            if (!userId || userId === 'undefined' || userId === 'null') {
+                WP_BMC_Toast.error('ID utilisateur invalide');
+                return;
+            }
+            
+            // Récupérer l'ID utilisateur WordPress par défaut
+            $.post(wp_bmc_admin_ajax.ajax_url, {
+                action: 'wp_bmc_get_wp_user_id',
+                nonce: wp_bmc_admin_ajax.nonce,
+                bmc_user_id: userId
+            }, function(response) {
+                if (response.success && response.data.wp_user_id) {
+                    // Rediriger vers la page de réinitialisation WordPress
+                    var adminUrl = wp_bmc_admin_ajax.admin_url || window.location.origin + '/wp-admin/';
+                    var resetUrl = adminUrl + 'user-edit.php?user_id=' + response.data.wp_user_id + '&action=edit';
+                    window.open(resetUrl, '_blank');
+                    WP_BMC_Toast.success('Redirection vers la page d\'édition de l\'utilisateur');
+                } else {
+                    WP_BMC_Toast.error('Erreur lors de la récupération de l\'ID utilisateur WordPress: ' + (response.data || 'Erreur inconnue'));
+                }
+            }).fail(function(xhr, status, error) {
+                WP_BMC_Toast.error('Erreur de connexion: ' + error);
+            });
+        }
+    }
+
+    // Désactiver l'utilisateur
+    function deactivateUser(userId) {
+        if (confirm("Êtes-vous sûr de vouloir désactiver cet utilisateur ?")) {
+            // Implémentation de la désactivation
+            WP_BMC_Toast.info("Fonctionnalité de désactivation à implémenter");
+        }
+    }
+
+    // Mettre à jour le statut utilisateur
+    function updateUserStatus(userId, status) {
+        var actionText = status === 'disabled' ? 'désactiver' : 'activer';
+        
+        if (confirm('Êtes-vous sûr de vouloir ' + actionText + ' cet utilisateur ?')) {
+            $.post(wp_bmc_admin_ajax.ajax_url, {
+                action: 'wp_bmc_update_user_status',
+                user_id: userId,
+                status: status,
+                nonce: wp_bmc_admin_ajax.nonce
+            }, function(response) {
+                if (response.success) {
+                    WP_BMC_Toast.success(response.data.message);
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    WP_BMC_Toast.error(response.data);
+                }
+            }).fail(function() {
+                WP_BMC_Toast.error('Erreur lors de la mise à jour du statut.');
+            });
+        }
     }
     
     // ========================================

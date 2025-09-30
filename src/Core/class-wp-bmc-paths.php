@@ -94,10 +94,6 @@ class WP_BMC_Paths {
                 'loader' => WP_BMC_CORE_DIR . 'class-wp-bmc-loader.php',
                 'template_loader' => WP_BMC_CORE_DIR . 'class-wp-bmc-template-loader.php',
             ),
-            'admin' => array(
-                'dashboard' => WP_BMC_ADMIN_DIR . 'Controllers/admin-dashboard.php',
-                'page' => WP_BMC_ADMIN_DIR . 'Controllers/admin-page.php',
-            ),
             'public' => array(
                 'canvas' => WP_BMC_PUBLIC_DIR . 'Controllers/canvas.php',
                 'dashboard' => WP_BMC_PUBLIC_DIR . 'Controllers/dashboard.php',

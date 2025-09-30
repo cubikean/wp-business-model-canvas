@@ -66,81 +66,49 @@ class WP_BMC_Loader {
      * Ajouter le menu d'administration
      */
     public function add_admin_menu() {
+        // Menu principal - Projets
         add_menu_page(
-            'WP Business Model Canvas v2.0',
-            'BMC v2.0',
+            'BMC',
+            'BMC',
             'manage_options',
-            'wp-business-model-canvas',
-            array($this, 'admin_page'),
+            'wp-business-model-canvas-projects',
+            array($this, 'admin_projects_page'),
             'dashicons-chart-area',
             30
         );
-        
+
+        // Menu principal - Utilisateurs
         add_submenu_page(
-            'wp-business-model-canvas',
-            'Dashboard',
-            'Dashboard',
-            'manage_options',
-            'wp-business-model-canvas',
-            array($this, 'admin_page')
-        );
-        
-        add_submenu_page(
-            'wp-business-model-canvas',
-            'Gestion des Projets',
+            'wp-business-model-canvas-projects',
+            'Projets',
             'Projets',
             'manage_options',
             'wp-business-model-canvas-projects',
             array($this, 'admin_projects_page')
         );
         
+        // Sous-menu - Utilisateurs
         add_submenu_page(
-            'wp-business-model-canvas',
-            'Gestion des Utilisateurs',
+            'wp-business-model-canvas-projects',
+            'Utilisateurs',
             'Utilisateurs',
             'manage_options',
             'wp-business-model-canvas-users',
             array($this, 'admin_users_page')
         );
         
-        // Ajouter un sous-menu pour la migration v2.0
+        // Sous-menu - Configuration
         add_submenu_page(
-            'wp-business-model-canvas',
-            'Migration v2.0',
-            'Migration v2.0',
-            'manage_options',
-            'wp-business-model-canvas-migration',
-            array($this, 'migration_page')
-        );
-        
-        // Ajouter un sous-menu pour la vérification
-        add_submenu_page(
-            'wp-business-model-canvas',
-            'Vérification',
-            'Vérification',
-            'manage_options',
-            'wp-business-model-canvas-check',
-            array($this, 'check_page')
-        );
-        
-        // Ajouter un sous-menu pour la configuration du canvas
-        add_submenu_page(
-            'wp-business-model-canvas',
-            'Configuration du Canvas',
-            'Config Canvas',
+            'wp-business-model-canvas-projects',
+            'Configuration',
+            'Configuration',
             'manage_options',
             'wp-business-model-canvas-config',
             array($this, 'canvas_config_page')
         );
     }
     
-    /**
-     * Page d'administration
-     */
-    public function admin_page() {
-        include WP_BMC_ADMIN_DIR . 'Controllers/admin-dashboard.php';
-    }
-    
+   
     /**
      * Page de gestion des projets
      */
@@ -152,71 +120,71 @@ class WP_BMC_Loader {
      * Page de gestion des utilisateurs
      */
     public function admin_users_page() {
-        include WP_BMC_ADMIN_DIR . 'Controllers/admin-users-v2.php';
+        include WP_BMC_ADMIN_DIR . 'Controllers/admin-users.php';
     }
     
-    /**
-     * Page de migration v2.0
-     */
-    public function migration_page() {
-        include WP_BMC_CORE_DIR . 'class-wp-bmc-migration-v2.php';
+    // /**
+    //  * Page de migration v2.0
+    //  */
+    // public function migration_page() {
+    //     include WP_BMC_CORE_DIR . 'class-wp-bmc-migration-v2.php';
         
-        // Vérifier l'état de la migration
-        $status = WP_BMC_Migration_V2::check_migration_status();
+    //     // Vérifier l'état de la migration
+    //     $status = WP_BMC_Migration_V2::check_migration_status();
         
-        echo '<div class="wrap">';
-        echo '<h1>Migration vers la v2.0</h1>';
+    //     echo '<div class="wrap">';
+    //     echo '<h1>Migration vers la v2.0</h1>';
         
-        if ($status['needs_migration']) {
-            echo '<div class="notice notice-warning">';
-            echo '<h3>Migration nécessaire</h3>';
-            echo '<p>Votre installation nécessite une migration vers la version 2.0. Les problèmes suivants ont été détectés :</p>';
-            echo '<ul>';
-            foreach ($status['issues'] as $issue) {
-                echo '<li>' . esc_html($issue) . '</li>';
-            }
-            echo '</ul>';
-            echo '</div>';
+    //     if ($status['needs_migration']) {
+    //         echo '<div class="notice notice-warning">';
+    //         echo '<h3>Migration nécessaire</h3>';
+    //         echo '<p>Votre installation nécessite une migration vers la version 2.0. Les problèmes suivants ont été détectés :</p>';
+    //         echo '<ul>';
+    //         foreach ($status['issues'] as $issue) {
+    //             echo '<li>' . esc_html($issue) . '</li>';
+    //         }
+    //         echo '</ul>';
+    //         echo '</div>';
             
-            echo '<form method="post" action="">';
-            wp_nonce_field('wp_bmc_migration_v2', 'wp_bmc_migration_nonce');
-            echo '<input type="hidden" name="action" value="run_migration_v2">';
-            echo '<p><button type="submit" class="button button-primary">Lancer la migration</button></p>';
-            echo '</form>';
-        } else {
-            echo '<div class="notice notice-success">';
-            echo '<h3>Migration terminée</h3>';
-            echo '<p>Votre installation est déjà à jour avec la version 2.0.</p>';
-            echo '</div>';
-        }
+    //         echo '<form method="post" action="">';
+    //         wp_nonce_field('wp_bmc_migration_v2', 'wp_bmc_migration_nonce');
+    //         echo '<input type="hidden" name="action" value="run_migration_v2">';
+    //         echo '<p><button type="submit" class="button button-primary">Lancer la migration</button></p>';
+    //         echo '</form>';
+    //     } else {
+    //         echo '<div class="notice notice-success">';
+    //         echo '<h3>Migration terminée</h3>';
+    //         echo '<p>Votre installation est déjà à jour avec la version 2.0.</p>';
+    //         echo '</div>';
+    //     }
         
-        // Traitement de la migration
-        if (isset($_POST['action']) && $_POST['action'] === 'run_migration_v2' && 
-            check_admin_referer('wp_bmc_migration_v2', 'wp_bmc_migration_nonce')) {
+    //     // Traitement de la migration
+    //     if (isset($_POST['action']) && $_POST['action'] === 'run_migration_v2' && 
+    //         check_admin_referer('wp_bmc_migration_v2', 'wp_bmc_migration_nonce')) {
             
-            $results = WP_BMC_Migration_V2::migrate_to_v2();
-            WP_BMC_Migration_V2::display_migration_results($results);
-        }
+    //         $results = WP_BMC_Migration_V2::migrate_to_v2();
+    //         WP_BMC_Migration_V2::display_migration_results($results);
+    //     }
         
-        echo '</div>';
-    }
+    //     echo '</div>';
+    // }
     
-    /**
-     * Page de vérification
-     */
-    public function check_page() {
-        echo '<div class="wrap">';
-        echo '<h1>🔍 Vérification WP Business Model Canvas v2.0</h1>';
+    // /**
+    //  * Page de vérification
+    //  */
+    // public function check_page() {
+    //     echo '<div class="wrap">';
+    //     echo '<h1>🔍 Vérification WP Business Model Canvas v2.0</h1>';
         
-        if (class_exists('WP_BMC_Complete_Check')) {
-            $results = WP_BMC_Complete_Check::run_complete_check();
-            WP_BMC_Complete_Check::display_complete_results($results);
-        } else {
-            echo '<div class="notice notice-error"><p>Classe de vérification non trouvée.</p></div>';
-        }
+    //     if (class_exists('WP_BMC_Complete_Check')) {
+    //         $results = WP_BMC_Complete_Check::run_complete_check();
+    //         WP_BMC_Complete_Check::display_complete_results($results);
+    //     } else {
+    //         echo '<div class="notice notice-error"><p>Classe de vérification non trouvée.</p></div>';
+    //     }
         
-        echo '</div>';
-    }
+    //     echo '</div>';
+    // }
     
     /**
      * Page de configuration du canvas
@@ -232,20 +200,16 @@ class WP_BMC_Loader {
         
         // Vérifier si on est sur une page du plugin BMC
         $bmc_pages = array(
-            'toplevel_page_wp-business-model-canvas',
-            'bmc-v2-0_page_wp-business-model-canvas-projects',
-            'bmc-v2-0_page_wp-business-model-canvas-users',
-            'bmc-v2-0_page_wp-business-model-canvas-migration',
-            'bmc-v2-0_page_wp-business-model-canvas-check',
-            'bmc-v2-0_page_wp-business-model-canvas-config'
+            'toplevel_page_wp-business-model-canvas-projects',
+            'bmc_page_wp-business-model-canvas-users',
+            'bmc_page_wp-business-model-canvas-config'
         );
         
         if (!in_array($hook, $bmc_pages)) {
             return;
         }
         
-        
-        // Charger le système de toasts
+        // Charger le système de toasts (toujours nécessaire)
         wp_enqueue_script(
             'wp-bmc-toast',
             WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js',
@@ -261,7 +225,7 @@ class WP_BMC_Loader {
             WP_BMC_VERSION
         );
         
-        // Script principal d'administration
+        // Script principal d'administration (toujours nécessaire)
         wp_enqueue_script(
             'wp-bmc-admin',
             WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin.js',
@@ -270,49 +234,53 @@ class WP_BMC_Loader {
             true
         );
         
-        // Script de gestion des utilisateurs
-        wp_enqueue_script(
-            'wp-bmc-admin-users',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users.js',
-            array('jquery', 'wp-bmc-toast'),
-            WP_BMC_VERSION,
-            true
-        );
+        // Charger les scripts spécifiques selon la page
+        if (strpos($hook, 'wp-business-model-canvas-projects') !== false) {
+            // Page des projets
+            wp_enqueue_script(
+                'wp-bmc-admin-projects',
+                WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-projects.js',
+                array('jquery', 'wp-bmc-toast'),
+                WP_BMC_VERSION,
+                true
+            );
+            
+            wp_enqueue_style(
+                'wp-bmc-admin-projects-css',
+                WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-projects.css',
+                array(),
+                WP_BMC_VERSION
+            );
+        }
         
-        // Script de gestion des projets (v2.0)
-        wp_enqueue_script(
-            'wp-bmc-admin-projects',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-projects.js',
-            array('jquery', 'wp-bmc-toast'),
-            WP_BMC_VERSION,
-            true
-        );
-        
-        // Styles pour la page des projets (v2.0)
-        wp_enqueue_style(
-            'wp-bmc-admin-projects-css',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-projects.css',
-            array(),
-            WP_BMC_VERSION
-        );
-        
+        if (strpos($hook, 'wp-business-model-canvas-users') !== false) {
+            // Page des utilisateurs
+            wp_enqueue_script(
+                'wp-bmc-admin-users',
+                WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users.js',
+                array('jquery', 'wp-bmc-toast'),
+                WP_BMC_VERSION,
+                true
+            );
 
-        // Script de gestion des utilisateurs (v2.0)
-        wp_enqueue_script(
-            'wp-bmc-admin-users-v2',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-users-v2.js',
-            array('jquery', 'wp-bmc-toast'),
-            WP_BMC_VERSION,
-            true
-        );
-
-        // Styles pour la page des utilisateurs (v2.0)
-        wp_enqueue_style(
-            'wp-bmc-admin-users-css',
-            WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-users-v2.css',
-            array(),
-            WP_BMC_VERSION
-        );
+            wp_enqueue_style(
+                'wp-bmc-admin-users-css',
+                WP_BMC_PLUGIN_URL . 'src/Admin/Assets/css/admin-users.css',
+                array(),
+                WP_BMC_VERSION
+            );
+        }
+        
+        if (strpos($hook, 'wp-business-model-canvas-config') !== false) {
+            // Page de configuration
+            wp_enqueue_script(
+                'wp-bmc-admin-canvas-config',
+                WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-canvas-config.js',
+                array('jquery', 'wp-bmc-toast'),
+                WP_BMC_VERSION,
+                true
+            );
+        }
 
         // Variables AJAX pour les scripts admin
         wp_localize_script('wp-bmc-admin', 'wp_bmc_admin_ajax', array(
@@ -321,17 +289,30 @@ class WP_BMC_Loader {
             'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
         ));
         
-        wp_localize_script('wp-bmc-admin-users-v2', 'wp_bmc_admin_ajax', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'admin_url' => admin_url(),
-            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
-        ));
+        // Variables AJAX pour les scripts spécifiques
+        if (strpos($hook, 'wp-business-model-canvas-users') !== false) {
+            wp_localize_script('wp-bmc-admin-users', 'wp_bmc_admin_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'admin_url' => admin_url(),
+                'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+            ));
+        }
         
-        wp_localize_script('wp-bmc-admin-projects', 'wp_bmc_admin_ajax', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'admin_url' => admin_url(),
-            'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
-        ));
+        if (strpos($hook, 'wp-business-model-canvas-projects') !== false) {
+            wp_localize_script('wp-bmc-admin-projects', 'wp_bmc_admin_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'admin_url' => admin_url(),
+                'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+            ));
+        }
+        
+        if (strpos($hook, 'wp-business-model-canvas-config') !== false) {
+            wp_localize_script('wp-bmc-admin-canvas-config', 'wp_bmc_admin_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'admin_url' => admin_url(),
+                'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
+            ));
+        }
     }
     
     /**
@@ -340,7 +321,7 @@ class WP_BMC_Loader {
     public function enqueue_fonts() {
         wp_enqueue_style(
             'wp-bmc-fonts',
-            WP_BMC_PLUGIN_URL . 'src/Shared/utils/fonts/urbanist.css',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Utils/fonts/urbanist.css',
             array(),
             WP_BMC_VERSION
         );

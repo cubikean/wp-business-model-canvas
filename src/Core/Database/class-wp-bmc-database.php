@@ -584,9 +584,6 @@ class WP_BMC_Database {
     public static function save_canvas_data($project_id, $section, $content) {
         global $wpdb;
         
-        // Log de débogage
-        error_log('WP_BMC_Database::save_canvas_data - project_id: ' . $project_id . ', section: ' . $section . ', content length: ' . strlen($content));
-        
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
         // Vérifier si les données existent déjà
@@ -630,9 +627,6 @@ class WP_BMC_Database {
     public static function get_canvas_data($project_id) {
         global $wpdb;
         
-        // Log de débogage
-        error_log('WP_BMC_Database::get_canvas_data - project_id: ' . $project_id);
-        
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
         $results = $wpdb->get_results(
@@ -645,10 +639,8 @@ class WP_BMC_Database {
         $data = array();
         foreach ($results as $row) {
             $data[$row->section] = $row->content;
-            error_log('WP_BMC_Database::get_canvas_data - section: ' . $row->section . ', content length: ' . strlen($row->content));
         }
         
-        error_log('WP_BMC_Database::get_canvas_data - total sections found: ' . count($data));
         return $data;
     }
     
@@ -1495,7 +1487,6 @@ class WP_BMC_Database {
         
         // Supprimer la table si elle existe
         $wpdb->query("DROP TABLE IF EXISTS $table");
-        error_log("Table $table supprimée");
         
         // Recréer la table
         self::ensure_todos_table_exists();
@@ -1534,17 +1525,13 @@ class WP_BMC_Database {
                 if ($result !== false) {
                     $total_deleted += $count;
                     $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : $count enregistrements supprimés";
-                    error_log("wp_bmc_reset_data - Table $table : $count enregistrements supprimés");
                 } else {
                     $results[] = "Erreur lors de la suppression de la table " . str_replace($wpdb->prefix, '', $table);
-                    error_log("wp_bmc_reset_data - Erreur lors de la suppression de la table $table");
                 }
             } else {
                 $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : n'existe pas";
             }
         }
-        
-        error_log("wp_bmc_reset_data - Total : $total_deleted enregistrements supprimés");
         
         return array(
             'total_deleted' => $total_deleted,
