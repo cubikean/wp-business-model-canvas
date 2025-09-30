@@ -221,8 +221,8 @@ function wp_bmc_get_synthetic_order()
  */
 function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin = false, $pending_grading_requests = array(), $include_progress_chart = false)
 {
-    // Configuration des sections du canvas
-    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
+    // Configuration des sections du canvas (utiliser les valeurs par défaut du fichier)
+    $canvas_sections = wp_bmc_get_canvas_sections($view_mode, false);
 
     // Calculer le pourcentage d'avancement si nécessaire
     $progress_percentage = 0;
