@@ -301,10 +301,10 @@ function wp_bmc_save_canvas_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -569,10 +569,10 @@ function wp_bmc_get_section_files_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -655,10 +655,10 @@ function wp_bmc_upload_file_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -813,10 +813,10 @@ function wp_bmc_delete_file_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -1344,7 +1344,7 @@ function wp_bmc_export_all_data_handler() {
     $is_admin = current_user_can('manage_options');
     
     // Vérifier les permissions
-    if (!$is_admin && $project->user_id != $user->user_id) {
+    if (!$is_admin && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
     
@@ -1576,7 +1576,7 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     $is_admin = current_user_can('manage_options');
     
     // Vérifier les permissions
-    if (!$is_admin && $project->user_id != $user->user_id) {
+    if (!$is_admin && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
         error_log('PDF: Permissions insuffisantes');
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
@@ -2062,6 +2062,12 @@ function wp_bmc_add_todo_handler() {
         wp_send_json_error('Aucun projet trouvé.');
     }
     
+    // Vérifier que l'utilisateur a accès à ce projet
+    $user = WP_BMC_Auth::get_current_user();
+    if (!current_user_can('manage_options') && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
+        wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
+    }
+    
     // S'assurer que la table des todos existe
     WP_BMC_Database::ensure_todos_table_exists();
     
@@ -2109,10 +2115,10 @@ function wp_bmc_get_section_todos_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -2166,10 +2172,10 @@ function wp_bmc_toggle_todo_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
         }
     }
@@ -2222,10 +2228,10 @@ function wp_bmc_delete_todo_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour supprimer cette tâche.');
         }
     }
@@ -2279,10 +2285,10 @@ function wp_bmc_update_todo_text_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
         }
     }
