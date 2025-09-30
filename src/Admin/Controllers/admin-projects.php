@@ -24,7 +24,7 @@ $all_users = WP_BMC_Database::get_all_users();
 ?>
 
 <div class="wrap wp-bmc-admin-projects">
-    <h1>📋 Gestion des Projets - Business Model Canvas v2.0</h1>
+    <h1>Gestion des Projets</h1>
     
     <!-- Statistiques -->
     <div class="wp-bmc-stats-section">
@@ -85,8 +85,8 @@ $all_users = WP_BMC_Database::get_all_users();
                                 <button class="button button-small manage-users-btn" data-project-id="<?php echo $project->id; ?>">
                                     <i class="fas fa-users"></i>
                                 </button>
-                                <button class="button button-small view-canvas-btn" data-project-id="<?php echo $project->id; ?>">
-                                    <i class="fas fa-chart-area"></i>
+                                <button class="button view-canvas-btn" data-project-id="<?php echo $project->id; ?>">
+                                    Voir le projet
                                 </button>
                             </div>
                         </div>
@@ -192,19 +192,4 @@ $all_users = WP_BMC_Database::get_all_users();
         </div>
     </div>
 </div>
-
-<!-- Modal de gestion des projets -->
-<div id="manage-projects-modal" class="wp-bmc-modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Gérer les projets</h3>
-            <button class="modal-close">&times;</button>
-        </div>
-    </div>
-</div>
-
-
-
-
-
 

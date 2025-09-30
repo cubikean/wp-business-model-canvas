@@ -221,6 +221,12 @@
     font-size: 16px;
 }
 
+.project-title .no-project{
+    color: var(--dashboard-text-light);
+    font-size: 14px;
+    font-style: italic;
+}
+
 .project-description {
     font-size: 13px;
     color: #666;

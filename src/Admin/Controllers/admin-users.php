@@ -108,7 +108,7 @@ $all_users = WP_BMC_Database::get_all_users();
         <?php if (empty($all_users)): ?>
             <p>Aucun utilisateur n'a été créé.</p>
         <?php else: ?>
-            <table class="wp-list-table widefat fixed striped" id="users-table">
+            <table class="wp-list-table widefat striped" id="users-table">
                 <thead>
                     <tr>
                        
@@ -150,7 +150,11 @@ $all_users = WP_BMC_Database::get_all_users();
                                 <span class="no-project">Aucun projet assigné</span>
                             <?php else: ?>
                                 <?php foreach ($user_projects as $project): ?>
-                                    <span class="project-name"><strong><?php echo esc_html($project->title); ?></strong></span>
+                                    <?php 
+                                    // Vérifier que l'objet project existe et a une propriété title
+                                    $project_title = isset($project->title) ? $project->title : (isset($project->project_name) ? $project->project_name : 'Projet sans nom');
+                                    ?>
+                                    <a class="project-name" href="<?php echo home_url('/business-model-canvas/?admin_view=true&project_id=' . $project->id) . '&view=global'; ?>"><strong><?php echo esc_html($project_title); ?></strong></a>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             </td>
@@ -171,18 +175,6 @@ $all_users = WP_BMC_Database::get_all_users();
                             </td>
                             <td class="user-actions">
                                 <div class="action-buttons">
-                                    <button class="button button-small button-primary edit-user-btn"
-                                        data-user-id="<?php echo $user->user_id; ?>"
-                                        title="Éditer l'utilisateur">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-
-                                    <button class="button button-small button-secondary view-projects-btn"
-                                        data-user-id="<?php echo $user->user_id; ?>"
-                                        title="Voir les projets">
-                                        <i class="fas fa-folder"></i>
-                                    </button>
-
                                     <button class="button button-small button-secondary reset-password-btn"
                                         data-user-id="<?php echo $user->id; ?>"
                                         title="Réinitialiser le mot de passe">

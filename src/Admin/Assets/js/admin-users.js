@@ -95,24 +95,6 @@ jQuery(document).ready(function($) {
         viewUserProfile(userId);
     });
     
-    // Éditer l'utilisateur
-    $(document).on('click', '.edit-user-btn', function() {
-        var userId = $(this).data('user-id');
-        editUser(userId);
-    });
-    
-    // Voir le canvas de l'utilisateur
-    $(document).on('click', '.view-canvas-btn', function() {
-        var userId = $(this).data('user-id');
-        viewUserCanvas(userId);
-    });
-    
-    // Voir les projets de l'utilisateur
-    $(document).on('click', '.view-projects-btn', function() {
-        var userId = $(this).data('user-id');
-        viewUserProjects(userId);
-    });
-
     // Réinitialiser le mot de passe
     $(document).on('click', '.reset-password-btn', function() {
         var userId = $(this).data('user-id');
@@ -305,57 +287,6 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Éditer l'utilisateur
-    function editUser(userId) {
-        // Implémentation de l'édition d'utilisateur
-        WP_BMC_Toast.info("Fonctionnalité d'édition à implémenter");
-    }
-    
-    // Voir le canvas de l'utilisateur
-    function viewUserCanvas(userId) {
-        // Ouvrir le canvas dans un nouvel onglet
-        window.open('admin.php?page=wp-business-model-canvas&action=view_canvas&user_id=' + userId, '_blank');
-    }
-    
-    // Voir les projets de l'utilisateur
-    function viewUserProjects(userId) {
-        // Créer une popup pour afficher les projets
-        var popup = $('<div class="wp-bmc-popup user-projects-popup">' +
-            '<div class="popup-overlay"></div>' +
-            '<div class="popup-content">' +
-                '<div class="popup-header">' +
-                    '<h3>Projets de l\'utilisateur</h3>' +
-                    '<button class="popup-close">&times;</button>' +
-                '</div>' +
-                '<div class="popup-body">' +
-                    '<div class="user-projects-loading">Chargement...</div>' +
-                '</div>' +
-            '</div>' +
-        '</div>');
-        
-        $('body').append(popup);
-        popup.fadeIn(300);
-        
-        // Charger les projets via AJAX
-        $.post(wp_bmc_admin_ajax.ajax_url, {
-            action: 'wp_bmc_get_user_projects',
-            user_id: userId,
-            nonce: wp_bmc_admin_ajax.nonce
-        }, function(response) {
-            if (response.success) {
-                popup.find('.user-projects-loading').html(response.data.html);
-            } else {
-                popup.find('.user-projects-loading').html('<p>Erreur lors du chargement des projets.</p>');
-            }
-        });
-        
-        // Gérer la fermeture
-        popup.find('.popup-close, .popup-overlay').on('click', function() {
-            popup.fadeOut(300, function() {
-                popup.remove();
-            });
-        });
-    }
 
     // Réinitialiser le mot de passe
     function resetUserPassword(userId) {

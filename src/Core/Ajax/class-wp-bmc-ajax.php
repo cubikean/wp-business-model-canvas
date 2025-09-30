@@ -2540,13 +2540,18 @@ function wp_bmc_get_available_users_handler() {
     // Obtenir tous les utilisateurs actifs
     $all_users = WP_BMC_Database::get_all_users();
     
-    // Obtenir les utilisateurs déjà assignés à ce projet
-    $assigned_users = WP_BMC_Database::get_project_users($project_id);
-    $assigned_user_ids = array_column($assigned_users, 'user_id');
+    // Obtenir TOUS les utilisateurs déjà liés à un projet (peu importe le projet)
+    global $wpdb;
+    $table_project_users = $wpdb->prefix . 'bmc_project_users';
+    $all_assigned_user_ids = $wpdb->get_col("
+        SELECT DISTINCT user_id 
+        FROM $table_project_users 
+        WHERE is_active = 1
+    ");
     
-    // Filtrer les utilisateurs non assignés
-    $available_users = array_filter($all_users, function($user) use ($assigned_user_ids) {
-        return !in_array($user->user_id, $assigned_user_ids);
+    // Filtrer les utilisateurs non liés à aucun projet
+    $available_users = array_filter($all_users, function($user) use ($all_assigned_user_ids) {
+        return !in_array($user->user_id, $all_assigned_user_ids);
     });
 
     wp_send_json_success(array(

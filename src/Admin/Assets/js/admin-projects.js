@@ -109,6 +109,11 @@ jQuery(document).ready(function($) {
         var projectId = $(this).data('project-id');
         openManageUsersModal(projectId);
     });
+
+    $('.view-canvas-btn').on('click', function() {
+        var projectId = $(this).data('project-id');
+        viewCanvas(projectId);
+    });
     
     // Retirer un utilisateur d'un projet
     $('.remove-user-btn').on('click', function() {
@@ -230,5 +235,10 @@ jQuery(document).ready(function($) {
         }).fail(function() {
             WP_BMC_Toast.error('Erreur lors du retrait de l\'utilisateur.');
         });
+    }
+
+    function viewCanvas(projectId) {
+        var url = window.location.origin + '/business-model-canvas/?admin_view=true&project_id=' + projectId + '&view=global';
+        window.open(url, '_blank');
     }
 });
