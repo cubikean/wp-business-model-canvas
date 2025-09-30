@@ -14,9 +14,10 @@ if (!defined('ABSPATH')) {
  * Récupère la configuration des sections du canvas selon le mode de vue
  * 
  * @param string $view_mode Mode de vue ('synthetic' ou 'global')
+ * @param bool $use_custom_configs Si true, utilise les configurations personnalisées de la DB
  * @return array Configuration des sections
  */
-function wp_bmc_get_canvas_sections($view_mode = 'global') {
+function wp_bmc_get_canvas_sections($view_mode = 'global', $use_custom_configs = true) {
     // Configuration par défaut
     $default_sections = array(
         'key_partners' => array(
@@ -45,7 +46,7 @@ function wp_bmc_get_canvas_sections($view_mode = 'global') {
         ),
         'value_proposition' => array(
             'title' => 'Proposition de valeur',
-            'placeholder' => 'Pourquoi un client choisirait-il ton offre plutôt qu\'une autre ?',
+            'placeholder' => "Pourquoi un client choisirait-il ton offre plutôt qu'une autre ?",
             'synthetic' => true,
             'color' => 'green',
             'grid-column' => $view_mode === 'synthetic' ? '1/3' : '3/5',
@@ -53,7 +54,7 @@ function wp_bmc_get_canvas_sections($view_mode = 'global') {
         ),
         'customer_segments' => array(
             'title' => 'Segments clients',
-            'placeholder' => 'Comment mon projet génère-t-il de l\'argent ?',
+            'placeholder' => "Comment mon projet génère-t-il de l'argent ?",
             'synthetic' => true,
             'color' => 'orange',
             'grid-column' => $view_mode === 'synthetic' ? '3/5' : '4/7',
@@ -85,7 +86,7 @@ function wp_bmc_get_canvas_sections($view_mode = 'global') {
         ),
         'revenue_streams' => array(
             'title' => 'Sources de revenus',
-            'placeholder' => 'Comment mon projet génère-t-il de l\'argent ?',
+            'placeholder' => "Comment mon projet génère-t-il de l'argent ?",
             'synthetic' => true,    
             'color' => 'blue',
             'grid-column' => ($view_mode === 'synthetic') ? '1/5' : '4/7',
@@ -93,17 +94,19 @@ function wp_bmc_get_canvas_sections($view_mode = 'global') {
         )
     );
     
-    // Récupérer les configurations personnalisées depuis la base de données
-    $custom_configs = WP_BMC_Database::get_all_canvas_configs();
-    
-    // Fusionner les configurations personnalisées avec les valeurs par défaut
-    foreach ($default_sections as $section_key => &$section_config) {
-        if (isset($custom_configs[$section_key])) {
-            if (isset($custom_configs[$section_key]['title'])) {
-                $section_config['title'] = $custom_configs[$section_key]['title'];
-            }
-            if (isset($custom_configs[$section_key]['placeholder'])) {
-                $section_config['placeholder'] = $custom_configs[$section_key]['placeholder'];
+    // Récupérer les configurations personnalisées depuis la base de données si demandé
+    if ($use_custom_configs) {
+        $custom_configs = WP_BMC_Database::get_all_canvas_configs();
+        
+        // Fusionner les configurations personnalisées avec les valeurs par défaut
+        foreach ($default_sections as $section_key => &$section_config) {
+            if (isset($custom_configs[$section_key])) {
+                if (isset($custom_configs[$section_key]['title'])) {
+                    $section_config['title'] = $custom_configs[$section_key]['title'];
+                }
+                if (isset($custom_configs[$section_key]['placeholder'])) {
+                    $section_config['placeholder'] = $custom_configs[$section_key]['placeholder'];
+                }
             }
         }
     }

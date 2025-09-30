@@ -2833,6 +2833,9 @@ function wp_bmc_get_canvas_configs_handler() {
     // S'assurer que la table des configurations existe
     WP_BMC_Database::create_tables();
     
+    // Vider le cache des configurations pour forcer le rechargement
+    WP_BMC_Canvas_Config::clear_cache();
+    
     $configs = WP_BMC_Database::get_all_canvas_configs();
     
     // Inclure la fonction des sections si elle n'est pas disponible
@@ -2840,14 +2843,14 @@ function wp_bmc_get_canvas_configs_handler() {
         include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
     }
     
-    $sections = wp_bmc_get_canvas_sections();
+    $sections = wp_bmc_get_canvas_sections('global', false); // Utiliser les valeurs par défaut du fichier
     
     // Préparer les données pour l'interface admin
     $formatted_configs = array();
     foreach ($sections as $section_key => $section_config) {
         $formatted_configs[$section_key] = array(
-            'title' => isset($configs[$section_key]['title']) ? $configs[$section_key]['title'] : $section_config['title'],
-            'placeholder' => isset($configs[$section_key]['placeholder']) ? $configs[$section_key]['placeholder'] : $section_config['placeholder'],
+            'title' => isset($configs[$section_key]['title']) ? stripslashes($configs[$section_key]['title']) : $section_config['title'],
+            'placeholder' => isset($configs[$section_key]['placeholder']) ? stripslashes($configs[$section_key]['placeholder']) : $section_config['placeholder'],
             'default_title' => $section_config['title'],
             'default_placeholder' => $section_config['placeholder']
         );
@@ -2899,7 +2902,7 @@ function wp_bmc_save_canvas_configs_handler() {
             $result = WP_BMC_Database::save_canvas_section_config(
                 $section_key,
                 'placeholder',
-                sanitize_textarea_field($section_configs['placeholder'])
+                sanitize_text_field($section_configs['placeholder'])
             );
             if ($result) {
                 $success_count++;

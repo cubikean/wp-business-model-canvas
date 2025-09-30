@@ -226,5 +226,12 @@ class WP_BMC_Canvas_Config {
             'color' => 'default'
         ), $config);
     }
+    
+    /**
+     * Vider le cache des configurations
+     */
+    public static function clear_cache() {
+        self::$sections_config = null;
+    }
 
 }

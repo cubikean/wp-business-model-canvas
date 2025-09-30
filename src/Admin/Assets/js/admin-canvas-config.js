@@ -79,9 +79,9 @@ jQuery(document).ready(function($) {
                         <input type="text" 
                                id="title_${sectionKey}" 
                                name="configs[${sectionKey}][title]" 
-                               value="${escapeHtml(config.title)}"
-                               data-default="${escapeHtml(config.default_title)}">
-                        <div class="default-value">Valeur par défaut: ${escapeHtml(config.default_title)}</div>
+                               value="${config.title}"
+                               data-default="${config.default_title}">
+                        <div class="default-value">Valeur par défaut: ${config.default_title}</div>
                     </div>
                     
                     <div class="config-field">
@@ -89,8 +89,8 @@ jQuery(document).ready(function($) {
                         <textarea id="placeholder_${sectionKey}" 
                                   name="configs[${sectionKey}][placeholder]" 
                                   rows="3"
-                                  data-default="${escapeHtml(config.default_placeholder)}">${escapeHtml(config.placeholder)}</textarea>
-                        <div class="default-value">Valeur par défaut: ${escapeHtml(config.default_placeholder)}</div>
+                                  data-default="${config.default_placeholder}">${config.placeholder}</textarea>
+                        <div class="default-value">Valeur par défaut: ${config.default_placeholder}</div>
                     </div>
                 </div>
             `;
@@ -163,17 +163,4 @@ jQuery(document).ready(function($) {
     }
     
     
-    /**
-     * Échapper les caractères HTML
-     */
-    function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
 });
