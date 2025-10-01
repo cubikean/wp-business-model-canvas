@@ -633,12 +633,13 @@ class WP_BMC_Database {
         
         $table_users = $wpdb->prefix . 'users';
         $table_usermeta = $wpdb->prefix . 'usermeta';
+        $capabilities_key = $wpdb->prefix . 'capabilities';
         
         $sql = "
             SELECT DISTINCT u.ID as user_id, u.display_name, u.user_email
             FROM $table_users u
             INNER JOIN $table_usermeta um ON u.ID = um.user_id
-            WHERE um.meta_key = 'wp_capabilities'
+            WHERE um.meta_key = '{$capabilities_key}'
             AND um.meta_value LIKE '%administrator%'
         ";
         
@@ -1257,12 +1258,33 @@ class WP_BMC_Database {
     
     /**
      * Obtenir les demandes de notation en attente
+     * 
+     * @param int|null $supervisor_id ID du superviseur pour filtrer (optionnel)
+     * @return array Liste des demandes de notation en attente
      */
-    public static function get_pending_grading_requests() {
+    public static function get_pending_grading_requests($supervisor_id = null) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_grading_requests';
         
+        // Si un superviseur est spécifié, filtrer par ses projets
+        if ($supervisor_id) {
+            return $wpdb->get_results($wpdb->prepare(
+                "SELECT gr.*, p.title as project_title, 
+                        COALESCE(u.display_name, u.user_login) as user_name 
+                 FROM $table gr 
+                 JOIN {$wpdb->prefix}bmc_projects p ON gr.project_id = p.id 
+                 JOIN {$wpdb->users} u ON gr.user_id = u.ID 
+                 JOIN {$wpdb->prefix}bmc_project_supervisors ps ON p.id = ps.project_id 
+                 WHERE gr.status = 'pending' 
+                   AND ps.supervisor_id = %d 
+                   AND ps.is_active = 1
+                 ORDER BY gr.created_at DESC",
+                $supervisor_id
+            ));
+        }
+        
+        // Sinon, retourner toutes les demandes (compatibilité)
         return $wpdb->get_results(
             "SELECT gr.*, p.title as project_title, 
                     COALESCE(u.display_name, u.user_login) as user_name 

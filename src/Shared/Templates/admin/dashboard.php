@@ -107,8 +107,8 @@ $recent_projects = $wpdb->get_results("
 $current_admin_id = get_current_user_id();
 $unread_notifications = WP_BMC_Database::get_unread_notifications($current_admin_id);
 
-// Obtenir les demandes de notation en attente
-$pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
+// Obtenir les demandes de notation en attente (filtrées par superviseur)
+$pending_grading_requests = WP_BMC_Database::get_pending_grading_requests($current_admin_id);
 ?>
 
 <div class="wrap">
@@ -262,12 +262,6 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                 <input type="text" id="users-search" placeholder="Rechercher un projet..." class="regular-text">
             </div>
             <div class="users-filters">
-                <select id="users-filter-group">
-                    <option value="">Tous les projets</option>
-                    <option value="my-students">Mes étudiants</option>
-                    <option value="managed-students">Projets gérés</option>
-                    <option value="unmanaged-students">Non assignés</option>
-                </select>
                 <select id="users-filter-grading">
                     <option value="">Toutes les demandes</option>
                     <option value="no-requests">Aucune demande</option>
@@ -291,9 +285,6 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                     </th>
                     <th class="sortable" data-sort="project_advancement">
                         AVANCEMENT <span class="sort-indicator"></span>
-                    </th>
-                    <th class="sortable" data-sort="is_my_student">
-                        GROUPE <span class="sort-indicator"></span>
                     </th>
                     <th>ACTIONS</th>
                 </tr>
@@ -397,28 +388,6 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                     <span class="rating-value"><?php echo $percentage; ?>%</span>
                                 </div>
                             </div>
-                        </td>
-
-                        <td class="user-group">
-                            <?php if ($project->admin_name && !$project->is_my_student): ?>
-                                <span class="group-status managed-student">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4" />
-                                    </svg>
-                                    <span>Géré par <?php echo esc_html($project->admin_name); ?></span>
-                                </span>
-                            <?php elseif ($project->is_my_student): ?>
-                                <span class="group-status managed-student">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4" />
-                                    </svg>
-                                    <span>Mon étudiant</span>
-                                </span>
-                            <?php else: ?>
-                                <span class="group-status not-managed">
-                                    <span>Non assigné</span>
-                                </span>
-                            <?php endif; ?>
                         </td>
 
                         <td class="user-actions">

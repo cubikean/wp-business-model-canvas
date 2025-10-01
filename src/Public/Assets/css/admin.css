@@ -165,6 +165,26 @@
     border-bottom: none;
 }
 
+#users-table tbody td .users-list{
+    font-size: 16px;
+    font-weight: 500;
+
+}
+
+#users-table tbody td .users-list span{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 12px;
+    background: rgb(47, 82, 160, .2);
+    border-radius: 99px;
+    width: fit-content;
+    color: var(--dashboard-dark-blue);
+}
+#users-table tbody td .users-list .user-badge:not(:last-child){
+    margin-bottom: 4px;
+}
+
 /* ========================================
    COLONNES SPÉCIFIQUES
    ======================================== */
@@ -216,9 +236,9 @@
 }
 
 .project-title {
-    font-weight: 600;
+    font-weight: 500;
     color: var(--dashboard-text);
-    font-size: 16px;
+    font-size: 20px;
 }
 
 .project-title .no-project{
