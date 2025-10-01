@@ -122,6 +122,11 @@ jQuery(document).ready(function($) {
         var userId = $(this).data('user-id');
         updateUserStatus(userId, 'active');
     });
+
+    $(document).on('click', '.delete-user-btn', function() {
+        var userId = $(this).data('user-id');
+        deleteUser(userId);
+    });
     
     // ========================================
     // FONCTIONS UTILITAIRES
@@ -242,6 +247,8 @@ jQuery(document).ready(function($) {
         var totalCount = $('.user-row').length;
         $('#users-count').text(visibleCount + ' utilisateur(s) sur ' + totalCount);
     }
+
+    
     
     // ========================================
     // ACTIONS SUR LES UTILISATEURS
@@ -349,6 +356,50 @@ jQuery(document).ready(function($) {
                 WP_BMC_Toast.error('Erreur lors de la mise à jour du statut.');
             });
         }
+    }
+
+    // Supprimer un utilisateur
+    function deleteUser(userId) {
+        // Vérifier que l'ID est valide
+        if (!userId || userId === 'undefined' || userId === 'null') {
+            WP_BMC_Toast.error('ID utilisateur invalide');
+            return;
+        }
+
+        // Confirmation avec avertissement
+        if (!confirm('⚠️ ATTENTION : Cette action va supprimer définitivement cet utilisateur !\n\n\n\nÊtes-vous sûr de vouloir continuer ?')) {
+            return;
+        }
+
+        // Afficher un loader sur le bouton
+        var $deleteBtn = $('.delete-user-btn[data-user-id="' + userId + '"]');
+        var originalText = $deleteBtn.html();
+        $deleteBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+
+        $.post(wp_bmc_admin_ajax.ajax_url, {
+            action: 'wp_bmc_delete_user',
+            user_id: userId,
+            nonce: wp_bmc_admin_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('Utilisateur supprimé avec succès !');
+                
+                // Supprimer la ligne du tableau
+                $('.user-row[data-user-id="' + userId + '"]').fadeOut(500, function() {
+                    $(this).remove();
+                    updateUsersCount();
+                });
+                
+            } else {
+                WP_BMC_Toast.error('Erreur lors de la suppression : ' + response.data);
+                // Restaurer le bouton en cas d'erreur
+                $deleteBtn.prop('disabled', false).html(originalText);
+            }
+        }).fail(function(xhr, status, error) {
+            WP_BMC_Toast.error('Erreur de connexion lors de la suppression : ' + error);
+            // Restaurer le bouton en cas d'erreur
+            $deleteBtn.prop('disabled', false).html(originalText);
+        });
     }
     
     // ========================================

@@ -88,6 +88,9 @@ $all_users = WP_BMC_Database::get_all_users();
                                 <button class="button button-small manage-admins-btn" data-project-id="<?php echo $project->id; ?>">
                                     <i class="fas fa-users-cog"></i>
                                 </button>
+                                <button class="button button-small delete-project-btn" data-project-id="<?php echo $project->id; ?>" data-project-title="<?php echo esc_attr($project->title); ?>">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                                 <button class="button view-canvas-btn" data-project-id="<?php echo $project->id; ?>">
                                     Voir le projet
                                 </button>
@@ -241,6 +244,37 @@ $all_users = WP_BMC_Database::get_all_users();
 
         <div class="modal-footer">
             <button type="button" class="button button-secondary modal-close">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="delete-project-modal" class="wp-bmc-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmer la suppression</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="delete-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Êtes-vous sûr de vouloir supprimer le projet <strong id="delete-project-title"></strong> ?</p>
+                <p class="warning-text">Cette action est irréversible et supprimera :</p>
+                <ul>
+                    <li>Toutes les données du canvas</li>
+                    <li>Tous les todos associés</li>
+                    <li>Toutes les évaluations</li>
+                    <li>L'historique des révisions</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="button button-primary confirm-delete-btn" id="confirm-delete-project">
+                <i class="fas fa-trash"></i> Supprimer définitivement
+            </button>
+            <button type="button" class="button button-secondary modal-close">Annuler</button>
         </div>
     </div>
 </div>

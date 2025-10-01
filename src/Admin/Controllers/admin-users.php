@@ -208,6 +208,12 @@ $all_users = WP_BMC_Database::get_all_users();
                                         title="Désactiver l'utilisateur">
                                         <i class="fas fa-ban"></i>
                                     </button>
+
+                                    <button class="button button-small button-link-delete delete-user-btn"
+                                        data-user-id="<?php echo $user->user_id; ?>"
+                                        title="Supprimer l'utilisateur">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>

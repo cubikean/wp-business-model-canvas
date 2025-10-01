@@ -2448,7 +2448,8 @@ body.popup-open {
 
 .btn-outline {
   padding: 10px 20px;
-  border: 1px solid var(--edit-view-color);
+  outline: 1px solid var(--edit-view-color);
+  border: none;
   background: white;
   color: var(--edit-view-color);
   border-radius: 99px;
@@ -2457,6 +2458,7 @@ body.popup-open {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  line-height: 1.2;
 }
 
 .btn-outline.--icon-bg {
@@ -2490,6 +2492,7 @@ body.popup-open {
   font-size: 16px;
   font-weight: 400;
   transition: all 0.3s ease;
+  line-height: 1.2;
 }
 
 .sub-section {

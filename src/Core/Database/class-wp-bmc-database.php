@@ -1723,6 +1723,97 @@ class WP_BMC_Database {
         );
     }
     
+    /**
+     * Supprimer un utilisateur (sans toucher aux données canvas)
+     */
+    public static function delete_user($user_id) {
+        global $wpdb;
+        
+        // Log pour débogage
+        error_log("wp_bmc_delete_user - Tentative de suppression de l'utilisateur ID: $user_id");
+        
+        // Récupérer les informations utilisateur avant suppression
+        // $user_id est l'ID WordPress, on doit chercher par user_id dans la table BMC
+        $user = self::get_user($user_id);
+        if (!$user) {
+            error_log("wp_bmc_delete_user - Utilisateur non trouvé avec l'ID WordPress: $user_id");
+            return false;
+        }
+        
+        error_log("wp_bmc_delete_user - Utilisateur trouvé: " . $user->first_name . " " . $user->last_name . " (" . $user->email . ") - ID BMC: " . $user->id);
+        
+        $wp_user_id = $user->user_id;
+        $details = array();
+        $total_deleted = 0;
+        
+        // 1. Supprimer les relations projet-utilisateur (désassocier l'utilisateur des projets)
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        $project_users_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table_project_users WHERE user_id = %d
+        ", $user_id));
+        
+        if ($project_users_count > 0) {
+            $result = $wpdb->delete(
+                $table_project_users,
+                array('user_id' => $user_id),
+                array('%d')
+            );
+            
+            if ($result !== false) {
+                $total_deleted += $project_users_count;
+                $details[] = "Relations projet : $project_users_count supprimées";
+            }
+        }
+        
+        // 2. Supprimer les relations admin-étudiant
+        $table_admin_students = $wpdb->prefix . 'bmc_admin_students';
+        $admin_students_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table_admin_students WHERE student_id = %d
+        ", $user_id));
+        
+        if ($admin_students_count > 0) {
+            $result = $wpdb->delete(
+                $table_admin_students,
+                array('student_id' => $user_id),
+                array('%d')
+            );
+            
+            if ($result !== false) {
+                $total_deleted += $admin_students_count;
+                $details[] = "Relations admin : $admin_students_count supprimées";
+            }
+        }
+        
+        // 3. Supprimer l'utilisateur BMC
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->delete(
+            $table_users,
+            array('user_id' => $user_id),
+            array('%d')
+        );
+        
+        if ($result === false) {
+            error_log("wp_bmc_delete_user - Erreur lors de la suppression de l'utilisateur BMC ID: $user_id");
+            return false;
+        }
+        
+        $total_deleted += 1;
+        $details[] = "Utilisateur BMC : 1 supprimé";
+        
+        error_log("wp_bmc_delete_user - Suppression réussie. Total supprimé: $total_deleted");
+        
+        // Note : Les données canvas, todos et révisions sont CONSERVÉES
+        // pour préserver l'intégrité des projets
+        
+        return array(
+            'success' => true,
+            'total_deleted' => $total_deleted,
+            'details' => implode(', ', $details),
+            'user_info' => $user->first_name . ' ' . $user->last_name . ' (' . $user->email . ')',
+            'note' => 'Données canvas, tâches et révisions conservées'
+        );
+    }
+    
     // ========================================
     // MÉTHODES POUR LA GESTION DES GROUPES ADMIN-ÉTUDIANT
     // ========================================

@@ -119,6 +119,13 @@ jQuery(document).ready(function($) {
         var projectId = $(this).data('project-id');
         viewCanvas(projectId);
     });
+
+    // Gestion de la suppression de projet
+    $('.delete-project-btn').on('click', function() {
+        var projectId = $(this).data('project-id');
+        var projectTitle = $(this).data('project-title');
+        openDeleteProjectModal(projectId, projectTitle);
+    });
     
     // Retirer un utilisateur d'un projet
     $('.remove-user-btn').on('click', function() {
@@ -133,6 +140,12 @@ jQuery(document).ready(function($) {
     // Fermer les modales
     $('.modal-close').on('click', function() {
         $(this).closest('.wp-bmc-modal').hide();
+    });
+
+    // Confirmation de suppression de projet
+    $('#confirm-delete-project').on('click', function() {
+        var projectId = $(this).data('project-id');
+        deleteProject(projectId);
     });
     
     function openManageUsersModal(projectId) {
@@ -241,6 +254,7 @@ jQuery(document).ready(function($) {
             WP_BMC_Toast.error('Erreur lors du retrait de l\'utilisateur.');
         });
     }
+    
 
     function viewCanvas(projectId) {
         var url = window.location.origin + '/business-model-canvas/?admin_view=true&project_id=' + projectId + '&view=global';
@@ -361,6 +375,58 @@ jQuery(document).ready(function($) {
             }
         }).fail(function() {
             WP_BMC_Toast.error('Erreur lors du retrait du superviseur.');
+        });
+    }
+
+    // Fonction pour ouvrir le modal de suppression de projet
+    function openDeleteProjectModal(projectId, projectTitle) {
+        var $modal = $('#delete-project-modal');
+        
+        // Mettre à jour le titre du projet dans le modal
+        $('#delete-project-title').text(projectTitle);
+        
+        // Stocker l'ID du projet pour l'utiliser lors de la confirmation
+        $('#confirm-delete-project').data('project-id', projectId);
+        
+        // Afficher le modal
+        $modal.show();
+        $modal.css('display', 'flex');
+    }
+
+    // Fonction pour supprimer un projet
+    function deleteProject(projectId) {
+        var $confirmBtn = $('#confirm-delete-project');
+        var originalText = $confirmBtn.html();
+        
+        $confirmBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+        
+        var formData = {
+            action: 'wp_bmc_admin_delete_project',
+            project_id: projectId,
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        };
+        
+        $.post(ajaxurl, formData, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                $('#delete-project-modal').hide();
+                
+                // Supprimer la carte du projet de l'interface
+                $('.project-card[data-project-id="' + projectId + '"]').fadeOut(300, function() {
+                    $(this).remove();
+                });
+                
+                // Recharger la page après un délai pour mettre à jour les statistiques
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors de la suppression du projet.');
+        }).always(function() {
+            $confirmBtn.prop('disabled', false).html(originalText);
         });
     }
 });

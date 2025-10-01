@@ -94,6 +94,7 @@ function wp_bmc_create_project_handler() {
 // Handler pour créer un utilisateur (v2.0 - admin seulement)
 add_action('wp_ajax_wp_bmc_create_user', 'wp_bmc_create_user_handler');
 function wp_bmc_create_user_handler() {
+    error_log('=== wp_bmc_create_user_handler appelé ===');
     check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
     
     if (!current_user_can('manage_options')) {
@@ -135,11 +136,71 @@ function wp_bmc_create_user_handler() {
     $result = WP_BMC_Database::create_user($admin_id, $user_data);
     
     if ($result) {
+        error_log('email: ' . $email);
+        error_log('custom_id: ' . $custom_id);
+        error_log('password: ' . $password);
+        
+        // Préparer le contenu HTML de l'email
+        $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
+        
+        $email_message = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px; background-color: #f8f9fa; }
+                .credentials { background-color: #e8f4f8; padding: 20px; border-left: 4px solid #3498db; margin: 20px 0; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .button { display: inline-block; background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>WP Business Model Canvas</h1>
+                </div>
+                <div class="content">
+                    <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
+                    
+                    <p>Votre compte a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
+                    
+                    <div class="credentials">
+                        <h3>Vos identifiants de connexion :</h3>
+                        <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
+                        <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
+                        <p><strong>ID personnalisé :</strong> ' . esc_html($custom_id) . '</p>
+                    </div>
+                    
+                    <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
+                    
+                    <p>Vous pouvez maintenant accéder à votre espace personnel et commencer à créer vos Business Model Canvas.</p>
+                    
+                    <p>Si vous avez des questions ou besoin d\'assistance, n\'hésitez pas à nous contacter.</p>
+                    
+                    <p>Cordialement</p>
+                </div>
+                <div class="footer">
+                    <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                </div>
+            </div>
+        </body>
+        </html>';
+        
+        // Envoyer l'email avec les headers HTML
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        wp_mail($email, $email_subject, $email_message, $headers);
+        
         wp_send_json_success(array(
             'message' => 'Utilisateur créé avec succès !',
             'user_id' => $result
         ));
-        // wp_mail($email, 'Compte créé pour WP Business Model Canvas', 'Votre compte a été créé avec succès. Voici vos identifiants : ' . $email . ' et ' . $password);
+
+        
+
     } else {
         wp_send_json_error('Erreur lors de la création de l\'utilisateur.');
     }
@@ -531,6 +592,50 @@ function wp_bmc_delete_project_handler() {
     // Supprimer les données du canvas
     $canvas_table = $wpdb->prefix . 'bmc_canvas_data';
     $wpdb->delete($canvas_table, array('project_id' => $project_id), array('%d'));
+    
+    // Supprimer le projet
+    $projects_table = $wpdb->prefix . 'bmc_projects';
+    $result = $wpdb->delete($projects_table, array('id' => $project_id), array('%d'));
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Projet supprimé avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la suppression du projet.');
+    }
+}
+
+// Handler pour supprimer un projet (admin seulement)
+add_action('wp_ajax_wp_bmc_admin_delete_project', 'wp_bmc_admin_delete_project_handler');
+function wp_bmc_admin_delete_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (!$project_id) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    global $wpdb;
+    
+    // Supprimer toutes les données associées au projet
+    $tables_to_clean = array(
+        $wpdb->prefix . 'bmc_canvas_data',
+        $wpdb->prefix . 'bmc_todos',
+        $wpdb->prefix . 'bmc_ratings',
+        $wpdb->prefix . 'bmc_section_revisions',
+        $wpdb->prefix . 'bmc_project_users',
+        $wpdb->prefix . 'bmc_project_supervisors'
+    );
+    
+    foreach ($tables_to_clean as $table) {
+        $wpdb->delete($table, array('project_id' => $project_id), array('%d'));
+    }
     
     // Supprimer le projet
     $projects_table = $wpdb->prefix . 'bmc_projects';
@@ -2680,6 +2785,39 @@ function wp_bmc_update_user_status_handler() {
         ));
     } else {
         wp_send_json_error('Erreur lors de la mise à jour du statut.');
+    }
+}
+
+// Handler pour supprimer un utilisateur
+add_action('wp_ajax_wp_bmc_delete_user', 'wp_bmc_delete_user_handler');
+function wp_bmc_delete_user_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $user_id = intval($_POST['user_id']);
+
+    if (!$user_id) {
+        wp_send_json_error('ID utilisateur invalide.');
+    }
+
+    error_log("wp_bmc_delete_user_handler - Suppression demandée pour l'utilisateur ID: $user_id");
+
+    $result = WP_BMC_Database::delete_user($user_id);
+
+    if ($result && $result['success']) {
+        error_log("wp_bmc_delete_user_handler - Suppression réussie pour l'utilisateur ID: $user_id");
+        wp_send_json_success(array(
+            'message' => 'Utilisateur supprimé avec succès !',
+            'details' => $result['details'],
+            'total_deleted' => $result['total_deleted'],
+            'user_info' => $result['user_info']
+        ));
+    } else {
+        error_log("wp_bmc_delete_user_handler - Échec de la suppression pour l'utilisateur ID: $user_id");
+        wp_send_json_error('Erreur lors de la suppression de l\'utilisateur.');
     }
 }
 
