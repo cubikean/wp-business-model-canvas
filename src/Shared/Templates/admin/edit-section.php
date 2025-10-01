@@ -54,7 +54,7 @@ if (!defined('ABSPATH')) {
         <!-- Actions d'édition -->
         <div class="edit-actions">
             <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="inner-rate-brick-btn">Score de maturité</button>
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid" id="edit-save">Sauvegarder</button>
         </div>
 
         <div class="rating-section" id="rating-section">

@@ -576,7 +576,7 @@ jQuery(document).ready(function ($) {
         '<textarea id="comment" name="comment" rows="7" placeholder="Commentaires sur cette section..."></textarea>' +
         "</div>" +
         '<div class="grading-actions">' +
-        '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary btn-solid">Enregistrer</button>' +
+        '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid">Enregistrer</button>' +
         "</div>" +
         "</form>" +
         "</div>" +

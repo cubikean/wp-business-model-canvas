@@ -55,7 +55,7 @@ if (!defined('ABSPATH')) {
         <div class="edit-actions">
             <!-- <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button> -->
             <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="request-grading">Demander une notation</button>
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary btn-solid" id="edit-save">Sauvegarder</button>
+            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid" id="edit-save">Sauvegarder</button>
         </div>
 
         <div class="rating-section" id="rating-section">

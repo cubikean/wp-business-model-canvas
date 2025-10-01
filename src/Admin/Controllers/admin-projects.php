@@ -214,7 +214,7 @@ $all_users = WP_BMC_Database::get_all_users();
         </div>
         
         <div class="modal-footer">
-            <button type="submit" form="edit-project-form" class="wp-bmc-btn button-primary btn-solid">
+            <button type="submit" form="edit-project-form" class="wp-bmc-btn button-primary bmc-btn-solid">
                 <i class="fas fa-save"></i> Enregistrer
             </button>
             <button type="button" class="button button-secondary modal-close">Annuler</button>
