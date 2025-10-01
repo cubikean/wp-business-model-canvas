@@ -2566,6 +2566,12 @@ function wp_bmc_get_available_users_handler() {
 }
 
 // ========================================
+// GESTION DES ADMINISTRATEURS DISPONIBLES (v2.0)
+// ========================================
+
+
+
+// ========================================
 // GESTION DES STATUTS UTILISATEUR (v2.0)
 // ========================================
 

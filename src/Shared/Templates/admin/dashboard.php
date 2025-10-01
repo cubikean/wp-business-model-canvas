@@ -23,48 +23,74 @@ $recent_users = $wpdb->get_results("
     LIMIT 10
 ");
 
-// Obtenir tous les utilisateurs (pour la liste complète) avec les demandes de notation et les groupes
+// Obtenir tous les projets avec leurs utilisateurs associés
 $current_admin_id = get_current_user_id();
-$all_users = $wpdb->get_results("
-    SELECT u.*, 
+$all_projects = $wpdb->get_results("
+    SELECT p.id as project_id,
            p.title as project_name,
            p.description as project_description,
-           COUNT(DISTINCT p.id) as project_count,
-           MAX(p.created_at) as last_project_date,
+           p.created_at as project_created_at,
            COUNT(DISTINCT gr.id) as total_grading_requests_count,
            SUM(CASE WHEN gr.status = 'pending' THEN 1 ELSE 0 END) as pending_grading_requests_count,
            MAX(gr.created_at) as last_grading_request_date,
            GROUP_CONCAT(DISTINCT gr.status) as grading_statuses,
            COALESCE((
-               SELECT SUM(r2.rating) 
-               FROM {$wpdb->prefix}bmc_ratings r2 
-               JOIN {$wpdb->prefix}bmc_projects p2 ON r2.project_id = p2.id 
-               JOIN {$wpdb->prefix}bmc_project_users pu2 ON p2.id = pu2.project_id
-               WHERE pu2.user_id = u.user_id AND pu2.is_active = 1
+               SELECT SUM(r2.rating)
+               FROM {$wpdb->prefix}bmc_ratings r2
+               WHERE r2.project_id = p.id
            ), 0) as sum_rating_bricks,
-           CASE WHEN as_rel.admin_id IS NOT NULL THEN 1 ELSE 0 END as is_my_student
-    FROM {$wpdb->prefix}bmc_users u
-    LEFT JOIN {$wpdb->prefix}bmc_project_users pu ON u.user_id = pu.user_id AND pu.is_active = 1
-    LEFT JOIN {$wpdb->prefix}bmc_projects p ON pu.project_id = p.id
+           GROUP_CONCAT(DISTINCT CONCAT(u.user_id, ':', u.first_name, ' ', u.last_name, ':', 
+               CASE WHEN as_rel.admin_id IS NOT NULL THEN 1 ELSE 0 END) SEPARATOR '||') as users_info
+    FROM {$wpdb->prefix}bmc_projects p
+    LEFT JOIN {$wpdb->prefix}bmc_project_users pu ON p.id = pu.project_id AND pu.is_active = 1
+    LEFT JOIN {$wpdb->prefix}bmc_users u ON pu.user_id = u.user_id
     LEFT JOIN {$wpdb->prefix}bmc_grading_requests gr ON p.id = gr.project_id
     LEFT JOIN {$wpdb->prefix}bmc_admin_students as_rel ON u.user_id = as_rel.student_id AND as_rel.admin_id = $current_admin_id
-    GROUP BY u.user_id
-    ORDER BY u.created_at DESC
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
 ");
 
-// Obtenir les informations des admins pour chaque utilisateur
-foreach ($all_users as $user) {
-    $admin_info = $wpdb->get_row($wpdb->prepare(
-        "SELECT wp_user.display_name, wp_user.user_login 
-         FROM {$wpdb->prefix}bmc_admin_students as_rel
-         JOIN {$wpdb->prefix}users wp_user ON as_rel.admin_id = wp_user.ID
-         WHERE as_rel.student_id = %d
-         LIMIT 1",
-        $user->user_id
-    ));
-
-    $user->admin_name = $admin_info ? $admin_info->display_name : null;
-    $user->admin_login = $admin_info ? $admin_info->user_login : null;
+// Traiter les informations des utilisateurs pour chaque projet
+foreach ($all_projects as $project) {
+    $users_list = array();
+    $is_my_student = 0;
+    
+    if (!empty($project->users_info)) {
+        $users_data = explode('||', $project->users_info);
+        foreach ($users_data as $user_data) {
+            if (!empty($user_data)) {
+                list($user_id, $user_name, $is_student) = explode(':', $user_data);
+                $users_list[] = array(
+                    'user_id' => $user_id,
+                    'name' => $user_name,
+                    'is_my_student' => (int)$is_student
+                );
+                if ((int)$is_student) {
+                    $is_my_student = 1;
+                }
+            }
+        }
+    }
+    
+    $project->users = $users_list;
+    $project->is_my_student = $is_my_student;
+    
+    // Obtenir l'admin du premier utilisateur du projet (si géré)
+    if (!empty($users_list)) {
+        $first_user_id = $users_list[0]['user_id'];
+        $admin_info = $wpdb->get_row($wpdb->prepare(
+            "SELECT wp_user.display_name, wp_user.user_login 
+             FROM {$wpdb->prefix}bmc_admin_students as_rel
+             JOIN {$wpdb->prefix}users wp_user ON as_rel.admin_id = wp_user.ID
+             WHERE as_rel.student_id = %d
+             LIMIT 1",
+            $first_user_id
+        ));
+        
+        $project->admin_name = $admin_info ? $admin_info->display_name : null;
+    } else {
+        $project->admin_name = null;
+    }
 }
 
 // Obtenir les derniers projets
@@ -226,19 +252,19 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
         <?php endif; ?>
     </div>
 
-    <!-- Liste complète des utilisateurs -->
+    <!-- Liste complète des projets -->
     <div class="wp-bmc-all-users">
-        <h2>Utilisateurs</h2>
+        <h2>Projets</h2>
 
         <div class="wp-bmc-users-controls">
             <div class="users-search">
-                <input type="text" id="users-search" placeholder="Rechercher un utilisateur..." class="regular-text">
+                <input type="text" id="users-search" placeholder="Rechercher un projet..." class="regular-text">
             </div>
             <div class="users-filters">
                 <select id="users-filter-group">
-                    <option value="">Tous les utilisateurs</option>
+                    <option value="">Tous les projets</option>
                     <option value="my-students">Mes étudiants</option>
-                    <option value="managed-students">Étudiants gérés</option>
+                    <option value="managed-students">Projets gérés</option>
                     <option value="unmanaged-students">Non assignés</option>
                 </select>
                 <select id="users-filter-grading">
@@ -254,13 +280,10 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
             <thead>
                 <tr>
                     <th class="sortable" data-sort="name">
-                        PRÉNOM - NOM <span class="sort-indicator"></span>
-                    </th>
-                    <th class="sortable" data-sort="email">
-                        EMAIL <span class="sort-indicator"></span>
-                    </th>
-                    <th class="sortable" data-sort="last_project_date">
                         PROJET <span class="sort-indicator"></span>
+                    </th>
+                    <th class="sortable" data-sort="users">
+                        UTILISATEURS <span class="sort-indicator"></span>
                     </th>
                     <th class="sortable" data-sort="grading_status">
                         STATUT <span class="sort-indicator"></span>
@@ -275,49 +298,47 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($all_users as $user): ?>
-                    <tr class="user-row" data-user-id="<?php echo $user->user_id; ?>">
+                <?php foreach ($all_projects as $project): ?>
+                    <tr class="user-row" data-project-id="<?php echo $project->project_id; ?>">
                         <td class="user-name-container">
-                            <div class="user-name edit-user-btn">
-                                <div class="user-avatar">
-                                    <?php
-                                    $initials = strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
-                                    echo esc_html($initials);
-                                    ?>
-                                </div>
-                                <strong><?php echo esc_html($user->first_name . ' ' . strtoupper($user->last_name)); ?></strong>
-                            </div>
-
-                        </td>
-                        <td class="user-email">
-                            <a href="mailto:<?php echo esc_attr($user->email); ?>">
-                                <?php echo esc_html($user->email); ?>
-                            </a>
-                        </td>
-
-                        <!-- <td class="user-registration">
-                            <?php echo date('d/m/Y H:i', strtotime($user->created_at)); ?>
-                        </td> -->
-                        <td class="user-project-name">
                             <div class="project-info">
                                 <div class="project-title">
-                                    <?php
-                                    // Afficher le nom du projet assigné à l'utilisateur, ou un message si aucun projet
-                                    if (!empty($user->project_name)) {
-                                        echo esc_html($user->project_name);
-                                    } else {
-                                        echo '<span class="no-project">Aucun projet assigné</span>';
-                                    }
-                                    ?>
+                                    <strong><?php echo esc_html($project->project_name); ?></strong>
                                 </div>
-
+                                <?php if (!empty($project->project_description)): ?>
+                                    <div class="project-description">
+                                        <?php echo esc_html(wp_trim_words($project->project_description, 10)); ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </td>
+
+                        <td class="project-users">
+                            <div class="users-list">
+                                <?php if (!empty($project->users)): ?>
+                                    <?php foreach ($project->users as $user): ?>
+                                        <div class="user-badge">
+                                            <!-- <div class="user-avatar-small">
+                                                <?php
+                                                $name_parts = explode(' ', $user['name']);
+                                                $initials = strtoupper(substr($name_parts[0], 0, 1) . (isset($name_parts[1]) ? substr($name_parts[1], 0, 1) : ''));
+                                                echo esc_html($initials);
+                                                ?>
+                                            </div> -->
+                                            <span><?php echo esc_html($user['name']); ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span class="no-users">Aucun utilisateur</span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+
                         <td class="user-grading-status">
                             <?php
-                            $grading_statuses = $user->grading_statuses ? explode(',', $user->grading_statuses) : array();
-                            $total_grading_requests_count = intval($user->total_grading_requests_count);
-                            $pending_grading_requests_count = intval($user->pending_grading_requests_count);
+                            $grading_statuses = $project->grading_statuses ? explode(',', $project->grading_statuses) : array();
+                            $total_grading_requests_count = intval($project->total_grading_requests_count);
+                            $pending_grading_requests_count = intval($project->pending_grading_requests_count);
 
                             if ($total_grading_requests_count == 0): ?>
                                 <span class="grading-status no-requests">
@@ -345,16 +366,17 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                     </span>
                                 <?php endif; ?>
 
-                                <?php if ($user->last_grading_request_date): ?>
+                                <?php if ($project->last_grading_request_date): ?>
                                     <div class="grading-date">
-                                        Dernière demande : <?php echo date('d/m/Y', strtotime($user->last_grading_request_date)); ?>
+                                        Dernière demande : <?php echo date('d/m/Y', strtotime($project->last_grading_request_date)); ?>
                                     </div>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </td>
+                        
                         <td class="user-project-advancement">
                             <?php
-                            $rating_value = intval($user->sum_rating_bricks);
+                            $rating_value = intval($project->sum_rating_bricks);
                             $percentage = round(($rating_value / 90) * 100, 0);
                             $rating_class = 'red-rating';
 
@@ -373,19 +395,18 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
                                 <div class="advancement-info">
                                     <span class="rating-value"><?php echo $percentage; ?>%</span>
                                 </div>
-
                             </div>
                         </td>
 
                         <td class="user-group">
-                            <?php if ($user->admin_name && !$user->is_my_student): ?>
+                            <?php if ($project->admin_name && !$project->is_my_student): ?>
                                 <span class="group-status managed-student">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4" />
                                     </svg>
-                                    <span>Géré par <?php echo esc_html($user->admin_name); ?></span>
+                                    <span>Géré par <?php echo esc_html($project->admin_name); ?></span>
                                 </span>
-                            <?php elseif ($user->is_my_student): ?>
+                            <?php elseif ($project->is_my_student): ?>
                                 <span class="group-status managed-student">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4" />
@@ -401,40 +422,13 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 
                         <td class="user-actions">
                             <div class="action-buttons">
-                                <button class="button action-button button-small button-primary view-user-btn"
-                                    data-user-id="<?php echo $user->user_id; ?>"
-                                    title="Voir le profil">
+                                <button class="button action-button button-small button-primary view-project-btn"
+                                    data-project-id="<?php echo $project->project_id; ?>"
+                                    title="Voir le projet">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5s5 2.24 5 5s-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3s3-1.34 3-3s-1.34-3-3-3" />
                                     </svg>
                                 </button>
-
-                                <?php if ($user->is_my_student): ?>
-                                    <button class="button action-button button-small button-secondary remove-student-btn"
-                                        data-user-id="<?php echo $user->user_id; ?>"
-                                        data-user-name="<?php echo esc_attr($user->first_name . ' ' . $user->last_name); ?>"
-                                        title="Retirer de mes étudiants">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M14 8c0-2.21-1.79-4-4-4S6 5.79 6 8s1.79 4 4 4s4-1.79 4-4M2 18v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4s-8 1.34-8 4m16-8h4c.55 0 1 .45 1 1s-.45 1-1 1h-4c-.55 0-1-.45-1-1s.45-1 1-1" />
-                                        </svg>
-                                    </button>
-                                <?php elseif (!$user->admin_name): ?>
-                                    <button class="button action-button button-small button-primary add-student-btn"
-                                        data-user-id="<?php echo $user->user_id; ?>"
-                                        data-user-name="<?php echo esc_attr($user->first_name . ' ' . $user->last_name); ?>"
-                                        title="Ajouter à mes étudiants">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4" />
-                                        </svg>
-                                    </button>
-                                <?php else: ?>
-                                    <span class="action-disabled" title="Cet utilisateur est déjà géré par <?php echo esc_attr($user->admin_name); ?>">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M6 20V10h12v1c.7 0 1.37.1 2 .29V10c0-1.1-.9-2-2-2h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h6.26c-.42-.6-.75-1.28-.97-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z" />
-                                            <path fill="currentColor" d="M18 13c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5m0 2c.83 0 1.5.67 1.5 1.5S18.83 18 18 18s-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5m0 6c-1.03 0-1.94-.52-2.48-1.32c.73-.42 1.57-.68 2.48-.68s1.75.26 2.48.68c-.54.8-1.45 1.32-2.48 1.32" />
-                                        </svg>
-                                    </span>
-                                <?php endif; ?>
 
                                 <form method="post" action="" style="display: inline;">
                                     <?php wp_nonce_field('wp_bmc_admin_nonce'); ?>
@@ -449,7 +443,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests();
 
         <div class="wp-bmc-users-pagination">
             <div class="pagination-info">
-                <span id="users-count"><?php echo count($all_users); ?> utilisateur(s) au total</span>
+                <span id="users-count"><?php echo count($all_projects); ?> projet(s) au total</span>
             </div>
         </div>
     </div>

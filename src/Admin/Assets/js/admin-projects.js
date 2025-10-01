@@ -110,6 +110,11 @@ jQuery(document).ready(function($) {
         openManageUsersModal(projectId);
     });
 
+    $('.manage-admins-btn').on('click', function() {
+        var projectId = $(this).data('project-id');
+        openManageAdminsModal(projectId);
+    });
+
     $('.view-canvas-btn').on('click', function() {
         var projectId = $(this).data('project-id');
         viewCanvas(projectId);
@@ -240,5 +245,11 @@ jQuery(document).ready(function($) {
     function viewCanvas(projectId) {
         var url = window.location.origin + '/business-model-canvas/?admin_view=true&project_id=' + projectId + '&view=global';
         window.open(url, '_blank');
+    }
+
+    function openManageAdminsModal(projectId) {
+        $('#manage-admins-modal').show();
+        $('#manage-admins-modal').css('display', 'flex');
+        loadAvailableAdmins(projectId);
     }
 });

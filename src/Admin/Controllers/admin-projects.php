@@ -85,6 +85,9 @@ $all_users = WP_BMC_Database::get_all_users();
                                 <button class="button button-small manage-users-btn" data-project-id="<?php echo $project->id; ?>">
                                     <i class="fas fa-users"></i>
                                 </button>
+                                <button class="button button-small manage-admins-btn" data-project-id="<?php echo $project->id; ?>">
+                                    <i class="fas fa-users-cog"></i>
+                                </button>
                                 <button class="button view-canvas-btn" data-project-id="<?php echo $project->id; ?>">
                                     Voir le projet
                                 </button>
@@ -190,6 +193,29 @@ $all_users = WP_BMC_Database::get_all_users();
             </button>
             <button type="button" class="button button-secondary modal-close">Annuler</button>
         </div>
+    </div>
+</div>
+
+<!-- Modal de gestion des administrateurs -->
+<div id="manage-admins-modal" class="wp-bmc-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Gérer les administrateurs du projet</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+    </div>
+
+    <div class="modal-body">
+        <div class="available-admins">
+            <h4>Administrateurs disponibles</h4>
+            <div class="admins-list" id="available-admins-list">
+                <!-- Sera rempli via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="button button-secondary modal-close">Fermer</button>
     </div>
 </div>
 

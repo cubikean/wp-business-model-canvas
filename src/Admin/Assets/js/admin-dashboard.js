@@ -147,23 +147,6 @@ jQuery(document).ready(function ($) {
       });
   });
 
-  // Noter une section depuis une notification
-  $(document).on("click", ".grade-btn", function () {
-    var projectId = $(this).data("project-id");
-    var userId = $(this).data("user-id");
-    var section = $(this).data("section");
-
-    // Rediriger vers le canvas de l'utilisateur avec vue admin et auto-ouvrir la popup de notation
-    var url =
-      window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId +
-      "&project_id=" +
-      projectId +
-      "&auto_grade_section=" +
-      encodeURIComponent(section);
-    window.open(url, "_blank");
-  });
 
   // Noter une section depuis les demandes en attente
   $(document).on("click", ".grade-section-btn", function () {
@@ -174,9 +157,7 @@ jQuery(document).ready(function ($) {
     // Rediriger vers le canvas de l'utilisateur avec vue admin
     var url =
       window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId +
-      "&project_id=" +
+      "/business-model-canvas/?admin_view=true&view=global&project_id=" +
       projectId +
       "&open_section=" +
       encodeURIComponent(section);
@@ -202,108 +183,6 @@ jQuery(document).ready(function ($) {
    
   });
 
-  // ========================================
-  // ACTIONS SUR LES UTILISATEURS
-  // ========================================
-
-  // Voir le canvas de l'utilisateur
-  $(document).on("click", ".view-user-canvas-btn", function () {
-    var userId = $(this).data("user-id");
-    var url =
-      window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId;
-    window.open(url, "_blank");
-  });
-
-  // Éditer l'utilisateur
-  $(document).on("click", ".edit-user-btn", function () {
-    var userId = $(this).data("user-id");
-    editUserInPopup(userId);
-  });
-
-  // ========================================
-  // GESTION DES GROUPES D'ÉTUDIANTS
-  // ========================================
-
-  // Ajouter un étudiant à mes étudiants
-  $(document).on("click", ".add-student-btn", function () {
-    var $btn = $(this);
-    var userId = $btn.data("user-id");
-    var userName = $btn.data("user-name");
-
-    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_add_student",
-        student_id: userId,
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          WP_BMC_Toast.success(response.data.message);
-          // Mettre à jour l'interface
-          updateStudentGroupStatus(userId, true);
-        } else {
-          WP_BMC_Toast.error(response.data);
-        }
-      }
-    )
-      .fail(function () {
-        WP_BMC_Toast.error("Erreur lors de l'ajout de l'étudiant.");
-      })
-      .always(function () {
-        $btn.prop("disabled", false).html('<i class="fas fa-user-plus"></i>');
-      });
-  });
-
-  // Retirer un étudiant de mes étudiants
-  $(document).on("click", ".remove-student-btn", function () {
-    var $btn = $(this);
-    var userId = $btn.data("user-id");
-    var userName = $btn.data("user-name");
-
-    // Demander confirmation
-    if (
-      !confirm(
-        "Êtes-vous sûr de vouloir retirer " + userName + " de vos étudiants ?"
-      )
-    ) {
-      return;
-    }
-
-    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_remove_student",
-        student_id: userId,
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          WP_BMC_Toast.success(response.data.message);
-          // Mettre à jour l'interface
-          updateStudentGroupStatus(userId, false);
-        } else {
-          WP_BMC_Toast.error(response.data);
-        }
-      }
-    )
-      .fail(function () {
-        WP_BMC_Toast.error("Erreur lors de la suppression de l'étudiant.");
-      })
-      .always(function () {
-        $btn.prop("disabled", false).html('<i class="fas fa-user-minus"></i>');
-      });
-  });
-
-  // ========================================
-  // EXPORT DES DONNÉES
-  // ========================================
 
   // ========================================
   // FONCTIONS UTILITAIRES
@@ -410,67 +289,6 @@ jQuery(document).ready(function ($) {
 
     updateUsersCount();
   }
-
-  // Mettre à jour le statut de groupe d'un utilisateur
-  function updateStudentGroupStatus(userId, isMyStudent) {
-    var $row = $('.user-row[data-user-id="' + userId + '"]');
-    var $groupCell = $row.find(".user-group");
-    var $actionCell = $row.find(".user-actions");
-    var userName =
-      $actionCell.find(".add-student-btn").data("user-name") ||
-      $actionCell.find(".remove-student-btn").data("user-name");
-
-    if (isMyStudent) {
-      // Mettre à jour le statut de groupe
-      $groupCell.html(
-        '<span class="group-status managed-student">' +
-          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>' +
-          "<span>Mon étudiant</span>" +
-          "</span>"
-      );
-
-      // Mettre à jour le bouton d'action
-      $actionCell
-        .find(".add-student-btn")
-        .replaceWith(
-          '<button class="button action-button button-small button-secondary remove-student-btn" ' +
-            'data-user-id="' +
-            userId +
-            '" ' +
-            'data-user-name="' +
-            userName +
-            '" ' +
-            'title="Retirer de mes étudiants">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-            "</button>"
-        );
-    } else {
-      // Mettre à jour le statut de groupe
-      $groupCell.html(
-        '<span class="group-status not-managed">' +
-          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9"/></svg>' +
-          "<span>Non assigné</span>" +
-          "</span>"
-      );
-
-      // Mettre à jour le bouton d'action
-      $actionCell
-        .find(".remove-student-btn")
-        .replaceWith(
-          '<button class="button action-button button-small button-primary add-student-btn" ' +
-            'data-user-id="' +
-            userId +
-            '" ' +
-            'data-user-name="' +
-            userName +
-            '" ' +
-            'title="Ajouter à mes étudiants">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-            "</button>"
-        );
-    }
-  }
-
   // Trier le tableau des utilisateurs
   function sortUsersTable(column, order) {
     var $tbody = $("#users-table tbody");

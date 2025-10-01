@@ -1376,6 +1376,21 @@ jQuery(document).ready(function($) {
         var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&user_id=' + userId +'&view=global';
         window.open(canvasUrl, '_blank');
     });
+
+    // Voir le canvas de l'utilisateur (pour les admins)
+    $(document).on('click', '.view-project-btn', function(e) {
+        e.preventDefault();
+        
+        var projectId = $(this).data('project-id');
+        if (!projectId) {
+            console.error('ID projet manquant');
+            return;
+        }
+        
+        // Rediriger vers le canvas de l'utilisateur avec les paramètres admin
+        var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&project_id=' + projectId +'&view=global';
+        window.open(canvasUrl, '_blank');
+    });
     
     // ========================================
     // GESTION DES RÉVISIONS
