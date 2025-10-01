@@ -252,4 +252,115 @@ jQuery(document).ready(function($) {
         $('#manage-admins-modal').css('display', 'flex');
         loadAvailableAdmins(projectId);
     }
+
+    function loadAvailableAdmins(projectId) {
+        var $container = $('#available-admins-list');
+        $container.html('<div class="loading">Chargement des superviseurs...</div>');
+        
+        // Charger les superviseurs disponibles
+        $.post(ajaxurl, {
+            action: 'wp_bmc_get_available_supervisors',
+            project_id: projectId,
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        }, function(response) {
+            if (response.success) {
+                var supervisors = response.data.supervisors;
+                var html = '';
+                
+                if (supervisors.length === 0) {
+                    html = '<p class="no-admins">Aucun superviseur disponible à assigner.</p>';
+                } else {
+                    supervisors.forEach(function(admin) {
+                        html += '<div class="admin-item available-admin" data-admin-id="' + admin.user_id + '">';
+                        html += '<span class="admin-name">';
+                        html += admin.display_name;
+                        html += ' <small>(' + admin.user_email + ')</small>';
+                        html += '</span>';
+                        html += '<button class="button button-small add-admin-btn" ';
+                        html += 'data-project-id="' + projectId + '" ';
+                        html += 'data-admin-id="' + admin.user_id + '">';
+                        html += '<i class="fas fa-plus"></i> Assigner';
+                        html += '</button>';
+                        html += '</div>';
+                    });
+                }
+                
+                $container.html(html);
+                
+                // Gérer l'ajout de superviseurs
+                $('.add-admin-btn').on('click', function() {
+                    var $btn = $(this);
+                    var adminId = $btn.data('admin-id');
+                    var projectId = $btn.data('project-id');
+                    
+                    addSupervisorToProject(projectId, adminId, $btn);
+                });
+            } else {
+                $container.html('<p class="error">Erreur lors du chargement des superviseurs.</p>');
+            }
+        }).fail(function() {
+            $container.html('<p class="error">Erreur de connexion.</p>');
+        });
+    }
+    
+    function addSupervisorToProject(projectId, supervisorId, $button) {
+        var originalText = $button.html();
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+        
+        $.post(ajaxurl, {
+            action: 'wp_bmc_assign_supervisor_to_project',
+            project_id: projectId,
+            supervisor_id: supervisorId,
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val()
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                $button.closest('.admin-item').fadeOut(300, function() {
+                    $(this).remove();
+                });
+                // Recharger la liste des superviseurs du projet
+                setTimeout(function() {
+                    location.reload();
+                }, 500);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors de l\'assignation du superviseur.');
+        }).always(function() {
+            $button.prop('disabled', false).html(originalText);
+        });
+    }
+    
+    // Retirer un superviseur d'un projet
+    $(document).on('click', '.remove-admin-btn', function() {
+        var projectId = $(this).data('project-id');
+        var supervisorId = $(this).data('admin-id');
+        
+        if (confirm('Êtes-vous sûr de vouloir retirer ce superviseur du projet ?')) {
+            removeSupervisorFromProject(projectId, supervisorId, $(this));
+        }
+    });
+    
+    function removeSupervisorFromProject(projectId, supervisorId, $button) {
+        var formData = {
+            action: 'wp_bmc_remove_supervisor_from_project',
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val(),
+            project_id: projectId,
+            supervisor_id: supervisorId
+        };
+        
+        $.post(ajaxurl, formData, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                $button.closest('.admin-item').fadeOut(300, function() {
+                    $(this).remove();
+                });
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors du retrait du superviseur.');
+        });
+    }
 });

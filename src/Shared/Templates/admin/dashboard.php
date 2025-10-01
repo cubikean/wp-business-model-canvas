@@ -23,9 +23,9 @@ $recent_users = $wpdb->get_results("
     LIMIT 10
 ");
 
-// Obtenir tous les projets avec leurs utilisateurs associés
+// Obtenir tous les projets avec leurs utilisateurs associés (filtrés par superviseur)
 $current_admin_id = get_current_user_id();
-$all_projects = $wpdb->get_results("
+$all_projects = $wpdb->get_results($wpdb->prepare("
     SELECT p.id as project_id,
            p.title as project_name,
            p.description as project_description,
@@ -42,13 +42,14 @@ $all_projects = $wpdb->get_results("
            GROUP_CONCAT(DISTINCT CONCAT(u.user_id, ':', u.first_name, ' ', u.last_name, ':', 
                CASE WHEN as_rel.admin_id IS NOT NULL THEN 1 ELSE 0 END) SEPARATOR '||') as users_info
     FROM {$wpdb->prefix}bmc_projects p
+    INNER JOIN {$wpdb->prefix}bmc_project_supervisors ps ON p.id = ps.project_id AND ps.supervisor_id = %d AND ps.is_active = 1
     LEFT JOIN {$wpdb->prefix}bmc_project_users pu ON p.id = pu.project_id AND pu.is_active = 1
     LEFT JOIN {$wpdb->prefix}bmc_users u ON pu.user_id = u.user_id
     LEFT JOIN {$wpdb->prefix}bmc_grading_requests gr ON p.id = gr.project_id
-    LEFT JOIN {$wpdb->prefix}bmc_admin_students as_rel ON u.user_id = as_rel.student_id AND as_rel.admin_id = $current_admin_id
+    LEFT JOIN {$wpdb->prefix}bmc_admin_students as_rel ON u.user_id = as_rel.student_id AND as_rel.admin_id = %d
     GROUP BY p.id
     ORDER BY p.created_at DESC
-");
+", $current_admin_id, $current_admin_id));
 
 // Traiter les informations des utilisateurs pour chaque projet
 foreach ($all_projects as $project) {

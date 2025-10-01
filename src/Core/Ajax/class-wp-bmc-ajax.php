@@ -200,6 +200,82 @@ function wp_bmc_remove_user_from_project_handler() {
     }
 }
 
+// Handler pour assigner un superviseur à un projet
+add_action('wp_ajax_wp_bmc_assign_supervisor_to_project', 'wp_bmc_assign_supervisor_to_project_handler');
+function wp_bmc_assign_supervisor_to_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (empty($project_id) || empty($supervisor_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::assign_supervisor_to_project($project_id, $supervisor_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Superviseur assigné au projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'assignation du superviseur au projet.');
+    }
+}
+
+// Handler pour retirer un superviseur d'un projet
+add_action('wp_ajax_wp_bmc_remove_supervisor_from_project', 'wp_bmc_remove_supervisor_from_project_handler');
+function wp_bmc_remove_supervisor_from_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (empty($project_id) || empty($supervisor_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::remove_supervisor_from_project($project_id, $supervisor_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Superviseur retiré du projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors du retrait du superviseur du projet.');
+    }
+}
+
+// Handler pour obtenir les superviseurs disponibles pour un projet
+add_action('wp_ajax_wp_bmc_get_available_supervisors', 'wp_bmc_get_available_supervisors_handler');
+function wp_bmc_get_available_supervisors_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    $supervisors = WP_BMC_Database::get_available_supervisors($project_id);
+    
+    wp_send_json_success(array(
+        'supervisors' => $supervisors
+    ));
+}
+
 // Handler pour vérifier l'accès d'un utilisateur à un projet (v2.0)
 add_action('wp_ajax_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');
 add_action('wp_ajax_nopriv_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');

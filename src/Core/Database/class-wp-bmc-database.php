@@ -200,6 +200,21 @@ class WP_BMC_Database {
             KEY is_active (is_active)
         ) $charset_collate;";
         
+        // Table de liaison projet-superviseurs (admins responsables)
+        $table_project_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        $sql_project_supervisors = "CREATE TABLE $table_project_supervisors (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            supervisor_id bigint(20) NOT NULL,
+            assigned_at datetime DEFAULT CURRENT_TIMESTAMP,
+            is_active tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            UNIQUE KEY project_supervisor (project_id, supervisor_id),
+            KEY project_id (project_id),
+            KEY supervisor_id (supervisor_id),
+            KEY is_active (is_active)
+        ) $charset_collate;";
+        
         // Table des configurations du canvas
         $table_canvas_config = $wpdb->prefix . 'bmc_canvas_config';
         $sql_canvas_config = "CREATE TABLE $table_canvas_config (
@@ -225,6 +240,7 @@ class WP_BMC_Database {
         dbDelta($sql_todos);
         dbDelta($sql_admin_students);
         dbDelta($sql_project_users);
+        dbDelta($sql_project_supervisors);
         dbDelta($sql_canvas_config);
     }
     
@@ -493,6 +509,152 @@ class WP_BMC_Database {
         ", $project_id));
         
         return $results;
+    }
+    
+    /**
+     * Assigner un superviseur (admin) à un projet
+     */
+    public static function assign_supervisor_to_project($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        // Vérifier si l'assignation existe déjà
+        $existing = $wpdb->get_var($wpdb->prepare("
+            SELECT id FROM $table 
+            WHERE project_id = %d AND supervisor_id = %d
+        ", $project_id, $supervisor_id));
+        
+        if ($existing) {
+            // Réactiver si désactivée
+            $result = $wpdb->update(
+                $table,
+                array('is_active' => 1),
+                array('id' => $existing),
+                array('%d'),
+                array('%d')
+            );
+            return $result !== false;
+        }
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'supervisor_id' => $supervisor_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Retirer un superviseur d'un projet
+     */
+    public static function remove_supervisor_from_project($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        $result = $wpdb->update(
+            $table,
+            array('is_active' => 0),
+            array(
+                'project_id' => $project_id,
+                'supervisor_id' => $supervisor_id
+            ),
+            array('%d'),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir les superviseurs d'un projet
+     */
+    public static function get_project_supervisors($project_id) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'users';
+        $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT u.ID as user_id, u.display_name, u.user_email, ps.assigned_at
+            FROM $table_users u
+            JOIN $table_supervisors ps ON u.ID = ps.supervisor_id
+            WHERE ps.project_id = %d AND ps.is_active = 1
+            ORDER BY ps.assigned_at DESC
+        ", $project_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir les projets d'un superviseur
+     */
+    public static function get_supervisor_projects($supervisor_id) {
+        global $wpdb;
+        
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT p.*, ps.assigned_at
+            FROM $table_projects p
+            JOIN $table_supervisors ps ON p.id = ps.project_id
+            WHERE ps.supervisor_id = %d AND ps.is_active = 1
+            ORDER BY ps.assigned_at DESC
+        ", $supervisor_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Vérifier si un admin est superviseur d'un projet
+     */
+    public static function is_project_supervisor($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        $result = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table 
+            WHERE project_id = %d AND supervisor_id = %d AND is_active = 1
+        ", $project_id, $supervisor_id));
+        
+        return $result > 0;
+    }
+    
+    /**
+     * Obtenir tous les admins disponibles pour supervision
+     */
+    public static function get_available_supervisors($exclude_project_id = null) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'users';
+        $table_usermeta = $wpdb->prefix . 'usermeta';
+        
+        $sql = "
+            SELECT DISTINCT u.ID as user_id, u.display_name, u.user_email
+            FROM $table_users u
+            INNER JOIN $table_usermeta um ON u.ID = um.user_id
+            WHERE um.meta_key = 'wp_capabilities'
+            AND um.meta_value LIKE '%administrator%'
+        ";
+        
+        if ($exclude_project_id) {
+            $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+            $sql .= $wpdb->prepare("
+                AND u.ID NOT IN (
+                    SELECT supervisor_id FROM $table_supervisors 
+                    WHERE project_id = %d AND is_active = 1
+                )
+            ", $exclude_project_id);
+        }
+        
+        $sql .= " ORDER BY u.display_name ASC";
+        
+        return $wpdb->get_results($sql);
     }
     
     /**

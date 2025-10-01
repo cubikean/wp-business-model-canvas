@@ -135,6 +135,32 @@ $all_users = WP_BMC_Database::get_all_users();
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <div class="project-supervisors">
+                                <h4>Superviseurs assignés</h4>
+                                <div class="admins-list" id="admins-list-<?php echo $project->id; ?>">
+                                    <?php
+                                    $project_supervisors = WP_BMC_Database::get_project_supervisors($project->id);
+                                    if (empty($project_supervisors)):
+                                    ?>
+                                        <p class="no-admins">Aucun superviseur assigné</p>
+                                    <?php else: ?>
+                                        <?php foreach ($project_supervisors as $supervisor): ?>
+                                            <div class="admin-item" data-admin-id="<?php echo $supervisor->user_id; ?>">
+                                                <span class="admin-name">
+                                                    <?php echo esc_html($supervisor->display_name); ?>
+                                                    <small>(<?php echo esc_html($supervisor->user_email); ?>)</small>
+                                                </span>
+                                                <button class="button button-small remove-admin-btn" 
+                                                        data-project-id="<?php echo $project->id; ?>" 
+                                                        data-admin-id="<?php echo $supervisor->user_id; ?>">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -196,26 +222,26 @@ $all_users = WP_BMC_Database::get_all_users();
     </div>
 </div>
 
-<!-- Modal de gestion des administrateurs -->
+<!-- Modal de gestion des superviseurs -->
 <div id="manage-admins-modal" class="wp-bmc-modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Gérer les administrateurs du projet</h3>
+            <h3>Gérer les superviseurs du projet</h3>
             <button class="modal-close">&times;</button>
         </div>
-    </div>
 
-    <div class="modal-body">
-        <div class="available-admins">
-            <h4>Administrateurs disponibles</h4>
-            <div class="admins-list" id="available-admins-list">
-                <!-- Sera rempli via JavaScript -->
+        <div class="modal-body">
+            <div class="available-admins">
+                <h4>Superviseurs disponibles</h4>
+                <div class="admins-list" id="available-admins-list">
+                    <!-- Sera rempli via JavaScript -->
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="modal-footer">
-        <button type="button" class="button button-secondary modal-close">Fermer</button>
+        <div class="modal-footer">
+            <button type="button" class="button button-secondary modal-close">Fermer</button>
+        </div>
     </div>
 </div>
 
