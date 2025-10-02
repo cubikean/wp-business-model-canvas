@@ -358,6 +358,11 @@
   display: block;
 }
 
+.form-group .password-input-container{
+  display: flex;
+  align-items: center;
+}
+
 /* Boutons */
 .btn-primary,
 .wp-bmc-form button[type="submit"] {
@@ -823,6 +828,8 @@
   background: var(--light-gray);
   border-radius: 12px;
   margin-bottom: 30px;
+  max-width: 600px;
+  margin-inline: auto;
 }
 
 .welcome-message h2 {
@@ -1290,8 +1297,6 @@
 .change-password-form .form-group .show-password {
   position: absolute;
   right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--dashboard-text-light);
@@ -2448,10 +2453,10 @@ body.popup-open {
 
 .btn-outline {
   padding: 10px 20px;
-  outline: 1px solid var(--edit-view-color);
+  outline: 1px solid var(--edit-view-color, var(--dashboard-primary));
   border: none;
   background: white;
-  color: var(--edit-view-color);
+  color: var(--edit-view-color, var(--dashboard-primary));
   border-radius: 99px;
   font-size: 16px;
   display: flex;
@@ -2464,7 +2469,7 @@ body.popup-open {
 .btn-outline.--icon-bg {
   padding: 6px 20px 6px 10px;
   i {
-    background-color: var(--edit-view-color);
+    background-color: var(--edit-view-color, var(--dashboard-primary));
     color: white;
     border-radius: 99px;
     padding: 4px;
@@ -2477,13 +2482,13 @@ body.popup-open {
 }
 
 .btn-outline:hover {
-  background: var(--edit-view-color);
+  background: var(--edit-view-color, var(--dashboard-primary));
   color: white;
   cursor: pointer;
 }
 
 .bmc-btn-solid {
-  background: var(--edit-view-color);
+  background: var(--edit-view-color, var(--dashboard-primary));
   color: white;
   cursor: pointer;
   border: none;

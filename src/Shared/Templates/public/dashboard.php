@@ -47,14 +47,12 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
         <div class="no-project-section">
             <div class="welcome-message">
                 <h2>Bienvenue, <?php echo esc_html($current_user->first_name); ?> !</h2>
-                <p>Vous n'avez pas encore de projet assigné. Contactez votre administrateur pour qu'il vous assigne un projet.</p>
             </div>
 
             <div class="no-projects-info">
                 <div class="info-card">
-                    <i class="fas fa-info-circle"></i>
                     <h3>Comment obtenir un projet ?</h3>
-                    <p>Dans la version 2.0, les projets sont créés et assignés par les administrateurs. Contactez votre responsable pour qu'il vous assigne un projet Business Model Canvas.</p>
+                    <p>Les projets sont créés et assignés par les administrateurs. Contactez votre responsable pour qu'il vous assigne un projet Business Model Canvas.</p>
                 </div>
             </div>
         </div>
