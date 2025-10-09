@@ -26,20 +26,24 @@
   --dashboard-text-light: #666666;
 }
 
-[data-section="key_partners"], [data-section="key_activities"], [data-section="key_resources"]{
+[data-section="key_partners"],
+[data-section="key_activities"],
+[data-section="key_resources"] {
   --edit-view-color: var(--dashboard-primary);
 }
 
-[data-section="value_proposition"]{
+[data-section="value_proposition"] {
   --edit-view-color: var(--dashboard-green);
 }
 
-[data-section="customer_relationships"], [data-section="channels"], [data-section="customer_segments"]{
+[data-section="customer_relationships"],
+[data-section="channels"],
+[data-section="customer_segments"] {
   --edit-view-color: var(--dashboard-orange);
 }
 
-
-[data-section="cost_structure"], [data-section="revenue_streams"]{
+[data-section="cost_structure"],
+[data-section="revenue_streams"] {
   --edit-view-color: var(--dashboard-blue);
 }
 
@@ -290,7 +294,7 @@
   --wp--style--global--wide-size: unset;
 }
 
-.business-model-canvas #lqd-contents-wrap{
+.business-model-canvas #lqd-contents-wrap {
   width: 100%;
   margin: 0 auto;
   padding: 0;
@@ -358,7 +362,7 @@
   display: block;
 }
 
-.form-group .password-input-container{
+.form-group .password-input-container {
   display: flex;
   align-items: center;
 }
@@ -451,7 +455,7 @@
   font-size: 36px;
 }
 
-.dashboard-header h3{
+.dashboard-header h3 {
   color: white;
   font-size: 24px;
 }
@@ -594,14 +598,14 @@
   display: flex;
   gap: 10px;
 
-  a{
+  a {
     color: white;
     text-decoration: underline;
     transition: all 0.3s ease;
 
-    &:hover{
+    &:hover {
       text-decoration: none;
-      color: white
+      color: white;
     }
   }
 }
@@ -626,11 +630,15 @@
   flex-direction: column;
 }
 
-.canvas-section.overview-status{
+.canvas-section.overview-status {
   padding: 32px;
 
-  h3{
+  h3 {
     margin-bottom: 20px;
+    text-transform: initial;
+    text-wrap: balance;
+    width: 80%;
+    margin-inline: auto;
   }
 }
 
@@ -1066,9 +1074,8 @@
   grid-row: 1;
 }
 
-.canvas-section .overview-status{
+.canvas-section .overview-status {
   padding: 32px;
-
 }
 
 .canvas-section-header {
@@ -1345,8 +1352,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -1355,18 +1366,18 @@
     width: 95%;
     margin: 20px;
   }
-  
+
   #wp-bmc-change-password-popup .popup-header,
   #wp-bmc-change-password-popup .popup-body {
     padding-left: 20px;
     padding-right: 20px;
   }
-  
+
   .change-password-info {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .change-password-form .wp-bmc-btn {
     width: 100%;
     min-width: auto;
@@ -1500,7 +1511,7 @@
   background: var(--edit-view-color);
   color: white;
   cursor: not-allowed;
-  opacity: .6;
+  opacity: 0.6;
 }
 
 .rate-brick-btn.rated {
@@ -1691,7 +1702,7 @@
 }
 
 /* Grading modal */
-.grading-modal .popup-content{
+.grading-modal .popup-content {
   width: 500px;
 }
 
@@ -1701,23 +1712,23 @@
   gap: 0px;
 }
 
-.grading-modal .popup-close{
+.grading-modal .popup-close {
   position: absolute;
   right: 20px;
   top: 20px;
 }
 
-.grading-modal .section-title{
+.grading-modal .section-title {
   font-weight: 600;
   color: #aaaaaa;
   font-size: 20px;
 }
 
-.grading-modal :is(#rating, #comment){
+.grading-modal :is(#rating, #comment) {
   width: 100%;
 }
 
-.grading-modal #rating{
+.grading-modal #rating {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -1786,7 +1797,7 @@
 }
 
 .grading-modal .rating-slider-wrapper::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 0;
@@ -1799,7 +1810,7 @@
   z-index: 1;
 }
 
-.grading-modal #comment{
+.grading-modal #comment {
   padding: 16px;
   background-color: #fafafa;
   border: none;
@@ -1808,12 +1819,12 @@
   resize: vertical;
 }
 
-.grading-modal .grading-actions{
+.grading-modal .grading-actions {
   display: flex;
   justify-content: flex-end;
 }
 
-.grading-modal .rating-display{
+.grading-modal .rating-display {
   flex-wrap: nowrap;
 }
 
@@ -2247,7 +2258,7 @@ body.popup-open {
 .need-grading {
   border: 5px solid var(--admin-red-rating);
 
-  &::before{
+  &::before {
     position: absolute;
     content: "";
     top: -24px;
@@ -2264,14 +2275,14 @@ body.popup-open {
   }
 }
 
-.rating-section{
+.rating-section {
   display: flex;
   padding: 32px;
   flex-direction: column;
   gap: 16px;
 }
 
-.rating-display{
+.rating-display {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -2280,14 +2291,13 @@ body.popup-open {
   gap: 16px;
 }
 
-.rating-meta{
+.rating-meta {
   width: 100%;
   display: flex;
   gap: 12px;
   font-size: 18px;
   font-weight: 400;
 }
-
 
 .rating-score {
   position: relative;
@@ -2597,7 +2607,6 @@ body.popup-open {
   gap: 24px;
 }
 
-
 .revision-info {
   display: flex;
   flex-direction: column;
@@ -2627,8 +2636,8 @@ body.popup-open {
   font-weight: 500;
   line-height: 1.4;
   line-break: anywhere;
-  background-color: #F6F6F6;
-  color: #7C7C7C;
+  background-color: #f6f6f6;
+  color: #7c7c7c;
 }
 
 .reason-grading_request {
@@ -2768,13 +2777,13 @@ body.popup-open {
   position: relative;
   width: 200px;
   height: 120px;
-  margin: 0 auto 20px;
+  margin: 0 auto 60px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.overview-status h3{
+.overview-status h3 {
   color: var(--dashboard-text);
 }
 
@@ -2811,11 +2820,11 @@ body.popup-open {
 
 .overview-status .action-plan li {
   padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #ffffff18;
 }
 
-.overview-status .action-plan li:last-child {
-  border-bottom: none;
+.overview-status .action-plan li:first-child {
+  border-top: 1px solid #ffffff18;
 }
 
 /* ========================================
@@ -2823,13 +2832,24 @@ body.popup-open {
    ======================================== */
 
 .action-plan-info {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0.5rem 0 1rem 0;
-  padding: 0.5rem;
-  background: var(--light-blue);
-  border-radius: 6px;
-  border-left: 3px solid var(--dashboard-blue);
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  border-radius: 20px;
+  background-color: var(--dashboard-primary);
+  padding: 28px;
+}
+
+.action-plan-info h4 {
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.action-plan-info ul {
+  width: 100%;
 }
 
 .action-plan-info i {
@@ -2850,20 +2870,8 @@ body.popup-open {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  margin-bottom: 0;
   transition: all 0.2s ease;
-}
-
-.action-plan .todo-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.action-plan .todo-item:hover .todo-checkbox {
-  transform: scale(1.1);
 }
 
 .action-plan .todo-item.completed {
@@ -2889,13 +2897,13 @@ body.popup-open {
 
 .action-plan .todo-text {
   font-size: 0.9rem;
-  color: var(--text-color);
+  color: white;
   line-height: 1.4;
 }
 
 .action-plan .todo-section-badge {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: white;
   background: var(--light-blue);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
@@ -2982,9 +2990,15 @@ body.popup-open {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .todo-count {
@@ -3051,16 +3065,17 @@ body.popup-open {
   margin: 0;
   display: flex;
   flex-direction: column;
+
 }
 
 .todo-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0.5rem;
   background: var(--white);
   transition: all 0.2s ease;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
   &:last-child {
     border-bottom: none;
   }
@@ -3086,8 +3101,40 @@ body.popup-open {
 .todo-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0;
   flex: 1;
+}
+
+.todo-edit-input{
+  flex: 1;
+  border: none;
+  padding: 8px;
+  margin-right: 6px;
+  border-radius: 6px;
+}
+
+.todo-edit-actions{
+  display: flex;
+  gap: 4px;
+  margin: 0;
+
+  button{
+    border: none;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    color: white;
+    border-radius: 6px;
+
+  
+    &.todo-save-edit{
+      background-color: var(--dashboard-blue);
+    }
+
+    &.todo-cancel-edit{
+      background-color: var(--dashboard-primary);
+    }
+  }
 }
 
 .todo-checkbox {
@@ -3192,84 +3239,88 @@ body.popup-open {
 
 /* Loader principal */
 .wp-bmc-loader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    color: #6c757d;
-    font-size: 14px;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  font-size: 14px;
+  gap: 15px;
 }
 
 .wp-bmc-loader span {
-    margin-top: 10px;
-    font-weight: 500;
+  margin-top: 10px;
+  font-weight: 500;
 }
 
 /* Spinner animation */
 .loader-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #e9ecef;
-    border-top: 3px solid #007cba;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e9ecef;
+  border-top: 3px solid #007cba;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 /* Loader pour les boutons */
 .btn-loader {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
 }
 
 .btn-loader .loader-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  margin-right: 8px;
 }
 
 /* Indicateur de sauvegarde flottant */
 .saving-indicator {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    z-index: 10000;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    animation: slideInRight 0.3s ease-out;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 10000;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: slideInRight 0.3s ease-out;
 }
 
 .saving-indicator .loader-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  margin-right: 10px;
 }
 
 /* Animation pour les loaders */
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Loader pour les sections spécifiques */
@@ -3279,47 +3330,47 @@ body.popup-open {
 #revisions-list .wp-bmc-loader,
 #rating-section .wp-bmc-loader,
 #todo-list .wp-bmc-loader {
-    min-height: 100px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px dashed #dee2e6;
+  min-height: 100px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
 }
 
 /* Loader pour le canvas */
 .canvas-container .wp-bmc-loader {
-    min-height: 300px;
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
+  min-height: 300px;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
 }
 
 /* États de chargement pour les boutons */
 button:disabled .loader-spinner {
-    animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 /* Loader compact pour les petites zones */
 .wp-bmc-loader.compact {
-    padding: 20px;
-    min-height: auto;
+  padding: 20px;
+  min-height: auto;
 }
 
 .wp-bmc-loader.compact .loader-spinner {
-    width: 20px;
-    height: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Loader inline pour les boutons */
 .wp-bmc-loader-inline {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 /* ========================================
@@ -3327,62 +3378,60 @@ button:disabled .loader-spinner {
    ======================================== */
 
 .canvas-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .canvas-actions {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
-
-
 #wp-bmc-generate-pdf:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 #wp-bmc-generate-pdf .fas {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 /* Loader dans le bouton PDF */
 #wp-bmc-generate-pdf .btn-loader {
-    margin-right: 8px;
+  margin-right: 8px;
 }
 
 #wp-bmc-generate-pdf .btn-loader .loader-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
 }
 
 /* Responsive pour les contrôles canvas */
 @media (max-width: 768px) {
-    .canvas-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .view-toggle {
-        display: flex;
-        justify-content: center;
-    }
-    
-    .canvas-actions {
-        justify-content: center;
-    }
-    
-    #wp-bmc-generate-pdf {
-        width: 100%;
-        justify-content: center;
-    }
+  .canvas-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-toggle {
+    display: flex;
+    justify-content: center;
+  }
+
+  .canvas-actions {
+    justify-content: center;
+  }
+
+  #wp-bmc-generate-pdf {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Responsive design pour les todos */
@@ -3390,38 +3439,37 @@ button:disabled .loader-spinner {
   .todo-section {
     padding: 1rem;
   }
-  
+
   .todo-section header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .todo-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .todo-content {
     width: 100%;
   }
-  
+
   .todo-actions {
     opacity: 1;
     align-self: flex-end;
   }
-  
+
   .todo-input-group {
     flex-direction: column;
   }
-  
+
   .todo-input-group input {
     width: 100%;
   }
-  
+
   .todo-input-group button {
     width: 100%;
   }
 }
-

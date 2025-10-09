@@ -1797,7 +1797,7 @@ jQuery(document).ready(function($) {
             var $todoItem = $(this).closest('.todo-item');
             var todoId = $todoItem.data('todo-id');
             var currentText = $todoItem.find('.todo-text').text();
-            editTodo(todoId, currentText);
+            editTodo(todoId, currentText, $todoItem);
         });
         
         // Supprimer une tâche
@@ -1870,7 +1870,13 @@ jQuery(document).ready(function($) {
     
     // Attacher les événements pour une tâche spécifique
     function attachTodoEventsForItem(todoId) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItem = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]').first();
+        
+        if (!$todoItem || $todoItem.length === 0) {
+            return;
+        }
         
         // Cocher/décocher une tâche
         $todoItem.find('.todo-checkbox').off('change').on('change', function() {
@@ -1880,7 +1886,7 @@ jQuery(document).ready(function($) {
         // Modifier une tâche
         $todoItem.find('.todo-edit-btn').off('click').on('click', function() {
             var currentText = $todoItem.find('.todo-text').text();
-            editTodo(todoId, currentText);
+            editTodo(todoId, currentText, $todoItem);
         });
         
         // Supprimer une tâche
@@ -1901,16 +1907,29 @@ jQuery(document).ready(function($) {
     
     // Basculer l'état d'une tâche (avec opération différée)
     function toggleTodo(todoId) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
-        var $checkbox = $todoItem.find('.todo-checkbox');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItems = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        if ($todoItems.length === 0) {
+            return;
+        }
+        
+        var $firstItem = $todoItems.first();
+        var $checkbox = $firstItem.find('.todo-checkbox');
         var isChecked = $checkbox.is(':checked');
         
-        // Mettre à jour l'interface immédiatement
-        if (isChecked) {
-            $todoItem.addClass('completed');
-        } else {
-            $todoItem.removeClass('completed');
-        }
+        // Mettre à jour l'interface immédiatement pour TOUS les items avec cet ID dans le conteneur visible
+        $todoItems.each(function() {
+            var $item = $(this);
+            if (isChecked) {
+                $item.addClass('completed');
+                $item.find('.todo-checkbox').prop('checked', true);
+            } else {
+                $item.removeClass('completed');
+                $item.find('.todo-checkbox').prop('checked', false);
+            }
+        });
         
         // Mettre à jour les statistiques immédiatement
         updateTodoStats();
@@ -1926,42 +1945,48 @@ jQuery(document).ready(function($) {
     }
     
     // Modifier le texte d'une tâche (avec opération différée)
-    function editTodo(todoId, currentText) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+    function editTodo(todoId, currentText, $contextItem) {
+        // Utiliser le contexte fourni ou chercher dans la vue visible
+        var $todoItem;
+        if ($contextItem) {
+            $todoItem = $contextItem;
+        } else {
+            // Chercher uniquement dans le conteneur visible (edit-view ou canvas actuel)
+            var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+            $todoItem = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]').first();
+        }
+        
+        if (!$todoItem || $todoItem.length === 0) {
+            console.error('Todo item not found:', todoId);
+            return;
+        }
+        
         var $todoText = $todoItem.find('.todo-text');
+        
+        // Vérifier si déjà en mode édition
+        if ($todoItem.find('.todo-edit-input').length > 0) {
+            return;
+        }
         
         // Créer un input d'édition
         var $editInput = $('<input type="text" class="todo-edit-input">')
             .val(currentText)
-            .css({
-                'width': '100%',
-                'border': '2px solid #007cba',
-                'border-radius': '4px',
-                'padding': '8px',
-                'font-size': '14px',
-                'background': '#fff'
-            });
         
         // Créer les boutons de validation/annulation
         var $editActions = $('<div class="todo-edit-actions">')
-            .css({
-                'display': 'flex',
-                'gap': '8px',
-                'margin-top': '8px'
-            })
             .html(`
-                <button type="button" class="todo-save-edit" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                    <i class="fas fa-check"></i> Sauver
+                <button type="button" class="todo-save-edit">
+                    <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="todo-cancel-edit" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                    <i class="fas fa-times"></i> Annuler
+                <button type="button" class="todo-cancel-edit">
+                    <i class="fas fa-times"></i>
                 </button>
             `);
         
         // Remplacer le texte par l'input
         $todoText.hide();
         $todoItem.find('.todo-actions').hide();
-        $todoText.after($editInput).after($editActions);
+        $todoText.after($editActions).after($editInput);
         
         // Focus sur l'input
         $editInput.focus().select();
@@ -2029,15 +2054,21 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItems = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        if ($todoItems.length === 0) {
+            return;
+        }
         
         // Supprimer l'élément de l'interface immédiatement
-        $todoItem.fadeOut(300, function() {
+        $todoItems.fadeOut(300, function() {
             $(this).remove();
             
-            // Vérifier s'il reste des tâches
-            if ($('#todo-list .todo-item').length === 0) {
-                $('#no-todos').show();
+            // Vérifier s'il reste des tâches dans le conteneur visible
+            if ($visibleContainer.find('#todo-list .todo-item').length === 0) {
+                $visibleContainer.find('#no-todos').show();
             }
             
             // Mettre à jour les statistiques

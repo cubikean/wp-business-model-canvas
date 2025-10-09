@@ -276,8 +276,8 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
             echo '<text x="100" y="85" text-anchor="middle" class="progress-text">' . $progress_percentage . '%</text>';
             echo '</svg>';
             echo '</div>';
+            echo '<div class="action-plan-info">';
             echo '<h4>Plan d\'action</h4>';
-            echo '<p class="action-plan-info"><i class="fas fa-info-circle"></i> Prochaines 5 tâches à réaliser - Cliquez pour marquer comme terminées</p>';
             echo '<ul class="action-plan">';
 
             // Récupérer toutes les tâches todo de toutes les briques
@@ -306,6 +306,7 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
             }
 
             echo '</ul>';
+            echo '</div>';
             echo '</div>';
         }
 
