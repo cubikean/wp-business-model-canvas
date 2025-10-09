@@ -1,5 +1,21 @@
 # Guide d'Import CSV - WP Business Model Canvas
 
+## 🚀 NOUVEAU : Import Complet Unifié (Recommandé)
+
+**Créez tout en une seule étape !**
+
+📍 **BMC > Projets > Import CSV Complet**
+
+Uploadez votre fichier CSV et le système va automatiquement :
+1. ✅ Créer tous les utilisateurs
+2. ✅ Créer tous les superviseurs (sans doublons)
+3. ✅ Créer tous les projets
+4. ✅ Assigner les utilisateurs aux projets
+5. ✅ Assigner les superviseurs aux projets
+6. ✅ Envoyer tous les emails d'identifiants
+
+**Une seule étape, tout est fait automatiquement !** 🎉
+
 ## Vue d'ensemble
 
 Le système d'import CSV permet de créer en masse :
@@ -7,7 +23,9 @@ Le système d'import CSV permet de créer en masse :
 - ✅ Superviseurs (administrateurs)
 - ✅ Projets avec assignations automatiques
 
-**💡 Avantage majeur** : Vous pouvez utiliser **UN SEUL FICHIER CSV** pour tout créer en 3 étapes !
+**💡 Deux workflows possibles** :
+- **Import unifié** (recommandé) : 1 étape, tout automatique
+- **Import séparé** : 3 étapes pour plus de contrôle
 
 ## Format du fichier CSV
 
@@ -35,7 +53,51 @@ Sophie,Bernard,sophie.bernard@example.com,CAND002,Marie Martin,marie.martin@exam
 Pierre,Dubois,pierre.dubois@example.com,CAND003,Jean Lefebvre,jean.lefebvre@example.com,Service Consulting,Cabinet de conseil en transformation digitale
 ```
 
-## Processus d'import en 3 étapes
+## 🎯 Workflow Unifié (Recommandé)
+
+### Une seule étape pour tout créer
+
+1. **Préparez votre fichier CSV complet** avec toutes les colonnes
+2. **Allez dans BMC > Projets**
+3. **Uploadez dans "Import CSV Complet"**
+4. **✅ C'est tout !**
+
+Le système va automatiquement :
+- Créer tous les utilisateurs (avec emails)
+- Créer tous les superviseurs uniques (avec emails)
+- Créer tous les projets
+- Assigner chaque utilisateur à son projet
+- Assigner chaque superviseur à ses projets
+
+**Durée** : 5-10 secondes pour 50 lignes
+
+### Résultats visuels
+
+Après l'import, vous verrez :
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  👥 Utilisateurs  │  🛡️ Superviseurs  │  📁 Projets  │  🔗 Assignations  │
+│     25 créés     │      5 créés      │   25 créés  │   50 effectuées  │
+└─────────────────────────────────────────────────────────┘
+
+✓ Import réussi !
+  ✅ 25 utilisateur(s) créé(s) avec emails envoyés
+  ✅ 5 superviseur(s) créé(s) avec emails envoyés
+  ✅ 25 projet(s) créé(s) et assigné(s)
+  🔗 50 assignation(s) effectuée(s)
+```
+
+### Gestion intelligente des doublons
+
+Le système détecte automatiquement :
+- ✅ Si un superviseur est mentionné plusieurs fois, il n'est créé qu'une seule fois
+- ✅ Si un email existe déjà, il est ignoré (pas d'erreur)
+- ✅ Si un ID personnalisé existe, il est ignoré (pas d'erreur)
+
+**Exemple** : Si Marie Martin supervise 10 projets, elle sera créée une seule fois et assignée aux 10 projets.
+
+## Processus d'import séparé (3 étapes)
 
 ### Étape 1 : Importer les utilisateurs
 

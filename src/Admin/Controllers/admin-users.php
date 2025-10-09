@@ -49,7 +49,7 @@ $supervisors = get_users(array(
     </div>
 
     <!-- Import CSV -->
-    <div class="wp-bmc-section">
+    <!-- <div class="wp-bmc-section">
         <h2>📁 Importer des utilisateurs via CSV</h2>
         <p class="description">Importez plusieurs utilisateurs en une seule fois depuis un fichier CSV. Le fichier doit contenir les colonnes : <strong>Prénom</strong>, <strong>Nom</strong>, <strong>E-mail</strong>, <strong>Candidature</strong>.</p>
         
@@ -91,7 +91,7 @@ $supervisors = get_users(array(
                 <div class="import-details"></div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Création d'un nouvel utilisateur -->
     <div class="wp-bmc-section">
@@ -140,7 +140,7 @@ $supervisors = get_users(array(
     </div>
 
     <!-- Import CSV Superviseurs -->
-    <div class="wp-bmc-section">
+    <!-- <div class="wp-bmc-section">
         <h2>📁 Importer des superviseurs via CSV</h2>
         <p class="description">Importez plusieurs superviseurs en une seule fois depuis un fichier CSV. Le fichier doit contenir les colonnes : <strong>Tuteur</strong>, <strong>Coordonnées du tuteur</strong>.</p>
         
@@ -180,7 +180,7 @@ $supervisors = get_users(array(
                 <div class="import-details"></div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Création d'un superviseur (admin) -->
     <div class="wp-bmc-section">

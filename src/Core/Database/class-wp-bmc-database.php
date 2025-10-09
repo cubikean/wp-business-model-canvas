@@ -1678,22 +1678,36 @@ class WP_BMC_Database {
     
     /**
      * Réinitialiser toutes les données du plugin
-     * Vide toutes les tables mais conserve la structure
+     * Vide toutes les tables et supprime les utilisateurs WordPress créés par le plugin
      */
     public static function reset_all_data() {
         global $wpdb;
         
+        // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+        if (!function_exists('wp_delete_user')) {
+            require_once(ABSPATH . 'wp-admin/includes/user.php');
+        }
+        
+        $total_deleted = 0;
+        $results = array();
+        
+        // ÉTAPE 1 : Récupérer tous les utilisateurs BMC avant suppression
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $bmc_users = $wpdb->get_results("SELECT user_id, email FROM $table_users");
+        $bmc_users_count = count($bmc_users);
+        
+        // ÉTAPE 2 : Supprimer les tables BMC dans l'ordre inverse (pour respecter les contraintes)
         $tables = array(
             $wpdb->prefix . 'bmc_section_revisions',
             $wpdb->prefix . 'bmc_todos', 
             $wpdb->prefix . 'bmc_ratings',
             $wpdb->prefix . 'bmc_canvas_data',
+            $wpdb->prefix . 'bmc_project_users',
+            $wpdb->prefix . 'bmc_project_supervisors',
+            $wpdb->prefix . 'bmc_admin_students',
             $wpdb->prefix . 'bmc_projects',
             $wpdb->prefix . 'bmc_users'
         );
-        
-        $total_deleted = 0;
-        $results = array();
         
         foreach ($tables as $table) {
             // Vérifier si la table existe
@@ -1716,6 +1730,50 @@ class WP_BMC_Database {
                 $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : n'existe pas";
             }
         }
+        
+        // ÉTAPE 3 : Supprimer les utilisateurs WordPress créés par le plugin
+        $wp_users_deleted = 0;
+        foreach ($bmc_users as $bmc_user) {
+            $user_id = $bmc_user->user_id;
+            
+            // Vérifier que l'utilisateur existe encore
+            $wp_user = get_user_by('ID', $user_id);
+            if ($wp_user && !in_array('administrator', $wp_user->roles)) {
+                // Supprimer uniquement les non-admins pour éviter de supprimer des superviseurs importants
+                $deleted = wp_delete_user($user_id);
+                if ($deleted) {
+                    $wp_users_deleted++;
+                    error_log("reset_all_data - Utilisateur WordPress supprimé : ID $user_id (" . $bmc_user->email . ")");
+                }
+            }
+        }
+        
+        if ($wp_users_deleted > 0) {
+            $results[] = "Utilisateurs WordPress : $wp_users_deleted supprimés";
+            $total_deleted += $wp_users_deleted;
+        }
+        
+        // ÉTAPE 4 : Supprimer les superviseurs créés par le plugin (optionnel - commenté par sécurité)
+        // Décommentez cette section si vous voulez aussi supprimer les superviseurs WordPress
+        /*
+        $supervisors = get_users(array('role' => 'administrator'));
+        $supervisors_deleted = 0;
+        foreach ($supervisors as $supervisor) {
+            // Ne pas supprimer l'utilisateur connecté
+            if ($supervisor->ID != get_current_user_id()) {
+                $deleted = wp_delete_user($supervisor->ID);
+                if ($deleted) {
+                    $supervisors_deleted++;
+                }
+            }
+        }
+        if ($supervisors_deleted > 0) {
+            $results[] = "Superviseurs WordPress : $supervisors_deleted supprimés";
+            $total_deleted += $supervisors_deleted;
+        }
+        */
+        
+        error_log("reset_all_data - Total supprimé : $total_deleted enregistrements");
         
         return array(
             'total_deleted' => $total_deleted,

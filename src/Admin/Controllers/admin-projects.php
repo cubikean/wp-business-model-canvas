@@ -16,8 +16,24 @@ if (!current_user_can('manage_options')) {
 // Déclarer la variable globale $wpdb
 global $wpdb;
 
-// Obtenir tous les projets
-$all_projects = WP_BMC_Database::get_all_projects();
+// Vérifier s'il y a un filtre par superviseur
+$supervisor_filter = isset($_GET['supervisor']) ? intval($_GET['supervisor']) : 0;
+$supervisor_name = '';
+
+// Obtenir les projets (filtrés ou tous)
+if ($supervisor_filter > 0) {
+    // Obtenir uniquement les projets du superviseur
+    $all_projects = WP_BMC_Database::get_supervisor_projects($supervisor_filter);
+    
+    // Obtenir le nom du superviseur pour l'affichage
+    $supervisor = get_user_by('ID', $supervisor_filter);
+    if ($supervisor) {
+        $supervisor_name = $supervisor->display_name;
+    }
+} else {
+    // Obtenir tous les projets
+    $all_projects = WP_BMC_Database::get_all_projects();
+}
 
 // Obtenir tous les utilisateurs
 $all_users = WP_BMC_Database::get_all_users();
@@ -26,6 +42,19 @@ $all_users = WP_BMC_Database::get_all_users();
 <div class="wrap wp-bmc-admin-projects">
     <h1>Gestion des Projets</h1>
     
+    <?php if ($supervisor_filter > 0 && !empty($supervisor_name)): ?>
+        <div class="filter-active-notice">
+            <div class="filter-info">
+                <i class="fas fa-filter"></i>
+                <strong>Filtre actif :</strong> Projets supervisés par <strong><?php echo esc_html($supervisor_name); ?></strong>
+            </div>
+            <a href="<?php echo admin_url('admin.php?page=wp-business-model-canvas-projects'); ?>" class="button button-secondary">
+                <i class="fas fa-times"></i> Retirer le filtre
+            </a>
+        </div>
+    <?php endif; ?>
+    
+    <?php if ($supervisor_filter == 0): ?>
     <!-- Statistiques -->
     <div class="wp-bmc-stats-section">
         <div class="stats-grid">
@@ -41,11 +70,70 @@ $all_users = WP_BMC_Database::get_all_users();
                 <p>Utilisateurs actifs</p>
             </div>
         </div>
+        
+        <div class="danger-zone">
+            <button id="wp-bmc-reset-database-btn" class="button button-link-delete button-large">
+                <i class="fas fa-exclamation-triangle"></i> Vider la base de données du plugin
+            </button>
+            <p class="description danger-text">⚠️ <strong>ATTENTION</strong> : Cette action supprimera TOUTES les données (utilisateurs, projets, canvas, notes, etc.). Action irréversible !</p>
+        </div>
     </div>
     
+    <!-- Import CSV Complet (Unifié) -->
+    <div class="wp-bmc-section csv-unified-section">
+        <h2>🚀 Import CSV Complet (Recommandé)</h2>
+        <p class="description"><strong>Importez tout en une seule fois !</strong> Ce formulaire va créer automatiquement les utilisateurs, les superviseurs, les projets ET effectuer toutes les assignations.</p>
+        
+        <div class="csv-import-container">
+            <form id="import-complete-csv-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
+                
+                <div class="csv-upload-area">
+                    <input type="file" id="csv-complete-file" name="csv_file" accept=".csv" required>
+                    <label for="csv-complete-file" class="csv-upload-label csv-upload-complete">
+                        <i class="fas fa-magic"></i>
+                        <span>Choisir un fichier CSV complet</span>
+                        <small>Import automatique : Utilisateurs + Superviseurs + Projets</small>
+                    </label>
+                    <div class="csv-complete-file-name" style="display: none;"></div>
+                </div>
+
+                <div class="csv-info-box csv-info-complete">
+                    <h4>✨ Format attendu du CSV complet :</h4>
+                    <ul>
+                        <li><strong>Prénom</strong> + <strong>Nom</strong> + <strong>E-mail</strong> + <strong>Candidature</strong> → Créera les utilisateurs</li>
+                        <li><strong>Tuteur</strong> + <strong>Coordonnées du tuteur</strong> → Créera les superviseurs</li>
+                        <li><strong>Nom du projet</strong> + <strong>Résumé du projet</strong> → Créera les projets</li>
+                        <li>🎯 <strong>Assignations automatiques</strong> : Utilisateur + Superviseur → Projet</li>
+                    </ul>
+                    <p><small>
+                        <strong>Mots de passe générés :</strong><br>
+                        • Utilisateurs : <code>Candidature + Prénom</code><br>
+                        • Superviseurs : <code>Prénom + 6 caractères aléatoires</code>
+                    </small></p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary button-large button-hero">
+                        <i class="fas fa-magic"></i> Import complet (tout en un)
+                    </button>
+                </div>
+            </form>
+
+            <div id="csv-complete-import-results" style="display: none;">
+                <h3>📊 Résultats de l'import complet</h3>
+                <div class="import-stats-complete"></div>
+                <div class="import-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #e1e1e1;">
+    <h2 style="text-align: center; color: #666; margin: 40px 0;">📑 Imports séparés (optionnel)</h2>
+
     <!-- Import CSV Projets -->
-    <div class="wp-bmc-section">
-        <h2>📁 Importer des projets via CSV</h2>
+    <!-- <div class="wp-bmc-section">
+        <h2>📁 Importer uniquement des projets</h2>
         <p class="description">Importez plusieurs projets en une seule fois depuis un fichier CSV. Le fichier doit contenir : <strong>Nom du projet</strong>, <strong>Résumé du projet</strong>, <strong>E-mail</strong> (utilisateur), <strong>Coordonnées du tuteur</strong> (superviseur).</p>
         
         <div class="csv-import-container">
@@ -86,7 +174,7 @@ $all_users = WP_BMC_Database::get_all_users();
                 <div class="import-details"></div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Création d'un nouveau projet -->
     <div class="wp-bmc-section">
@@ -110,17 +198,45 @@ $all_users = WP_BMC_Database::get_all_users();
             </div>
         </form>
     </div>
+    <?php endif; // Fin de la condition supervisor_filter == 0 ?>
     
     <!-- Liste des projets -->
     <div class="wp-bmc-section">
-        <h2>📋 Projets existants</h2>
+        <h2>📋 Projets existants<?php if ($supervisor_filter > 0) echo ' - ' . esc_html($supervisor_name); ?></h2>
         
         <?php if (empty($all_projects)): ?>
-            <p>Aucun projet n'a été créé.</p>
+            <?php if ($supervisor_filter > 0): ?>
+                <div class="no-projects-filtered">
+                    <i class="fas fa-inbox"></i>
+                    <p><strong><?php echo esc_html($supervisor_name); ?></strong> ne supervise aucun projet pour le moment.</p>
+                    <a href="<?php echo admin_url('admin.php?page=wp-business-model-canvas-projects'); ?>" class="button button-primary">
+                        <i class="fas fa-arrow-left"></i> Voir tous les projets
+                    </a>
+                </div>
+            <?php else: ?>
+                <p>Aucun projet n'a été créé.</p>
+            <?php endif; ?>
         <?php else: ?>
+            <div class="projects-controls">
+                <div class="projects-search">
+                    <input type="text" id="projects-search" placeholder="Rechercher un projet par titre ou description..." class="regular-text">
+                </div>
+                <div class="projects-count">
+                    <span id="projects-count"><?php echo count($all_projects); ?> projet(s) au total</span>
+                </div>
+            </div>
+            
             <div class="projects-grid">
                 <?php foreach ($all_projects as $project): ?>
-                    <div class="project-card" data-project-id="<?php echo $project->id; ?>">
+                    <div class="project-card <?php echo $supervisor_filter > 0 ? 'filtered-project' : ''; ?>" 
+                         data-project-id="<?php echo $project->id; ?>"
+                         data-project-title="<?php echo esc_attr(strtolower($project->title)); ?>"
+                         data-project-description="<?php echo esc_attr(strtolower($project->description)); ?>">
+                        <?php if ($supervisor_filter > 0): ?>
+                            <div class="filter-badge">
+                                <i class="fas fa-filter"></i> Supervisé par <?php echo esc_html($supervisor_name); ?>
+                            </div>
+                        <?php endif; ?>
                         <div class="project-header">
                             <h3><?php echo esc_html($project->title); ?></h3>
                             <div class="project-actions">

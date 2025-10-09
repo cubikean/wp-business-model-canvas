@@ -626,6 +626,298 @@ function wp_bmc_import_csv_supervisors_handler() {
     ));
 }
 
+// Handler pour import CSV complet (unifié) - Utilisateurs + Superviseurs + Projets
+add_action('wp_ajax_wp_bmc_import_csv_complete', 'wp_bmc_import_csv_complete_handler');
+function wp_bmc_import_csv_complete_handler() {
+    error_log('=== wp_bmc_import_csv_complete_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV complet détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes
+    $prenom_index = array_search('Prénom', $headers);
+    $nom_index = array_search('Nom', $headers);
+    $email_index = array_search('E-mail', $headers);
+    $candidature_index = array_search('Candidature', $headers);
+    $tuteur_index = array_search('Tuteur', $headers);
+    $tuteur_email_index = array_search('Coordonnées du tuteur', $headers);
+    $nom_projet_index = array_search('Nom du projet', $headers);
+    $resume_projet_index = array_search('Résumé du projet', $headers);
+    
+    // Vérifier que toutes les colonnes obligatoires sont présentes
+    $missing_columns = array();
+    if ($prenom_index === false) $missing_columns[] = 'Prénom';
+    if ($nom_index === false) $missing_columns[] = 'Nom';
+    if ($email_index === false) $missing_columns[] = 'E-mail';
+    if ($candidature_index === false) $missing_columns[] = 'Candidature';
+    if ($tuteur_index === false) $missing_columns[] = 'Tuteur';
+    if ($tuteur_email_index === false) $missing_columns[] = 'Coordonnées du tuteur';
+    if ($nom_projet_index === false) $missing_columns[] = 'Nom du projet';
+    
+    if (!empty($missing_columns)) {
+        fclose($handle);
+        wp_send_json_error('Colonnes manquantes dans le CSV : ' . implode(', ', $missing_columns));
+    }
+    
+    $admin_id = get_current_user_id();
+    global $wpdb;
+    
+    // Compteurs et tableaux de stockage
+    $users_created = 0;
+    $supervisors_created = 0;
+    $projects_created = 0;
+    $assignments_count = 0;
+    $errors = array();
+    $supervisors_cache = array(); // Cache des superviseurs déjà créés
+    $line_number = 1;
+    
+    // Lire toutes les lignes
+    $all_rows = array();
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        if (empty(array_filter($data))) continue;
+        $all_rows[] = array('line' => $line_number, 'data' => $data);
+    }
+    fclose($handle);
+    
+    error_log("Import complet : " . count($all_rows) . " lignes à traiter");
+    
+    // PHASE 1 : Créer tous les utilisateurs
+    error_log("=== PHASE 1 : Création des utilisateurs ===");
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $first_name = isset($data[$prenom_index]) ? sanitize_text_field(trim($data[$prenom_index])) : '';
+        $last_name = isset($data[$nom_index]) ? sanitize_text_field(trim($data[$nom_index])) : '';
+        $email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $custom_id = isset($data[$candidature_index]) ? sanitize_text_field(trim($data[$candidature_index])) : '';
+        
+        if (empty($first_name) || empty($last_name) || empty($email) || empty($custom_id)) {
+            continue; // Silencieux pour les utilisateurs
+        }
+        
+        // Vérifier si existe déjà
+        if (email_exists($email)) {
+            continue; // Silencieux
+        }
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+        if ($existing_custom_id) {
+            continue; // Silencieux
+        }
+        
+        // Créer l'utilisateur
+        $password = $custom_id . $first_name;
+        $user_data = array(
+            'custom_id' => $custom_id,
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $first_name,
+            'last_name' => $last_name
+        );
+        
+        $result = WP_BMC_Database::create_user($admin_id, $user_data);
+        
+        if ($result) {
+            $users_created++;
+            
+            // Envoyer email
+            $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
+            $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#2c3e50;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#e8f4f8;padding:20px;border-left:4px solid #3498db;margin:20px 0}.footer{text-align:center;padding:20px;color:#666;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>WP Business Model Canvas</h1></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><p>Votre compte a été créé avec succès.</p><div class="credentials"><h3>Vos identifiants:</h3><p><strong>Email:</strong> ' . esc_html($email) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p><p><strong>ID:</strong> ' . esc_html($custom_id) . '</p></div></div><div class="footer"><p>Email automatique</p></div></div></body></html>';
+            wp_mail($email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            
+            error_log("Ligne $line_number : Utilisateur créé - $email");
+        }
+    }
+    
+    // PHASE 2 : Créer tous les superviseurs (sans doublons)
+    error_log("=== PHASE 2 : Création des superviseurs ===");
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $tuteur = isset($data[$tuteur_index]) ? sanitize_text_field(trim($data[$tuteur_index])) : '';
+        $supervisor_email = isset($data[$tuteur_email_index]) ? sanitize_email(trim($data[$tuteur_email_index])) : '';
+        
+        if (empty($tuteur) || empty($supervisor_email)) {
+            continue;
+        }
+        
+        // Vérifier si déjà créé dans cette session
+        if (isset($supervisors_cache[$supervisor_email])) {
+            continue;
+        }
+        
+        // Vérifier si existe déjà
+        if (email_exists($supervisor_email)) {
+            $supervisors_cache[$supervisor_email] = true;
+            continue;
+        }
+        
+        // Séparer prénom et nom
+        $name_parts = explode(' ', $tuteur, 2);
+        $first_name = isset($name_parts[0]) ? sanitize_text_field($name_parts[0]) : '';
+        $last_name = isset($name_parts[1]) ? sanitize_text_field($name_parts[1]) : $first_name;
+        
+        if (empty($first_name)) continue;
+        
+        // Générer mot de passe et username
+        $random_chars = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
+        $password = $first_name . $random_chars;
+        
+        $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+        $original_username = $username;
+        $counter = 1;
+        while (username_exists($username)) {
+            $username = $original_username . $counter;
+            $counter++;
+        }
+        
+        // Créer le superviseur
+        $user_id = wp_create_user($username, $password, $supervisor_email);
+        
+        if (!is_wp_error($user_id)) {
+            wp_update_user(array(
+                'ID' => $user_id,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'display_name' => $first_name . ' ' . $last_name,
+                'role' => 'administrator'
+            ));
+            
+            $supervisors_created++;
+            $supervisors_cache[$supervisor_email] = true;
+            
+            // Envoyer email
+            $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
+            $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#27ae60;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#d4edda;padding:20px;border-left:4px solid #28a745;margin:20px 0}.badge{background-color:#28a745;color:white;padding:5px 10px;border-radius:3px;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>🛡️ WP BMC</h1><p><span class="badge">SUPERVISEUR</span></p></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><div class="credentials"><h3>🔑 Identifiants:</h3><p><strong>Email:</strong> ' . esc_html($supervisor_email) . '</p><p><strong>Username:</strong> ' . esc_html($username) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p></div><p>Vous avez tous les privilèges administrateur.</p></div></div></body></html>';
+            wp_mail($supervisor_email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            
+            error_log("Ligne $line_number : Superviseur créé - $supervisor_email");
+        }
+    }
+    
+    // PHASE 3 : Créer tous les projets et assigner
+    error_log("=== PHASE 3 : Création des projets et assignations ===");
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $project_title = isset($data[$nom_projet_index]) ? sanitize_text_field(trim($data[$nom_projet_index])) : '';
+        $project_description = ($resume_projet_index !== false && isset($data[$resume_projet_index])) ? sanitize_textarea_field(trim($data[$resume_projet_index])) : '';
+        $user_email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $supervisor_email = isset($data[$tuteur_email_index]) ? sanitize_email(trim($data[$tuteur_email_index])) : '';
+        
+        if (empty($project_title)) {
+            $errors[] = "Ligne $line_number : Titre du projet manquant";
+            continue;
+        }
+        
+        // Créer le projet
+        $project_id = WP_BMC_Database::create_project($admin_id, $project_title, $project_description);
+        
+        if (!$project_id) {
+            $errors[] = "Ligne $line_number : Erreur lors de la création du projet '$project_title'";
+            continue;
+        }
+        
+        $projects_created++;
+        error_log("Ligne $line_number : Projet créé - '$project_title' (ID: $project_id)");
+        
+        // Assigner l'utilisateur au projet
+        if (!empty($user_email)) {
+            $bmc_user = $wpdb->get_row($wpdb->prepare(
+                "SELECT user_id FROM {$wpdb->prefix}bmc_users WHERE email = %s",
+                $user_email
+            ));
+            
+            if ($bmc_user) {
+                $assigned = WP_BMC_Database::assign_user_to_project($project_id, $bmc_user->user_id, $admin_id);
+                if ($assigned) {
+                    $assignments_count++;
+                    error_log("Ligne $line_number : Utilisateur '$user_email' assigné au projet");
+                } else {
+                    $errors[] = "Ligne $line_number : Erreur assignation utilisateur '$user_email' au projet '$project_title'";
+                }
+            } else {
+                $errors[] = "Ligne $line_number : Utilisateur '$user_email' non trouvé pour le projet '$project_title'";
+            }
+        }
+        
+        // Assigner le superviseur au projet
+        if (!empty($supervisor_email)) {
+            $supervisor = get_user_by('email', $supervisor_email);
+            
+            if ($supervisor && in_array('administrator', $supervisor->roles)) {
+                $assigned = WP_BMC_Database::assign_supervisor_to_project($project_id, $supervisor->ID);
+                if ($assigned) {
+                    $assignments_count++;
+                    error_log("Ligne $line_number : Superviseur '$supervisor_email' assigné au projet");
+                } else {
+                    $errors[] = "Ligne $line_number : Erreur assignation superviseur '$supervisor_email' au projet '$project_title'";
+                }
+            } else {
+                $errors[] = "Ligne $line_number : Superviseur '$supervisor_email' non trouvé pour le projet '$project_title'";
+            }
+        }
+    }
+    
+    error_log("Import complet terminé. Users: $users_created, Supervisors: $supervisors_created, Projects: $projects_created, Assignations: $assignments_count");
+    
+    $success_message = "Import complet terminé ! $users_created utilisateur(s), $supervisors_created superviseur(s), $projects_created projet(s) créés.";
+    
+    wp_send_json_success(array(
+        'message' => $success_message,
+        'users_created' => $users_created,
+        'supervisors_created' => $supervisors_created,
+        'projects_created' => $projects_created,
+        'assignments_count' => $assignments_count,
+        'errors' => $errors
+    ));
+}
+
 // Handler pour importer des projets via CSV
 add_action('wp_ajax_wp_bmc_import_csv_projects', 'wp_bmc_import_csv_projects_handler');
 function wp_bmc_import_csv_projects_handler() {

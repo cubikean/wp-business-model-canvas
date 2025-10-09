@@ -5,6 +5,141 @@
 
 jQuery(document).ready(function($) {
     // ========================================
+    // IMPORT CSV COMPLET (UNIFIÉ)
+    // ========================================
+    
+    // Afficher le nom du fichier sélectionné pour l'import complet
+    $('#csv-complete-file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        if (fileName) {
+            $('.csv-complete-file-name').text('Fichier sélectionné : ' + fileName).show();
+            $('#csv-complete-file').siblings('.csv-upload-label').find('span').text('Fichier : ' + fileName);
+        }
+    });
+
+    // Gérer l'import CSV complet
+    $("#import-complete-csv-form").on("submit", function (e) {
+        e.preventDefault();
+        
+        var fileInput = $('#csv-complete-file')[0];
+        if (!fileInput.files || !fileInput.files[0]) {
+            WP_BMC_Toast.error('Veuillez sélectionner un fichier CSV.');
+            return;
+        }
+
+        var file = fileInput.files[0];
+        if (!file.name.endsWith('.csv')) {
+            WP_BMC_Toast.error('Le fichier doit être au format CSV.');
+            return;
+        }
+
+        var $submitBtn = $(this).find('button[type="submit"]');
+        var originalText = $submitBtn.html();
+        $submitBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Import complet en cours...');
+
+        // Masquer les résultats précédents
+        $('#csv-complete-import-results').hide();
+
+        var formData = new FormData();
+        formData.append('action', 'wp_bmc_import_csv_complete');
+        formData.append('nonce', $('input[name="wp_bmc_admin_nonce"]').val());
+        formData.append('csv_file', file);
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('Réponse AJAX import complet:', response);
+                
+                if (response.success) {
+                    WP_BMC_Toast.success(response.data.message);
+                    
+                    // Afficher les résultats
+                    displayCompleteImportResults(response.data);
+                    
+                    // Réinitialiser le formulaire
+                    $('#import-complete-csv-form')[0].reset();
+                    $('.csv-complete-file-name').hide();
+                    $('#csv-complete-file').siblings('.csv-upload-label').find('span').text('Choisir un fichier CSV complet');
+                    
+                    // Recharger la page après 5 secondes
+                    setTimeout(function() {
+                        location.reload();
+                    }, 5000);
+                } else {
+                    WP_BMC_Toast.error(response.data || 'Erreur lors de l\'import.');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erreur AJAX:', xhr, status, error);
+                WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
+            },
+            complete: function() {
+                $submitBtn.prop("disabled", false).html(originalText);
+            }
+        });
+    });
+
+    function displayCompleteImportResults(data) {
+        var statsHtml = '<div class="import-stats-complete-grid">';
+        statsHtml += '<div class="stat-box stat-users">';
+        statsHtml += '<i class="fas fa-users"></i>';
+        statsHtml += '<div class="stat-label">Utilisateurs</div>';
+        statsHtml += '<div class="stat-value">' + data.users_created + ' créés</div>';
+        statsHtml += '</div>';
+        
+        statsHtml += '<div class="stat-box stat-supervisors">';
+        statsHtml += '<i class="fas fa-user-shield"></i>';
+        statsHtml += '<div class="stat-label">Superviseurs</div>';
+        statsHtml += '<div class="stat-value">' + data.supervisors_created + ' créés</div>';
+        statsHtml += '</div>';
+        
+        statsHtml += '<div class="stat-box stat-projects">';
+        statsHtml += '<i class="fas fa-project-diagram"></i>';
+        statsHtml += '<div class="stat-label">Projets</div>';
+        statsHtml += '<div class="stat-value">' + data.projects_created + ' créés</div>';
+        statsHtml += '</div>';
+        
+        statsHtml += '<div class="stat-box stat-assignments">';
+        statsHtml += '<i class="fas fa-link"></i>';
+        statsHtml += '<div class="stat-label">Assignations</div>';
+        statsHtml += '<div class="stat-value">' + data.assignments_count + ' effectuées</div>';
+        statsHtml += '</div>';
+        statsHtml += '</div>';
+
+        var detailsHtml = '';
+        
+        // Erreurs globales
+        if (data.errors && data.errors.length > 0) {
+            detailsHtml += '<div class="import-section error-section">';
+            detailsHtml += '<h4><i class="fas fa-times-circle"></i> Erreurs rencontrées (' + data.errors.length + ')</h4>';
+            detailsHtml += '<ul>';
+            data.errors.forEach(function(error) {
+                detailsHtml += '<li>' + error + '</li>';
+            });
+            detailsHtml += '</ul></div>';
+        }
+
+        // Succès
+        if (data.projects_created > 0) {
+            detailsHtml += '<div class="import-section success-section">';
+            detailsHtml += '<h4><i class="fas fa-check-circle"></i> Import réussi !</h4>';
+            detailsHtml += '<p>✅ ' + data.users_created + ' utilisateur(s) créé(s) avec emails envoyés</p>';
+            detailsHtml += '<p>✅ ' + data.supervisors_created + ' superviseur(s) créé(s) avec emails envoyés</p>';
+            detailsHtml += '<p>✅ ' + data.projects_created + ' projet(s) créé(s) et assigné(s)</p>';
+            detailsHtml += '<p>🔗 ' + data.assignments_count + ' assignation(s) effectuée(s)</p>';
+            detailsHtml += '</div>';
+        }
+
+        $('#csv-complete-import-results .import-stats-complete').html(statsHtml);
+        $('#csv-complete-import-results .import-details').html(detailsHtml);
+        $('#csv-complete-import-results').show();
+    }
+    
+    // ========================================
     // IMPORT CSV PROJETS
     // ========================================
     
@@ -127,6 +262,42 @@ jQuery(document).ready(function($) {
         $('#csv-projects-import-results .import-stats').html(statsHtml);
         $('#csv-projects-import-results .import-details').html(detailsHtml);
         $('#csv-projects-import-results').show();
+    }
+    
+    // ========================================
+    // RECHERCHE DE PROJETS
+    // ========================================
+    $('#projects-search').on('input', function() {
+        var searchTerm = $(this).val().toLowerCase();
+        filterProjects(searchTerm);
+    });
+    
+    function filterProjects(searchTerm) {
+        var visibleCount = 0;
+        
+        $('.project-card').each(function() {
+            var $card = $(this);
+            var title = $card.data('project-title') || '';
+            var description = $card.data('project-description') || '';
+            
+            var matchesSearch = title.includes(searchTerm) || 
+                              description.includes(searchTerm);
+            
+            if (matchesSearch) {
+                $card.show();
+                visibleCount++;
+            } else {
+                $card.hide();
+            }
+        });
+        
+        // Mettre à jour le compteur
+        var totalCount = $('.project-card').length;
+        if (searchTerm) {
+            $('#projects-count').html(visibleCount + ' sur ' + totalCount + ' projet(s)');
+        } else {
+            $('#projects-count').html(totalCount + ' projet(s) au total');
+        }
     }
     
     // ========================================
@@ -554,6 +725,68 @@ jQuery(document).ready(function($) {
             WP_BMC_Toast.error('Erreur lors de la suppression du projet.');
         }).always(function() {
             $confirmBtn.prop('disabled', false).html(originalText);
+        });
+    }
+    
+    // ========================================
+    // RESET DE LA BASE DE DONNÉES
+    // ========================================
+    
+    $('#wp-bmc-reset-database-btn').on('click', function() {
+        resetAllData();
+    });
+    
+    function resetAllData() {
+        // Confirmation critique avec plusieurs étapes
+        if (!confirm('⚠️ ATTENTION : Cette action va supprimer TOUTES les données du plugin !\n\nCela inclut :\n- Tous les utilisateurs\n- Tous les projets\n- Tous les canvas\n- Toutes les notes et révisions\n- Toutes les tâches\n- Tous les superviseurs assignés\n\n⚠️ LES COMPTES WORDPRESS DES UTILISATEURS ET SUPERVISEURS SERONT AUSSI SUPPRIMÉS\n\nÊtes-vous sûr de vouloir continuer ?')) {
+            return;
+        }
+        
+        if (!confirm('🚨 DERNIÈRE CHANCE !\n\nCette action est IRRÉVERSIBLE !\n\nVous allez perdre TOUTES vos données définitivement.\n\nContinuer ?')) {
+            return;
+        }
+        
+        var finalConfirm = prompt('Pour confirmer la suppression complète, tapez exactement :\nSUPPRIMER TOUT');
+        if (finalConfirm !== 'SUPPRIMER TOUT') {
+            WP_BMC_Toast.info('Opération annulée.');
+            return;
+        }
+        
+        // Afficher un loader
+        var $btn = $('#wp-bmc-reset-database-btn');
+        var originalText = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Suppression en cours...');
+        
+        $.post(ajaxurl, {
+            action: 'wp_bmc_reset_all_data',
+            nonce: $('input[name="wp_bmc_admin_nonce"]').val(),
+            confirm: 'RESET_ALL_DATA'
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('✅ Toutes les données ont été supprimées !');
+                WP_BMC_Toast.info('📊 ' + response.data.total_deleted + ' enregistrements supprimés');
+                
+                // Afficher les détails
+                if (response.data.details && response.data.details.length > 0) {
+                    setTimeout(function() {
+                        var details = response.data.details.join('\n');
+                        WP_BMC_Toast.info('Détails :\n' + details);
+                    }, 2000);
+                }
+                
+                // Recharger la page après un délai
+                setTimeout(function() {
+                    location.reload();
+                }, 4000);
+                
+            } else {
+                WP_BMC_Toast.error('❌ Erreur : ' + response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion lors de la suppression');
+        }).always(function() {
+            // Restaurer le bouton
+            $btn.prop('disabled', false).html(originalText);
         });
     }
 });
