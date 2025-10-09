@@ -222,7 +222,13 @@ jQuery(document).ready(function($) {
     function openEditView(sectionName, sectionTitle, sectionPlaceholder, content) {
         // Sauvegarder les todos de la section actuelle avant de changer
         forceSave();
-        
+
+        console.log('openEditView appelée');
+
+        const mainElement = document.querySelector('.wp-bmc-canvas-container');
+
+        mainElement.scrollIntoView({ behavior: "smooth" })
+
         // Définir la section actuellement éditée (priorité à la variable globale)
         currentEditingSection = sectionName;
         
