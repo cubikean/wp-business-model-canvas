@@ -273,6 +273,73 @@ table.fixed{
    STYLES POUR LES SUPERVISEURS
    ======================================== */
 
+/* Styles identiques au tableau des utilisateurs */
+#supervisors-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+#supervisors-table thead th {
+  background: #f1f1f1;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #0073aa;
+  padding: 12px 8px;
+}
+
+#supervisors-table thead th.sortable {
+  cursor: pointer;
+  position: relative;
+}
+
+#supervisors-table thead th.sortable:hover {
+  background: #e9ecef;
+}
+
+#supervisors-table thead th.sortable.asc::after {
+  content: " ▲";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#supervisors-table thead th.sortable.desc::after {
+  content: " ▼";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#supervisors-table tbody td {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+#supervisors-table tbody tr {
+  border-bottom: 1px solid #e1e1e1;
+}
+
+#supervisors-table tbody tr:hover td {
+  background: #f9f9f9;
+}
+
+/* Typographie des superviseurs - identique aux utilisateurs */
+.supervisor-name strong {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.supervisor-email a {
+  color: #0073aa;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.supervisor-email a:hover {
+  text-decoration: underline;
+}
+
 /* Badge "Vous" pour le superviseur connecté */
 .current-user-badge {
   display: inline-block;
