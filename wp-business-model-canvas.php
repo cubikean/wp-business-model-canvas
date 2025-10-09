@@ -54,6 +54,9 @@ function wp_bmc_init() {
     // Initialiser le chargeur principal
     $plugin = new WP_BMC_Loader();
     $plugin->run();
+    
+    // Hook pour synchroniser la suppression d'utilisateurs WordPress avec la table BMC
+    add_action('delete_user', array('WP_BMC_Database', 'cleanup_on_wp_user_delete'), 10, 1);
 }
 add_action('plugins_loaded', 'wp_bmc_init');
 

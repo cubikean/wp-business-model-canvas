@@ -206,6 +206,132 @@ function wp_bmc_create_user_handler() {
     }
 }
 
+// Handler pour créer un superviseur (admin)
+add_action('wp_ajax_wp_bmc_create_supervisor', 'wp_bmc_create_supervisor_handler');
+function wp_bmc_create_supervisor_handler() {
+    error_log('=== wp_bmc_create_supervisor_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+    
+    if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
+        wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
+    }
+    
+    // Vérifier si l'email existe déjà
+    if (email_exists($email)) {
+        wp_send_json_error('Cette adresse email est déjà utilisée.');
+    }
+    
+    // Générer un nom d'utilisateur unique basé sur le prénom et nom
+    $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+    $original_username = $username;
+    $counter = 1;
+    
+    // Vérifier si le nom d'utilisateur existe déjà et en créer un unique
+    while (username_exists($username)) {
+        $username = $original_username . $counter;
+        $counter++;
+    }
+    
+    // Créer l'utilisateur WordPress avec le rôle administrator
+    $user_id = wp_create_user($username, $password, $email);
+    
+    if (is_wp_error($user_id)) {
+        wp_send_json_error('Erreur lors de la création du superviseur : ' . $user_id->get_error_message());
+    }
+    
+    // Mettre à jour les informations utilisateur et définir le rôle administrator
+    wp_update_user(array(
+        'ID' => $user_id,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'display_name' => $first_name . ' ' . $last_name,
+        'role' => 'administrator'
+    ));
+    
+    error_log('Superviseur créé avec succès - ID: ' . $user_id);
+    error_log('email: ' . $email);
+    error_log('username: ' . $username);
+    
+    // Préparer le contenu HTML de l'email
+    $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
+    
+    $email_message = '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px; background-color: #f8f9fa; }
+            .credentials { background-color: #d4edda; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            .badge { display: inline-block; background-color: #28a745; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🛡️ WP Business Model Canvas</h1>
+                <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
+            </div>
+            <div class="content">
+                <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
+                
+                <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
+                
+                <div class="credentials">
+                    <h3>🔑 Vos identifiants de connexion :</h3>
+                    <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
+                    <p><strong>Nom d\'utilisateur :</strong> ' . esc_html($username) . '</p>
+                    <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
+                </div>
+                
+                <h3>📋 Vos privilèges superviseur :</h3>
+                <ul>
+                    <li>✅ Créer et gérer des projets</li>
+                    <li>✅ Créer et gérer des utilisateurs</li>
+                    <li>✅ Superviser les Business Model Canvas</li>
+                    <li>✅ Noter et commenter les sections</li>
+                    <li>✅ Accéder au tableau de bord administrateur</li>
+                </ul>
+                
+                <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
+                
+                <p>Vous pouvez maintenant accéder à l\'interface d\'administration et commencer à superviser les projets.</p>
+                
+                <p>Si vous avez des questions ou besoin d\'assistance, n\'hésitez pas à nous contacter.</p>
+                
+                <p>Cordialement,<br>L\'équipe WP Business Model Canvas</p>
+            </div>
+            <div class="footer">
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </div>
+        </div>
+    </body>
+    </html>';
+    
+    // Envoyer l'email avec les headers HTML
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+    wp_mail($email, $email_subject, $email_message, $headers);
+    
+    wp_send_json_success(array(
+        'message' => 'Superviseur créé avec succès !',
+        'user_id' => $user_id,
+        'username' => $username
+    ));
+}
+
 // Handler pour associer un utilisateur à un projet
 add_action('wp_ajax_wp_bmc_assign_user_to_project', 'wp_bmc_assign_user_to_project_handler');
 function wp_bmc_assign_user_to_project_handler() {

@@ -1724,9 +1724,12 @@ class WP_BMC_Database {
     }
     
     /**
-     * Supprimer un utilisateur (sans toucher aux données canvas)
+     * Supprimer un utilisateur (avec synchronisation WordPress)
+     * 
+     * @param int $user_id ID WordPress de l'utilisateur
+     * @param bool $delete_wp_user Si true, supprime aussi l'utilisateur WordPress natif (défaut: true)
      */
-    public static function delete_user($user_id) {
+    public static function delete_user($user_id, $delete_wp_user = true) {
         global $wpdb;
         
         // Log pour débogage
@@ -1800,6 +1803,25 @@ class WP_BMC_Database {
         $total_deleted += 1;
         $details[] = "Utilisateur BMC : 1 supprimé";
         
+        // 4. Supprimer l'utilisateur WordPress natif (si demandé)
+        if ($delete_wp_user) {
+            // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+            if (!function_exists('wp_delete_user')) {
+                require_once(ABSPATH . 'wp-admin/includes/user.php');
+            }
+            
+            // Supprimer l'utilisateur WordPress (sans réassignation de contenu)
+            $wp_deleted = wp_delete_user($user_id);
+            
+            if ($wp_deleted) {
+                $details[] = "Utilisateur WordPress : 1 supprimé";
+                error_log("wp_bmc_delete_user - Utilisateur WordPress supprimé avec succès");
+            } else {
+                $details[] = "Utilisateur WordPress : erreur de suppression";
+                error_log("wp_bmc_delete_user - Erreur lors de la suppression de l'utilisateur WordPress");
+            }
+        }
+        
         error_log("wp_bmc_delete_user - Suppression réussie. Total supprimé: $total_deleted");
         
         // Note : Les données canvas, todos et révisions sont CONSERVÉES
@@ -1812,6 +1834,30 @@ class WP_BMC_Database {
             'user_info' => $user->first_name . ' ' . $user->last_name . ' (' . $user->email . ')',
             'note' => 'Données canvas, tâches et révisions conservées'
         );
+    }
+    
+    /**
+     * Nettoyer les données BMC quand un utilisateur WordPress est supprimé
+     * (Hook appelé par WordPress lors de la suppression d'un utilisateur)
+     * 
+     * @param int $user_id ID WordPress de l'utilisateur supprimé
+     */
+    public static function cleanup_on_wp_user_delete($user_id) {
+        error_log("wp_bmc_cleanup - Hook delete_user déclenché pour l'utilisateur ID: $user_id");
+        
+        // Vérifier si l'utilisateur existe dans la table BMC
+        $user = self::get_user($user_id);
+        if (!$user) {
+            error_log("wp_bmc_cleanup - Utilisateur non trouvé dans bmc_users, pas de nettoyage nécessaire");
+            return;
+        }
+        
+        error_log("wp_bmc_cleanup - Nettoyage des données BMC pour l'utilisateur: " . $user->first_name . " " . $user->last_name);
+        
+        // Appeler delete_user avec delete_wp_user = false pour éviter une boucle récursive
+        self::delete_user($user_id, false);
+        
+        error_log("wp_bmc_cleanup - Nettoyage terminé");
     }
     
     // ========================================

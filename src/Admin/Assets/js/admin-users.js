@@ -58,6 +58,57 @@ jQuery(document).ready(function($) {
     });
 
     // ========================================
+    // CRÉATION DE SUPERVISEUR
+    // ========================================
+    $("#create-supervisor-form").on("submit", function (e) {
+        e.preventDefault();
+        
+        if (typeof wp_bmc_admin_ajax === 'undefined') {
+            WP_BMC_Toast.error('Variables AJAX non chargées. Rechargez la page.');
+            return;
+        }
+
+        var $form = $(this);
+        var $submitBtn = $form.find('button[type="submit"]');
+        var originalText = $submitBtn.html();
+
+        $submitBtn
+            .prop("disabled", true)
+            .html('<i class="fas fa-spinner fa-spin"></i> Création...');
+
+        var formData = {
+            action: "wp_bmc_create_supervisor",
+            nonce: wp_bmc_admin_ajax.nonce,
+            email: $("#supervisor_email").val(),
+            password: $("#supervisor_password").val(),
+            first_name: $("#supervisor_first_name").val(),
+            last_name: $("#supervisor_last_name").val(),
+        };
+
+        console.log('Envoi AJAX superviseur:', formData);
+
+        $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
+            console.log('Réponse AJAX:', response);
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                $form[0].reset();
+                setTimeout(function () {
+                    location.reload();
+                }, 1500);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        })
+            .fail(function (xhr, status, error) {
+                console.error('Erreur AJAX:', xhr, status, error);
+                WP_BMC_Toast.error("Erreur lors de la création du superviseur: " + error);
+            })
+            .always(function () {
+                $submitBtn.prop("disabled", false).html(originalText);
+            });
+    });
+
+    // ========================================
     // RECHERCHE D'UTILISATEURS
     // ========================================
     $('#users-search').on('input', function() {

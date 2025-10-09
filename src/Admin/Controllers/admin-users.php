@@ -87,6 +87,46 @@ $all_users = WP_BMC_Database::get_all_users();
         </form>
     </div>
 
+    <!-- Création d'un superviseur (admin) -->
+    <div class="wp-bmc-section">
+        <h2>👨‍💼 Créer un superviseur</h2>
+        <p class="description">Les superviseurs sont des administrateurs qui peuvent gérer les projets et les utilisateurs.</p>
+        <form id="create-supervisor-form" class="wp-bmc-form">
+            <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="supervisor_first_name">Prénom *</label>
+                    <input type="text" id="supervisor_first_name" name="first_name" class="regular-text" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="supervisor_last_name">Nom *</label>
+                    <input type="text" id="supervisor_last_name" name="last_name" class="regular-text" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="supervisor_email">Email *</label>
+                    <input type="email" id="supervisor_email" name="email" class="regular-text" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="supervisor_password">Mot de passe *</label>
+                    <input type="password" id="supervisor_password" name="password" class="regular-text" required>
+                    <small class="description">Minimum 8 caractères recommandés</small>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button button-primary">
+                    <i class="fas fa-user-shield"></i> Créer le superviseur
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Liste des utilisateurs -->
     <div class="wp-bmc-section">
         <h2>👥 Utilisateurs existants</h2>
