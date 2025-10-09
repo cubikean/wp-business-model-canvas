@@ -116,6 +116,14 @@ $all_supervisors = get_users(array(
                             </small></p>
                     </div>
 
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="send-emails-complete" checked>
+                            <strong>Envoyer les emails d'identifiants (utilisateurs + superviseurs)</strong>
+                        </label>
+                        <p class="description">⚠️ <strong>Import volumineux (&gt;50 lignes) ?</strong> Décochez pour éviter les timeouts. Vous pourrez communiquer les identifiants manuellement.</p>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="button button-primary button-large button-hero">
                             <i class="fas fa-magic"></i> Import complet (tout en un)

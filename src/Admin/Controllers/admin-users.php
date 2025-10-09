@@ -78,6 +78,14 @@ $supervisors = get_users(array(
                     <p><small><strong>Note :</strong> Le mot de passe sera automatiquement généré : <code>Candidature + Prénom</code></small></p>
                 </div>
 
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="send-emails-users" checked>
+                        <strong>Envoyer les emails d'identifiants aux utilisateurs</strong>
+                    </label>
+                    <p class="description">⚠️ Pour les imports volumineux (&gt;50), décochez pour éviter les timeouts et limites serveur.</p>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="button button-primary button-large">
                         <i class="fas fa-upload"></i> Importer les utilisateurs
@@ -165,6 +173,14 @@ $supervisors = get_users(array(
                         <li><strong>Coordonnées du tuteur</strong> : Adresse email (doit être unique)</li>
                     </ul>
                     <p><small><strong>Note :</strong> Le mot de passe sera automatiquement généré : <code>Prénom + 6 caractères aléatoires</code></small></p>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="send-emails-supervisors" checked>
+                        <strong>Envoyer les emails d'identifiants aux superviseurs</strong>
+                    </label>
+                    <p class="description">⚠️ Pour les imports volumineux (&gt;50), décochez pour éviter les timeouts et limites serveur.</p>
                 </div>
 
                 <div class="form-actions">

@@ -273,6 +273,10 @@ function wp_bmc_import_csv_users_handler() {
     $skipped = 0;
     $line_number = 1;
     
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails : ' . ($send_emails ? 'OUI' : 'NON'));
+    
     // Lire les données ligne par ligne
     while (($data = fgetcsv($handle, 1000, ',')) !== false) {
         $line_number++;
@@ -378,10 +382,13 @@ function wp_bmc_import_csv_users_handler() {
             </body>
             </html>';
             
-            $headers = array('Content-Type: text/html; charset=UTF-8');
-            wp_mail($email, $email_subject, $email_message, $headers);
+            // Envoyer l'email seulement si l'option est activée
+            if ($send_emails) {
+                $headers = array('Content-Type: text/html; charset=UTF-8');
+                wp_mail($email, $email_subject, $email_message, $headers);
+            }
             
-            error_log("Utilisateur créé avec succès : $email (ID: $custom_id)");
+            error_log("Utilisateur créé avec succès : $email (ID: $custom_id)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
         } else {
             $errors[] = "Ligne $line_number : Erreur lors de la création de l'utilisateur '$email'";
         }
@@ -466,6 +473,10 @@ function wp_bmc_import_csv_supervisors_handler() {
     $errors = array();
     $skipped = 0;
     $line_number = 1;
+    
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails superviseurs : ' . ($send_emails ? 'OUI' : 'NON'));
     
     // Lire les données ligne par ligne
     while (($data = fgetcsv($handle, 1000, ',')) !== false) {
@@ -604,10 +615,13 @@ function wp_bmc_import_csv_supervisors_handler() {
         </body>
         </html>';
         
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        wp_mail($email, $email_subject, $email_message, $headers);
+        // Envoyer l'email seulement si l'option est activée
+        if ($send_emails) {
+            $headers = array('Content-Type: text/html; charset=UTF-8');
+            wp_mail($email, $email_subject, $email_message, $headers);
+        }
         
-        error_log("Superviseur créé avec succès : $email (Username: $username)");
+        error_log("Superviseur créé avec succès : $email (Username: $username)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
     }
     
     fclose($handle);
@@ -702,6 +716,10 @@ function wp_bmc_import_csv_complete_handler() {
     $admin_id = get_current_user_id();
     global $wpdb;
     
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails complet : ' . ($send_emails ? 'OUI' : 'NON'));
+    
     // Compteurs et tableaux de stockage
     $users_created = 0;
     $supervisors_created = 0;
@@ -763,12 +781,14 @@ function wp_bmc_import_csv_complete_handler() {
         if ($result) {
             $users_created++;
             
-            // Envoyer email
-            $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
-            $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#2c3e50;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#e8f4f8;padding:20px;border-left:4px solid #3498db;margin:20px 0}.footer{text-align:center;padding:20px;color:#666;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>WP Business Model Canvas</h1></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><p>Votre compte a été créé avec succès.</p><div class="credentials"><h3>Vos identifiants:</h3><p><strong>Email:</strong> ' . esc_html($email) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p><p><strong>ID:</strong> ' . esc_html($custom_id) . '</p></div></div><div class="footer"><p>Email automatique</p></div></div></body></html>';
-            wp_mail($email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            // Envoyer email seulement si l'option est activée
+            if ($send_emails) {
+                $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
+                $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#2c3e50;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#e8f4f8;padding:20px;border-left:4px solid #3498db;margin:20px 0}.footer{text-align:center;padding:20px;color:#666;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>WP Business Model Canvas</h1></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><p>Votre compte a été créé avec succès.</p><div class="credentials"><h3>Vos identifiants:</h3><p><strong>Email:</strong> ' . esc_html($email) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p><p><strong>ID:</strong> ' . esc_html($custom_id) . '</p></div></div><div class="footer"><p>Email automatique</p></div></div></body></html>';
+                wp_mail($email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            }
             
-            error_log("Ligne $line_number : Utilisateur créé - $email");
+            error_log("Ligne $line_number : Utilisateur créé - $email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
         }
     }
     
@@ -830,12 +850,14 @@ function wp_bmc_import_csv_complete_handler() {
             $supervisors_created++;
             $supervisors_cache[$supervisor_email] = true;
             
-            // Envoyer email
-            $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
-            $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#27ae60;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#d4edda;padding:20px;border-left:4px solid #28a745;margin:20px 0}.badge{background-color:#28a745;color:white;padding:5px 10px;border-radius:3px;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>🛡️ WP BMC</h1><p><span class="badge">SUPERVISEUR</span></p></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><div class="credentials"><h3>🔑 Identifiants:</h3><p><strong>Email:</strong> ' . esc_html($supervisor_email) . '</p><p><strong>Username:</strong> ' . esc_html($username) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p></div><p>Vous avez tous les privilèges administrateur.</p></div></div></body></html>';
-            wp_mail($supervisor_email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            // Envoyer email seulement si l'option est activée
+            if ($send_emails) {
+                $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
+                $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#27ae60;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#d4edda;padding:20px;border-left:4px solid #28a745;margin:20px 0}.badge{background-color:#28a745;color:white;padding:5px 10px;border-radius:3px;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>🛡️ WP BMC</h1><p><span class="badge">SUPERVISEUR</span></p></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><div class="credentials"><h3>🔑 Identifiants:</h3><p><strong>Email:</strong> ' . esc_html($supervisor_email) . '</p><p><strong>Username:</strong> ' . esc_html($username) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p></div><p>Vous avez tous les privilèges administrateur.</p></div></div></body></html>';
+                wp_mail($supervisor_email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+            }
             
-            error_log("Ligne $line_number : Superviseur créé - $supervisor_email");
+            error_log("Ligne $line_number : Superviseur créé - $supervisor_email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
         }
     }
     

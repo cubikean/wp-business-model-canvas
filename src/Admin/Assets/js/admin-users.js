@@ -50,6 +50,7 @@ jQuery(document).ready(function($) {
         formData.append('action', 'wp_bmc_import_csv_users');
         formData.append('nonce', wp_bmc_admin_ajax.nonce);
         formData.append('csv_file', file);
+        formData.append('send_emails', $('#send-emails-users').is(':checked') ? '1' : '0');
 
         $.ajax({
             url: wp_bmc_admin_ajax.ajax_url,
@@ -173,6 +174,7 @@ jQuery(document).ready(function($) {
         formData.append('action', 'wp_bmc_import_csv_supervisors');
         formData.append('nonce', wp_bmc_admin_ajax.nonce);
         formData.append('csv_file', file);
+        formData.append('send_emails', $('#send-emails-supervisors').is(':checked') ? '1' : '0');
 
         $.ajax({
             url: wp_bmc_admin_ajax.ajax_url,

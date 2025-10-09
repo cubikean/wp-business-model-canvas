@@ -44,6 +44,7 @@ jQuery(document).ready(function($) {
         formData.append('action', 'wp_bmc_import_csv_complete');
         formData.append('nonce', $('input[name="wp_bmc_admin_nonce"]').val());
         formData.append('csv_file', file);
+        formData.append('send_emails', $('#send-emails-complete').is(':checked') ? '1' : '0');
 
         $.ajax({
             url: ajaxurl,
