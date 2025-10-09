@@ -206,6 +206,203 @@ function wp_bmc_create_user_handler() {
     }
 }
 
+// Handler pour importer des utilisateurs via CSV
+add_action('wp_ajax_wp_bmc_import_csv_users', 'wp_bmc_import_csv_users_handler');
+function wp_bmc_import_csv_users_handler() {
+    error_log('=== wp_bmc_import_csv_users_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes nécessaires
+    $prenom_index = array_search('Prénom', $headers);
+    $nom_index = array_search('Nom', $headers);
+    $email_index = array_search('E-mail', $headers);
+    $candidature_index = array_search('Candidature', $headers);
+    
+    // Vérifier que toutes les colonnes nécessaires sont présentes
+    if ($prenom_index === false || $nom_index === false || $email_index === false || $candidature_index === false) {
+        fclose($handle);
+        error_log('Colonnes manquantes. Prenom: ' . $prenom_index . ', Nom: ' . $nom_index . ', Email: ' . $email_index . ', Candidature: ' . $candidature_index);
+        wp_send_json_error('Le fichier CSV doit contenir les colonnes : Prénom, Nom, E-mail, Candidature.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $created_users = array();
+    $errors = array();
+    $skipped = 0;
+    $line_number = 1;
+    
+    // Lire les données ligne par ligne
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        
+        // Ignorer les lignes vides
+        if (empty(array_filter($data))) {
+            $skipped++;
+            continue;
+        }
+        
+        // Extraire les données
+        $first_name = isset($data[$prenom_index]) ? sanitize_text_field(trim($data[$prenom_index])) : '';
+        $last_name = isset($data[$nom_index]) ? sanitize_text_field(trim($data[$nom_index])) : '';
+        $email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $custom_id = isset($data[$candidature_index]) ? sanitize_text_field(trim($data[$candidature_index])) : '';
+        
+        // Vérifier que les champs obligatoires sont remplis
+        if (empty($first_name) || empty($last_name) || empty($email) || empty($custom_id)) {
+            $errors[] = "Ligne $line_number : Champs manquants (Prénom: '$first_name', Nom: '$last_name', Email: '$email', Candidature: '$custom_id')";
+            continue;
+        }
+        
+        // Générer le mot de passe : Candidature + Prénom
+        $password = $custom_id . $first_name;
+        
+        // Vérifier si l'email existe déjà
+        if (email_exists($email)) {
+            $errors[] = "Ligne $line_number : L'email '$email' existe déjà";
+            continue;
+        }
+        
+        // Vérifier si l'ID personnalisé existe déjà
+        global $wpdb;
+        $table = $wpdb->prefix . 'bmc_users';
+        $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+        if ($existing_custom_id) {
+            $errors[] = "Ligne $line_number : L'ID personnalisé '$custom_id' existe déjà";
+            continue;
+        }
+        
+        // Créer l'utilisateur
+        $user_data = array(
+            'custom_id' => $custom_id,
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $first_name,
+            'last_name' => $last_name
+        );
+        
+        $result = WP_BMC_Database::create_user($admin_id, $user_data);
+        
+        if ($result) {
+            $created_users[] = array(
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'email' => $email,
+                'custom_id' => $custom_id,
+                'password' => $password
+            );
+            
+            // Envoyer un email à l'utilisateur avec ses identifiants
+            $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
+            
+            $email_message = '
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
+                    .content { padding: 30px; background-color: #f8f9fa; }
+                    .credentials { background-color: #e8f4f8; padding: 20px; border-left: 4px solid #3498db; margin: 20px 0; }
+                    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>WP Business Model Canvas</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
+                        
+                        <p>Votre compte a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
+                        
+                        <div class="credentials">
+                            <h3>Vos identifiants de connexion :</h3>
+                            <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
+                            <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
+                            <p><strong>ID personnalisé :</strong> ' . esc_html($custom_id) . '</p>
+                        </div>
+                        
+                        <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
+                        
+                        <p>Cordialement</p>
+                    </div>
+                    <div class="footer">
+                        <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                    </div>
+                </div>
+            </body>
+            </html>';
+            
+            $headers = array('Content-Type: text/html; charset=UTF-8');
+            wp_mail($email, $email_subject, $email_message, $headers);
+            
+            error_log("Utilisateur créé avec succès : $email (ID: $custom_id)");
+        } else {
+            $errors[] = "Ligne $line_number : Erreur lors de la création de l'utilisateur '$email'";
+        }
+    }
+    
+    fclose($handle);
+    
+    $created_count = count($created_users);
+    $error_count = count($errors);
+    
+    error_log("Import CSV terminé. Créés: $created_count, Ignorés: $skipped, Erreurs: $error_count");
+    
+    wp_send_json_success(array(
+        'message' => "$created_count utilisateur(s) créé(s) avec succès !",
+        'created' => $created_count,
+        'skipped' => $skipped,
+        'errors' => $errors,
+        'created_users' => $created_users
+    ));
+}
+
 // Handler pour créer un superviseur (admin)
 add_action('wp_ajax_wp_bmc_create_supervisor', 'wp_bmc_create_supervisor_handler');
 function wp_bmc_create_supervisor_handler() {

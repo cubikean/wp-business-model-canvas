@@ -48,9 +48,54 @@ $supervisors = get_users(array(
         </div>
     </div>
 
+    <!-- Import CSV -->
+    <div class="wp-bmc-section">
+        <h2>📁 Importer des utilisateurs via CSV</h2>
+        <p class="description">Importez plusieurs utilisateurs en une seule fois depuis un fichier CSV. Le fichier doit contenir les colonnes : <strong>Prénom</strong>, <strong>Nom</strong>, <strong>E-mail</strong>, <strong>Candidature</strong>.</p>
+        
+        <div class="csv-import-container">
+            <form id="import-csv-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
+                
+                <div class="csv-upload-area">
+                    <input type="file" id="csv-file" name="csv_file" accept=".csv" required>
+                    <label for="csv-file" class="csv-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Choisir un fichier CSV</span>
+                        <small>ou glisser-déposer ici</small>
+                    </label>
+                    <div class="csv-file-name" style="display: none;"></div>
+                </div>
+
+                <div class="csv-info-box">
+                    <h4>📋 Format attendu du CSV :</h4>
+                    <ul>
+                        <li><strong>Prénom</strong> : Prénom de l'utilisateur</li>
+                        <li><strong>Nom</strong> : Nom de l'utilisateur</li>
+                        <li><strong>E-mail</strong> : Adresse email (doit être unique)</li>
+                        <li><strong>Candidature</strong> : ID personnalisé (doit être unique)</li>
+                    </ul>
+                    <p><small><strong>Note :</strong> Le mot de passe sera automatiquement généré : <code>Candidature + Prénom</code></small></p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary button-large">
+                        <i class="fas fa-upload"></i> Importer les utilisateurs
+                    </button>
+                </div>
+            </form>
+
+            <div id="csv-import-results" style="display: none;">
+                <h3>Résultats de l'import</h3>
+                <div class="import-stats"></div>
+                <div class="import-details"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Création d'un nouvel utilisateur -->
     <div class="wp-bmc-section">
-        <h2>➕ Créer un nouvel utilisateur</h2>
+        <h2>➕ Créer un utilisateur individuel</h2>
         <form id="create-user-form" class="wp-bmc-form">
             <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
 

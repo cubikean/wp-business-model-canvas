@@ -6,6 +6,129 @@
 jQuery(document).ready(function($) {
     
     // ========================================
+    // IMPORT CSV
+    // ========================================
+    
+    // Afficher le nom du fichier sélectionné
+    $('#csv-file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        if (fileName) {
+            $('.csv-file-name').text('Fichier sélectionné : ' + fileName).show();
+            $('.csv-upload-label span').text('Fichier : ' + fileName);
+        }
+    });
+
+    // Gérer l'import CSV
+    $("#import-csv-form").on("submit", function (e) {
+        e.preventDefault();
+        
+        if (typeof wp_bmc_admin_ajax === 'undefined') {
+            WP_BMC_Toast.error('Variables AJAX non chargées. Rechargez la page.');
+            return;
+        }
+
+        var fileInput = $('#csv-file')[0];
+        if (!fileInput.files || !fileInput.files[0]) {
+            WP_BMC_Toast.error('Veuillez sélectionner un fichier CSV.');
+            return;
+        }
+
+        var file = fileInput.files[0];
+        if (!file.name.endsWith('.csv')) {
+            WP_BMC_Toast.error('Le fichier doit être au format CSV.');
+            return;
+        }
+
+        var $submitBtn = $(this).find('button[type="submit"]');
+        var originalText = $submitBtn.html();
+        $submitBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Import en cours...');
+
+        // Masquer les résultats précédents
+        $('#csv-import-results').hide();
+
+        var formData = new FormData();
+        formData.append('action', 'wp_bmc_import_csv_users');
+        formData.append('nonce', wp_bmc_admin_ajax.nonce);
+        formData.append('csv_file', file);
+
+        $.ajax({
+            url: wp_bmc_admin_ajax.ajax_url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('Réponse AJAX:', response);
+                
+                if (response.success) {
+                    WP_BMC_Toast.success(response.data.message);
+                    
+                    // Afficher les résultats
+                    displayImportResults(response.data);
+                    
+                    // Réinitialiser le formulaire
+                    $('#import-csv-form')[0].reset();
+                    $('.csv-file-name').hide();
+                    $('.csv-upload-label span').text('Choisir un fichier CSV');
+                    
+                    // Recharger la page après 3 secondes si des utilisateurs ont été créés
+                    if (response.data.created > 0) {
+                        setTimeout(function() {
+                            location.reload();
+                        }, 3000);
+                    }
+                } else {
+                    WP_BMC_Toast.error(response.data || 'Erreur lors de l\'import.');
+                    if (response.data && response.data.errors) {
+                        displayImportErrors(response.data.errors);
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erreur AJAX:', xhr, status, error);
+                WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
+            },
+            complete: function() {
+                $submitBtn.prop("disabled", false).html(originalText);
+            }
+        });
+    });
+
+    function displayImportResults(data) {
+        var statsHtml = '<div class="import-stats-grid">';
+        statsHtml += '<div class="stat-success"><i class="fas fa-check-circle"></i> <strong>' + data.created + '</strong> créés</div>';
+        statsHtml += '<div class="stat-skipped"><i class="fas fa-exclamation-triangle"></i> <strong>' + data.skipped + '</strong> ignorés</div>';
+        statsHtml += '<div class="stat-error"><i class="fas fa-times-circle"></i> <strong>' + data.errors.length + '</strong> erreurs</div>';
+        statsHtml += '</div>';
+
+        var detailsHtml = '';
+        
+        if (data.created_users && data.created_users.length > 0) {
+            detailsHtml += '<div class="import-section success-section">';
+            detailsHtml += '<h4><i class="fas fa-check-circle"></i> Utilisateurs créés avec succès</h4>';
+            detailsHtml += '<ul>';
+            data.created_users.forEach(function(user) {
+                detailsHtml += '<li>' + user.first_name + ' ' + user.last_name + ' (' + user.email + ') - ID: ' + user.custom_id + '</li>';
+            });
+            detailsHtml += '</ul></div>';
+        }
+
+        if (data.errors && data.errors.length > 0) {
+            detailsHtml += '<div class="import-section error-section">';
+            detailsHtml += '<h4><i class="fas fa-times-circle"></i> Erreurs rencontrées</h4>';
+            detailsHtml += '<ul>';
+            data.errors.forEach(function(error) {
+                detailsHtml += '<li>' + error + '</li>';
+            });
+            detailsHtml += '</ul></div>';
+        }
+
+        $('#csv-import-results .import-stats').html(statsHtml);
+        $('#csv-import-results .import-details').html(detailsHtml);
+        $('#csv-import-results').show();
+    }
+
+    // ========================================
     // CRÉATION D'UTILISATEUR
     // ========================================
     $("#create-user-form").on("submit", function (e) {
