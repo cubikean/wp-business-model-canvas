@@ -272,6 +272,22 @@ jQuery(document).ready(function($) {
         filterProjects(searchTerm);
     });
     
+    // ========================================
+    // FILTRE PAR SUPERVISEUR
+    // ========================================
+    $('#projects-filter-supervisor').on('change', function() {
+        var supervisorId = $(this).val();
+        var currentUrl = window.location.href.split('?')[0];
+        
+        if (supervisorId) {
+            // Rediriger avec le paramètre supervisor
+            window.location.href = currentUrl + '?page=wp-business-model-canvas-projects&supervisor=' + supervisorId;
+        } else {
+            // Rediriger sans filtre
+            window.location.href = currentUrl + '?page=wp-business-model-canvas-projects';
+        }
+    });
+    
     function filterProjects(searchTerm) {
         var visibleCount = 0;
         

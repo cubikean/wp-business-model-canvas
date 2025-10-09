@@ -37,6 +37,13 @@ if ($supervisor_filter > 0) {
 
 // Obtenir tous les utilisateurs
 $all_users = WP_BMC_Database::get_all_users();
+
+// Obtenir tous les superviseurs pour le filtre
+$all_supervisors = get_users(array(
+    'role' => 'administrator',
+    'orderby' => 'display_name',
+    'order' => 'ASC'
+));
 ?>
 
 <div class="wrap wp-bmc-admin-projects">
@@ -55,29 +62,7 @@ $all_users = WP_BMC_Database::get_all_users();
     <?php endif; ?>
     
     <?php if ($supervisor_filter == 0): ?>
-    <!-- Statistiques -->
-    <div class="wp-bmc-stats-section">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Projets</h3>
-                <div class="stat-number"><?php echo count($all_projects); ?></div>
-                <p>Projets créés</p>
-            </div>
-            
-            <div class="stat-card">
-                <h3>Utilisateurs</h3>
-                <div class="stat-number"><?php echo count($all_users); ?></div>
-                <p>Utilisateurs actifs</p>
-            </div>
-        </div>
-        
-        <div class="danger-zone">
-            <button id="wp-bmc-reset-database-btn" class="button button-link-delete button-large">
-                <i class="fas fa-exclamation-triangle"></i> Vider la base de données du plugin
-            </button>
-            <p class="description danger-text">⚠️ <strong>ATTENTION</strong> : Cette action supprimera TOUTES les données (utilisateurs, projets, canvas, notes, etc.). Action irréversible !</p>
-        </div>
-    </div>
+    
     
     <!-- Import CSV Complet (Unifié) -->
     <div class="wp-bmc-section csv-unified-section">
@@ -221,6 +206,22 @@ $all_users = WP_BMC_Database::get_all_users();
                 <div class="projects-search">
                     <input type="text" id="projects-search" placeholder="Rechercher un projet par titre ou description..." class="regular-text">
                 </div>
+                
+                <div class="projects-filter">
+                    <select id="projects-filter-supervisor" class="regular-text">
+                        <option value="">Tous les superviseurs (<?php echo count($all_projects); ?>)</option>
+                        <?php foreach ($all_supervisors as $supervisor): ?>
+                            <?php 
+                            $supervisor_projects = WP_BMC_Database::get_supervisor_projects($supervisor->ID);
+                            $projects_count = count($supervisor_projects);
+                            ?>
+                            <option value="<?php echo $supervisor->ID; ?>" <?php selected($supervisor_filter, $supervisor->ID); ?>>
+                                <?php echo esc_html($supervisor->display_name); ?> (<?php echo $projects_count; ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
                 <div class="projects-count">
                     <span id="projects-count"><?php echo count($all_projects); ?> projet(s) au total</span>
                 </div>
@@ -330,6 +331,30 @@ $all_users = WP_BMC_Database::get_all_users();
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="wp-bmc-stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Projets</h3>
+                <div class="stat-number"><?php echo count($all_projects); ?></div>
+                <p>Projets créés</p>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Utilisateurs</h3>
+                <div class="stat-number"><?php echo count($all_users); ?></div>
+                <p>Utilisateurs actifs</p>
+            </div>
+        </div>
+        
+        <div class="danger-zone">
+            <button id="wp-bmc-reset-database-btn" class="button button-link-delete button-large">
+                <i class="fas fa-exclamation-triangle"></i> Vider la base de données du plugin
+            </button>
+            <p class="description danger-text">⚠️ <strong>ATTENTION</strong> : Cette action supprimera TOUTES les données (utilisateurs, projets, canvas, notes, etc.). Action irréversible !</p>
+        </div>
     </div>
 </div>
 
