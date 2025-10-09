@@ -140,59 +140,8 @@ function wp_bmc_create_user_handler() {
         error_log('custom_id: ' . $custom_id);
         error_log('password: ' . $password);
         
-        // Préparer le contenu HTML de l'email
-        $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
-        
-        $email_message = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
-                .content { padding: 30px; background-color: #f8f9fa; }
-                .credentials { background-color: #e8f4f8; padding: 20px; border-left: 4px solid #3498db; margin: 20px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-                .button { display: inline-block; background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>WP Business Model Canvas</h1>
-                </div>
-                <div class="content">
-                    <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
-                    
-                    <p>Votre compte a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
-                    
-                    <div class="credentials">
-                        <h3>Vos identifiants de connexion :</h3>
-                        <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
-                        <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
-                        <p><strong>ID personnalisé :</strong> ' . esc_html($custom_id) . '</p>
-                    </div>
-                    
-                    <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
-                    
-                    <p>Vous pouvez maintenant accéder à votre espace personnel et commencer à créer vos Business Model Canvas.</p>
-                    
-                    <p>Si vous avez des questions ou besoin d\'assistance, n\'hésitez pas à nous contacter.</p>
-                    
-                    <p>Cordialement</p>
-                </div>
-                <div class="footer">
-                    <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-        
-        // Envoyer l'email avec les headers HTML
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        wp_mail($email, $email_subject, $email_message, $headers);
+        // Envoyer l'email de bienvenue
+        wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
         
         wp_send_json_success(array(
             'message' => 'Utilisateur créé avec succès !',
@@ -337,55 +286,9 @@ function wp_bmc_import_csv_users_handler() {
                 'password' => $password
             );
             
-            // Envoyer un email à l'utilisateur avec ses identifiants
-            $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
-            
-            $email_message = '
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
-                    .content { padding: 30px; background-color: #f8f9fa; }
-                    .credentials { background-color: #e8f4f8; padding: 20px; border-left: 4px solid #3498db; margin: 20px 0; }
-                    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>WP Business Model Canvas</h1>
-                    </div>
-                    <div class="content">
-                        <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
-                        
-                        <p>Votre compte a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
-                        
-                        <div class="credentials">
-                            <h3>Vos identifiants de connexion :</h3>
-                            <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
-                            <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
-                            <p><strong>ID personnalisé :</strong> ' . esc_html($custom_id) . '</p>
-                        </div>
-                        
-                        <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
-                        
-                        <p>Cordialement</p>
-                    </div>
-                    <div class="footer">
-                        <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-                    </div>
-                </div>
-            </body>
-            </html>';
-            
             // Envoyer l'email seulement si l'option est activée
             if ($send_emails) {
-                $headers = array('Content-Type: text/html; charset=UTF-8');
-                wp_mail($email, $email_subject, $email_message, $headers);
+                wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
             }
             
             error_log("Utilisateur créé avec succès : $email (ID: $custom_id)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
@@ -617,8 +520,7 @@ function wp_bmc_import_csv_supervisors_handler() {
         
         // Envoyer l'email seulement si l'option est activée
         if ($send_emails) {
-            $headers = array('Content-Type: text/html; charset=UTF-8');
-            wp_mail($email, $email_subject, $email_message, $headers);
+            wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
         }
         
         error_log("Superviseur créé avec succès : $email (Username: $username)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
@@ -783,9 +685,7 @@ function wp_bmc_import_csv_complete_handler() {
             
             // Envoyer email seulement si l'option est activée
             if ($send_emails) {
-                $email_subject = 'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion';
-                $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#2c3e50;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#e8f4f8;padding:20px;border-left:4px solid #3498db;margin:20px 0}.footer{text-align:center;padding:20px;color:#666;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>WP Business Model Canvas</h1></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><p>Votre compte a été créé avec succès.</p><div class="credentials"><h3>Vos identifiants:</h3><p><strong>Email:</strong> ' . esc_html($email) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p><p><strong>ID:</strong> ' . esc_html($custom_id) . '</p></div></div><div class="footer"><p>Email automatique</p></div></div></body></html>';
-                wp_mail($email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+                wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
             }
             
             error_log("Ligne $line_number : Utilisateur créé - $email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
@@ -852,9 +752,7 @@ function wp_bmc_import_csv_complete_handler() {
             
             // Envoyer email seulement si l'option est activée
             if ($send_emails) {
-                $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
-                $email_message = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#27ae60;color:white;padding:20px;text-align:center}.content{padding:30px;background-color:#f8f9fa}.credentials{background-color:#d4edda;padding:20px;border-left:4px solid #28a745;margin:20px 0}.badge{background-color:#28a745;color:white;padding:5px 10px;border-radius:3px;font-size:12px}</style></head><body><div class="container"><div class="header"><h1>🛡️ WP BMC</h1><p><span class="badge">SUPERVISEUR</span></p></div><div class="content"><h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . '!</h2><div class="credentials"><h3>🔑 Identifiants:</h3><p><strong>Email:</strong> ' . esc_html($supervisor_email) . '</p><p><strong>Username:</strong> ' . esc_html($username) . '</p><p><strong>Mot de passe:</strong> ' . esc_html($password) . '</p></div><p>Vous avez tous les privilèges administrateur.</p></div></div></body></html>';
-                wp_mail($supervisor_email, $email_subject, $email_message, array('Content-Type: text/html; charset=UTF-8'));
+                wp_bmc_send_supervisor_welcome_email($supervisor_email, $first_name, $last_name, $username, $password);
             }
             
             error_log("Ligne $line_number : Superviseur créé - $supervisor_email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
@@ -1165,69 +1063,8 @@ function wp_bmc_create_supervisor_handler() {
     error_log('email: ' . $email);
     error_log('username: ' . $username);
     
-    // Préparer le contenu HTML de l'email
-    $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
-    
-    $email_message = '
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; }
-            .content { padding: 30px; background-color: #f8f9fa; }
-            .credentials { background-color: #d4edda; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            .badge { display: inline-block; background-color: #28a745; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🛡️ WP Business Model Canvas</h1>
-                <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
-            </div>
-            <div class="content">
-                <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
-                
-                <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
-                
-                <div class="credentials">
-                    <h3>🔑 Vos identifiants de connexion :</h3>
-                    <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
-                    <p><strong>Nom d\'utilisateur :</strong> ' . esc_html($username) . '</p>
-                    <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
-                </div>
-                
-                <h3>📋 Vos privilèges superviseur :</h3>
-                <ul>
-                    <li>✅ Créer et gérer des projets</li>
-                    <li>✅ Créer et gérer des utilisateurs</li>
-                    <li>✅ Superviser les Business Model Canvas</li>
-                    <li>✅ Noter et commenter les sections</li>
-                    <li>✅ Accéder au tableau de bord administrateur</li>
-                </ul>
-                
-                <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
-                
-                <p>Vous pouvez maintenant accéder à l\'interface d\'administration et commencer à superviser les projets.</p>
-                
-                <p>Si vous avez des questions ou besoin d\'assistance, n\'hésitez pas à nous contacter.</p>
-                
-                <p>Cordialement,<br>L\'équipe WP Business Model Canvas</p>
-            </div>
-            <div class="footer">
-                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-            </div>
-        </div>
-    </body>
-    </html>';
-    
-    // Envoyer l'email avec les headers HTML
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-    wp_mail($email, $email_subject, $email_message, $headers);
+    // Envoyer l'email de bienvenue
+    wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
     
     wp_send_json_success(array(
         'message' => 'Superviseur créé avec succès !',
@@ -1312,54 +1149,8 @@ function wp_bmc_reset_supervisor_password_handler() {
     // Mettre à jour le mot de passe
     wp_set_password($new_password, $supervisor_id);
     
-    // Préparer l'email
-    $email_subject = 'Réinitialisation de votre mot de passe - WP Business Model Canvas';
-    
-    $email_message = '
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
-            .content { padding: 30px; background-color: #f8f9fa; }
-            .credentials { background-color: #fff3cd; padding: 20px; border-left: 4px solid #ffc107; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🔐 Réinitialisation de mot de passe</h1>
-            </div>
-            <div class="content">
-                <h2>Bonjour ' . esc_html($user->display_name) . ',</h2>
-                
-                <p>Votre mot de passe a été réinitialisé par un administrateur.</p>
-                
-                <div class="credentials">
-                    <h3>🔑 Votre nouveau mot de passe :</h3>
-                    <p style="font-size: 18px;"><strong>' . esc_html($new_password) . '</strong></p>
-                </div>
-                
-                <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer ce mot de passe dès votre prochaine connexion.</p>
-                
-                <p>Si vous n\'avez pas demandé cette réinitialisation, veuillez contacter un administrateur immédiatement.</p>
-                
-                <p>Cordialement,<br>L\'équipe WP Business Model Canvas</p>
-            </div>
-            <div class="footer">
-                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-            </div>
-        </div>
-    </body>
-    </html>';
-    
     // Envoyer l'email
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-    $email_sent = wp_mail($user->user_email, $email_subject, $email_message, $headers);
+    $email_sent = wp_bmc_send_password_reset_email($user->user_email, $user->display_name, $new_password);
     
     if ($email_sent) {
         wp_send_json_success(array(
