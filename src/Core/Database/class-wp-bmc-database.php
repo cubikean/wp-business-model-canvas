@@ -422,6 +422,26 @@ class WP_BMC_Database {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_project_users';
+        
+        // Vérifier si l'assignation existe déjà
+        $existing = $wpdb->get_var($wpdb->prepare("
+            SELECT id FROM $table 
+            WHERE project_id = %d AND user_id = %d
+        ", $project_id, $user_id));
+        
+        if ($existing) {
+            // Réactiver si désactivée
+            $result = $wpdb->update(
+                $table,
+                array('is_active' => 1),
+                array('id' => $existing),
+                array('%d'),
+                array('%d')
+            );
+            return $result !== false;
+        }
+        
+        // Créer une nouvelle assignation
         $result = $wpdb->insert(
             $table,
             array(

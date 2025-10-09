@@ -532,8 +532,8 @@ function wp_bmc_import_csv_supervisors_handler() {
     $error_count = count($errors);
     
     error_log("Import CSV superviseurs terminé. Créés: $created_count, Ignorés: $skipped, Erreurs: $error_count");
-    
-    wp_send_json_success(array(
+        
+        wp_send_json_success(array(
         'message' => "$created_count superviseur(s) créé(s) avec succès !",
         'created' => $created_count,
         'skipped' => $skipped,
@@ -761,6 +761,8 @@ function wp_bmc_import_csv_complete_handler() {
     
     // PHASE 3 : Créer tous les projets et assigner
     error_log("=== PHASE 3 : Création des projets et assignations ===");
+    $projects_cache = array(); // Cache pour éviter de recréer les mêmes projets
+    
     foreach ($all_rows as $row) {
         $line_number = $row['line'];
         $data = $row['data'];
@@ -775,16 +777,37 @@ function wp_bmc_import_csv_complete_handler() {
             continue;
         }
         
-        // Créer le projet
-        $project_id = WP_BMC_Database::create_project($admin_id, $project_title, $project_description);
-        
-        if (!$project_id) {
-            $errors[] = "Ligne $line_number : Erreur lors de la création du projet '$project_title'";
-            continue;
+        // Vérifier si le projet existe déjà (dans le cache ou en base)
+        if (isset($projects_cache[$project_title])) {
+            // Projet déjà créé dans cette session d'import
+            $project_id = $projects_cache[$project_title];
+            error_log("Ligne $line_number : Projet existant (cache) - '$project_title' (ID: $project_id)");
+        } else {
+            // Vérifier si le projet existe déjà en base de données
+            $existing_project = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}bmc_projects WHERE title = %s",
+                $project_title
+            ));
+            
+            if ($existing_project) {
+                // Le projet existe déjà, on le réutilise
+                $project_id = $existing_project->id;
+                $projects_cache[$project_title] = $project_id;
+                error_log("Ligne $line_number : Projet existant (BDD) - '$project_title' (ID: $project_id)");
+            } else {
+                // Créer le nouveau projet
+                $project_id = WP_BMC_Database::create_project($admin_id, $project_title, $project_description);
+                
+                if (!$project_id) {
+                    $errors[] = "Ligne $line_number : Erreur lors de la création du projet '$project_title'";
+                    continue;
+                }
+                
+                $projects_created++;
+                $projects_cache[$project_title] = $project_id;
+                error_log("Ligne $line_number : Projet créé - '$project_title' (ID: $project_id)");
+            }
         }
-        
-        $projects_created++;
-        error_log("Ligne $line_number : Projet créé - '$project_title' (ID: $project_id)");
         
         // Assigner l'utilisateur au projet
         if (!empty($user_email)) {
@@ -798,7 +821,7 @@ function wp_bmc_import_csv_complete_handler() {
                 if ($assigned) {
                     $assignments_count++;
                     error_log("Ligne $line_number : Utilisateur '$user_email' assigné au projet");
-                } else {
+    } else {
                     $errors[] = "Ligne $line_number : Erreur assignation utilisateur '$user_email' au projet '$project_title'";
                 }
             } else {

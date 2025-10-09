@@ -332,6 +332,13 @@
 .project-header h3 {
     margin: 0;
     color: #333;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.project-header h4 {
+  font-size: 18px;
+  line-height: 1.2;
 }
 
 .project-actions {
@@ -339,10 +346,6 @@
     gap: 5px;
 }
 
-.project-description {
-    color: #666;
-    margin-bottom: 15px;
-}
 
 .project-meta {
     display: flex;
@@ -385,7 +388,7 @@
     overflow-y: auto;
 }
 
-.user-item {
+.list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -393,7 +396,7 @@
     border-bottom: 1px solid #e1e1e1;
 }
 
-.user-item:last-child {
+.list-item:last-child {
     border-bottom: none;
 }
 
@@ -434,7 +437,7 @@
     border-radius: 8px;
     max-width: 600px;
     width: 100%;
-    max-height: calc(100vh - 40px);
+    max-height: calc(80dvh - 40px);
     overflow-y: auto;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     position: relative;
@@ -470,7 +473,7 @@
     text-align: right;
 }
 
-.available-users h4 {
+.available h4 {
     margin: 0 0 15px 0;
 }
 
@@ -528,7 +531,7 @@
     }
     
     .modal-content {
-        max-height: calc(100vh - 20px);
+        max-height: calc(80dvh - 20px);
     }
     
     .modal-header,
@@ -538,7 +541,7 @@
     }
 }
 
-.available-user {
+.available {
     background: #f8f9fa;
     border: 1px solid #e9ecef;
     border-radius: 4px;
@@ -546,12 +549,12 @@
     padding: 12px;
 }
 
-.available-user .user-name {
+.available .name {
     font-weight: 500;
     color: #333;
 }
 
-.add-user-btn {
+.add-btn {
     background: #28a745;
     color: white;
     border: none;
@@ -561,11 +564,11 @@
     font-size: 12px;
 }
 
-.add-user-btn:hover {
+.add-btn:hover {
     background: #218838;
 }
 
-.add-user-btn:disabled {
+.add-btn:disabled {
     background: #6c757d;
     cursor: not-allowed;
 }

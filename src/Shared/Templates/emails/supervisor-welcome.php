@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛡️ WP Business Model Canvas</h1>
+            <h1>WP Business Model Canvas</h1>
             <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
         </div>
         <div class="content">
@@ -31,21 +31,21 @@ if (!defined('ABSPATH')) exit;
             <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
             
             <div class="credentials">
-                <h3>🔑 Vos identifiants de connexion :</h3>
+                <h3>Vos identifiants de connexion :</h3>
                 <p><strong>Adresse email :</strong> <?php echo esc_html($email); ?></p>
                 <p><strong>Mot de passe :</strong> <?php echo esc_html($password); ?></p>
             </div>
             
-            <h3>📋 Vos privilèges superviseur :</h3>
+            <h3>Vos privilèges superviseur :</h3>
             <ul>
-                <li>✅ Créer et gérer des projets</li>
-                <li>✅ Créer et gérer des utilisateurs</li>
-                <li>✅ Superviser les Business Model Canvas</li>
-                <li>✅ Noter et commenter les sections</li>
-                <li>✅ Accéder au tableau de bord administrateur</li>
+                <li>Créer et gérer des projets</li>
+                <li>Créer et gérer des utilisateurs</li>
+                <li>Superviser les Business Model Canvas</li>
+                <li>Noter et commenter les sections</li>
+                <li>Accéder au tableau de bord administrateur</li>
             </ul>
             
-            <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
+            <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
             
             <p>Vous pouvez maintenant accéder à l'interface d'administration et commencer à superviser les projets.</p>
             

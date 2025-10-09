@@ -84,7 +84,7 @@ $all_supervisors = get_users(array(
 
         <!-- Import CSV Complet (Unifié) -->
         <div class="wp-bmc-section csv-unified-section">
-            <h2>🚀 Import CSV Complet (Recommandé)</h2>
+            <h2>Import CSV Complet (Recommandé)</h2>
             <p class="description"><strong>Importez tout en une seule fois !</strong> Ce formulaire va créer automatiquement les utilisateurs, les superviseurs, les projets ET effectuer toutes les assignations.</p>
 
             <div class="csv-import-container">
@@ -94,7 +94,7 @@ $all_supervisors = get_users(array(
                     <div class="csv-upload-area">
                         <input type="file" id="csv-complete-file" name="csv_file" accept=".csv" required>
                         <label for="csv-complete-file" class="csv-upload-label csv-upload-complete">
-                            <i class="fas fa-magic"></i>
+                            <i class="fas fa-file-csv"></i>
                             <span>Choisir un fichier CSV complet</span>
                             <small>Import automatique : Utilisateurs + Superviseurs + Projets</small>
                         </label>
@@ -102,12 +102,12 @@ $all_supervisors = get_users(array(
                     </div>
 
                     <div class="csv-info-box csv-info-complete">
-                        <h4>✨ Format attendu du CSV complet :</h4>
+                        <h4>Format attendu du CSV complet :</h4>
                         <ul>
                             <li><strong>Prénom</strong> + <strong>Nom</strong> + <strong>E-mail</strong> + <strong>Candidature</strong> → Créera les utilisateurs</li>
                             <li><strong>Tuteur</strong> + <strong>Coordonnées du tuteur</strong> → Créera les superviseurs</li>
                             <li><strong>Nom du projet</strong> + <strong>Résumé du projet</strong> → Créera les projets</li>
-                            <li>🎯 <strong>Assignations automatiques</strong> : Utilisateur + Superviseur → Projet</li>
+                            <li><strong>Assignations automatiques</strong> : Utilisateur + Superviseur → Projet</li>
                         </ul>
                         <p><small>
                                 <strong>Mots de passe générés :</strong><br>
@@ -121,18 +121,18 @@ $all_supervisors = get_users(array(
                             <input type="checkbox" id="send-emails-complete" checked>
                             <strong>Envoyer les emails d'identifiants (utilisateurs + superviseurs)</strong>
                         </label>
-                        <p class="description">⚠️ <strong>Import volumineux (&gt;50 lignes) ?</strong> Décochez pour éviter les timeouts. Vous pourrez communiquer les identifiants manuellement.</p>
+                        <p class="description"><strong>Import volumineux (&gt;50 lignes) ?</strong> Décochez pour éviter les timeouts. Vous pourrez communiquer les identifiants manuellement.</p>
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="button button-primary button-large button-hero">
-                            <i class="fas fa-magic"></i> Import complet (tout en un)
+                        <button type="submit" class="button button-primary">
+                            Import complet (tout en un)
                         </button>
                     </div>
                 </form>
 
                 <div id="csv-complete-import-results" style="display: none;">
-                    <h3>📊 Résultats de l'import complet</h3>
+                    <h3>Résultats de l'import complet</h3>
                     <div class="import-stats-complete"></div>
                     <div class="import-details"></div>
                 </div>
@@ -140,11 +140,11 @@ $all_supervisors = get_users(array(
         </div>
 
         <hr style="margin: 40px 0; border: none; border-top: 2px solid #e1e1e1;">
-        <h2 style="text-align: center; color: #666; margin: 40px 0;">📑 Imports séparés (optionnel)</h2>
+        <h2 style="text-align: center; color: #666; margin: 40px 0;">Imports séparés (optionnel)</h2>
 
         <!-- Import CSV Projets -->
         <!-- <div class="wp-bmc-section">
-        <h2>📁 Importer uniquement des projets</h2>
+        <h2>Importer uniquement des projets</h2>
         <p class="description">Importez plusieurs projets en une seule fois depuis un fichier CSV. Le fichier doit contenir : <strong>Nom du projet</strong>, <strong>Résumé du projet</strong>, <strong>E-mail</strong> (utilisateur), <strong>Coordonnées du tuteur</strong> (superviseur).</p>
         
         <div class="csv-import-container">
@@ -162,7 +162,7 @@ $all_supervisors = get_users(array(
                 </div>
 
                 <div class="csv-info-box">
-                    <h4>📋 Format attendu du CSV :</h4>
+                    <h4>Format attendu du CSV :</h4>
                     <ul>
                         <li><strong>Nom du projet</strong> : Titre du projet</li>
                         <li><strong>Résumé du projet</strong> : Description du projet</li>
@@ -189,7 +189,7 @@ $all_supervisors = get_users(array(
 
         <!-- Création d'un nouveau projet -->
         <div class="wp-bmc-section">
-            <h2>➕ Créer un projet individuel</h2>
+            <h2>Créer un projet individuel</h2>
             <form id="create-project-form" class="wp-bmc-form">
                 <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
                 <div class="form-group">
@@ -214,7 +214,7 @@ $all_supervisors = get_users(array(
 
     <!-- Liste des projets -->
     <div class="wp-bmc-section">
-        <h2>📋 Projets existants<?php if ($supervisor_filter > 0) echo ' - ' . esc_html($supervisor_name); ?></h2>
+        <h2>Projets existants<?php if ($supervisor_filter > 0) echo ' - ' . esc_html($supervisor_name); ?></h2>
 
         <?php if (empty($all_projects)): ?>
             <?php if ($supervisor_filter > 0): ?>
@@ -292,9 +292,7 @@ $all_supervisors = get_users(array(
                             <?php endif; ?>
 
                             <div class="project-meta">
-                                <span class="project-status status-<?php echo $project->status; ?>">
-                                    <?php echo ucfirst($project->status); ?>
-                                </span>
+                                
                                 <span class="project-date">
                                     Créé le <?php echo date('d/m/Y', strtotime($project->created_at)); ?>
                                 </span>
@@ -310,8 +308,8 @@ $all_supervisors = get_users(array(
                                         <p class="no-users">Aucun utilisateur assigné</p>
                                     <?php else: ?>
                                         <?php foreach ($project_users as $user): ?>
-                                            <div class="user-item" data-user-id="<?php echo $user->user_id; ?>">
-                                                <span class="user-name">
+                                            <div class="list-item" data-user-id="<?php echo $user->user_id; ?>">
+                                                <span class="name">
                                                     <?php echo esc_html($user->first_name . ' ' . $user->last_name); ?>
                                                     <?php if ($user->custom_id): ?>
                                                         <small>(<?php echo esc_html($user->custom_id); ?>)</small>
@@ -338,8 +336,8 @@ $all_supervisors = get_users(array(
                                         <p class="no-admins">Aucun superviseur assigné</p>
                                     <?php else: ?>
                                         <?php foreach ($project_supervisors as $supervisor): ?>
-                                            <div class="admin-item" data-admin-id="<?php echo $supervisor->user_id; ?>">
-                                                <span class="admin-name">
+                                            <div class="list-item" data-admin-id="<?php echo $supervisor->user_id; ?>">
+                                                <span class="name">
                                                     <?php echo esc_html($supervisor->display_name); ?>
                                                     <small>(<?php echo esc_html($supervisor->user_email); ?>)</small>
                                                 </span>

@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Réinitialisation de mot de passe</h1>
+            <h1>Réinitialisation de mot de passe</h1>
         </div>
         <div class="content">
             <h2>Bonjour <?php echo esc_html($display_name); ?>,</h2>
@@ -29,11 +29,11 @@ if (!defined('ABSPATH')) exit;
             <p>Votre mot de passe a été réinitialisé par un administrateur.</p>
             
             <div class="credentials">
-                <h3>🔑 Votre nouveau mot de passe :</h3>
+                <h3>Votre nouveau mot de passe :</h3>
                 <p style="font-size: 18px;"><strong><?php echo esc_html($new_password); ?></strong></p>
             </div>
             
-            <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer ce mot de passe dès votre prochaine connexion.</p>
+            <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer ce mot de passe dès votre prochaine connexion.</p>
             
             <p>Si vous n'avez pas demandé cette réinitialisation, veuillez contacter un administrateur immédiatement.</p>
             

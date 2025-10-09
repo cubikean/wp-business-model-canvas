@@ -487,14 +487,14 @@ jQuery(document).ready(function($) {
                     html = '<p class="no-users">Aucun utilisateur disponible à assigner.</p>';
                 } else {
                     users.forEach(function(user) {
-                        html += '<div class="user-item available-user" data-user-id="' + user.user_id + '">';
-                        html += '<span class="user-name">';
+                        html += '<div class="list-item available user" data-user-id="' + user.user_id + '">';
+                        html += '<span class="name">';
                         html += user.first_name + ' ' + user.last_name;
                         if (user.custom_id) {
                             html += ' <small>(' + user.custom_id + ')</small>';
                         }
                         html += '</span>';
-                        html += '<button class="button button-small add-user-btn" ';
+                        html += '<button class="button button-small add-btn" ';
                         html += 'data-project-id="' + projectId + '" ';
                         html += 'data-user-id="' + user.user_id + '">';
                         html += '<i class="fas fa-plus"></i> Ajouter';
@@ -600,12 +600,12 @@ jQuery(document).ready(function($) {
                     html = '<p class="no-admins">Aucun superviseur disponible à assigner.</p>';
                 } else {
                     supervisors.forEach(function(admin) {
-                        html += '<div class="admin-item available-admin" data-admin-id="' + admin.user_id + '">';
-                        html += '<span class="admin-name">';
+                        html += '<div class="list-item available admin" data-admin-id="' + admin.user_id + '">';
+                        html += '<span class="name">';
                         html += admin.display_name;
                         html += ' <small>(' + admin.user_email + ')</small>';
                         html += '</span>';
-                        html += '<button class="button button-small add-admin-btn" ';
+                        html += '<button class="button button-small add-btn" ';
                         html += 'data-project-id="' + projectId + '" ';
                         html += 'data-admin-id="' + admin.user_id + '">';
                         html += '<i class="fas fa-plus"></i> Assigner';
