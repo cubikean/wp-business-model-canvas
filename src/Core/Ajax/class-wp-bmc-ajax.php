@@ -332,6 +332,142 @@ function wp_bmc_create_supervisor_handler() {
     ));
 }
 
+// Handler pour supprimer un superviseur
+add_action('wp_ajax_wp_bmc_delete_supervisor', 'wp_bmc_delete_supervisor_handler');
+function wp_bmc_delete_supervisor_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (!$supervisor_id) {
+        wp_send_json_error('ID superviseur invalide.');
+    }
+    
+    // Ne pas permettre à un superviseur de se supprimer lui-même
+    if ($supervisor_id == get_current_user_id()) {
+        wp_send_json_error('Vous ne pouvez pas vous supprimer vous-même.');
+    }
+    
+    // Vérifier que l'utilisateur existe et est bien un administrateur
+    $user = get_user_by('ID', $supervisor_id);
+    if (!$user) {
+        wp_send_json_error('Superviseur non trouvé.');
+    }
+    
+    if (!in_array('administrator', $user->roles)) {
+        wp_send_json_error('Cet utilisateur n\'est pas un superviseur.');
+    }
+    
+    // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+    if (!function_exists('wp_delete_user')) {
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+    }
+    
+    // Supprimer l'utilisateur WordPress
+    $result = wp_delete_user($supervisor_id);
+    
+    if ($result) {
+        error_log('Superviseur supprimé avec succès - ID: ' . $supervisor_id);
+        wp_send_json_success(array(
+            'message' => 'Superviseur supprimé avec succès !'
+        ));
+    } else {
+        error_log('Erreur lors de la suppression du superviseur - ID: ' . $supervisor_id);
+        wp_send_json_error('Erreur lors de la suppression du superviseur.');
+    }
+}
+
+// Handler pour réinitialiser le mot de passe d'un superviseur
+add_action('wp_ajax_wp_bmc_reset_supervisor_password', 'wp_bmc_reset_supervisor_password_handler');
+function wp_bmc_reset_supervisor_password_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (!$supervisor_id) {
+        wp_send_json_error('ID superviseur invalide.');
+    }
+    
+    // Vérifier que l'utilisateur existe
+    $user = get_user_by('ID', $supervisor_id);
+    if (!$user) {
+        wp_send_json_error('Superviseur non trouvé.');
+    }
+    
+    // Générer un nouveau mot de passe aléatoire
+    $new_password = wp_generate_password(12, true, true);
+    
+    // Mettre à jour le mot de passe
+    wp_set_password($new_password, $supervisor_id);
+    
+    // Préparer l'email
+    $email_subject = 'Réinitialisation de votre mot de passe - WP Business Model Canvas';
+    
+    $email_message = '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px; background-color: #f8f9fa; }
+            .credentials { background-color: #fff3cd; padding: 20px; border-left: 4px solid #ffc107; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔐 Réinitialisation de mot de passe</h1>
+            </div>
+            <div class="content">
+                <h2>Bonjour ' . esc_html($user->display_name) . ',</h2>
+                
+                <p>Votre mot de passe a été réinitialisé par un administrateur.</p>
+                
+                <div class="credentials">
+                    <h3>🔑 Votre nouveau mot de passe :</h3>
+                    <p style="font-size: 18px;"><strong>' . esc_html($new_password) . '</strong></p>
+                </div>
+                
+                <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer ce mot de passe dès votre prochaine connexion.</p>
+                
+                <p>Si vous n\'avez pas demandé cette réinitialisation, veuillez contacter un administrateur immédiatement.</p>
+                
+                <p>Cordialement,<br>L\'équipe WP Business Model Canvas</p>
+            </div>
+            <div class="footer">
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </div>
+        </div>
+    </body>
+    </html>';
+    
+    // Envoyer l'email
+    $headers = array('Content-Type: text/html; charset=UTF-8');
+    $email_sent = wp_mail($user->user_email, $email_subject, $email_message, $headers);
+    
+    if ($email_sent) {
+        wp_send_json_success(array(
+            'message' => 'Mot de passe réinitialisé avec succès ! Un email a été envoyé au superviseur.'
+        ));
+    } else {
+        wp_send_json_success(array(
+            'message' => 'Mot de passe réinitialisé mais l\'email n\'a pas pu être envoyé.'
+        ));
+    }
+}
+
 // Handler pour associer un utilisateur à un projet
 add_action('wp_ajax_wp_bmc_assign_user_to_project', 'wp_bmc_assign_user_to_project_handler');
 function wp_bmc_assign_user_to_project_handler() {

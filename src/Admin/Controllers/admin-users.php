@@ -19,6 +19,13 @@ global $wpdb;
 
 // Obtenir tous les utilisateurs
 $all_users = WP_BMC_Database::get_all_users();
+
+// Obtenir tous les superviseurs (administrateurs WordPress)
+$supervisors = get_users(array(
+    'role' => 'administrator',
+    'orderby' => 'registered',
+    'order' => 'DESC'
+));
 ?>
 
 <div class="wrap wp-bmc-admin-users">
@@ -264,6 +271,121 @@ $all_users = WP_BMC_Database::get_all_users();
             <div class="users-pagination">
                 <div class="pagination-info">
                     <span id="users-count"><?php echo count($all_users); ?> utilisateur(s) au total</span>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Liste des superviseurs -->
+    <div class="wp-bmc-section">
+        <h2>👨‍💼 Superviseurs (Administrateurs)</h2>
+        <p class="description">Liste de tous les superviseurs ayant accès à l'administration de la plateforme.</p>
+
+        <div class="users-controls">
+            <div class="users-search">
+                <input type="text" id="supervisors-search" placeholder="Rechercher un superviseur..." class="regular-text">
+            </div>
+        </div>
+
+        <?php if (empty($supervisors)): ?>
+            <p>Aucun superviseur n'a été trouvé.</p>
+        <?php else: ?>
+            <table class="wp-list-table widefat striped" id="supervisors-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="name">
+                            Nom <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-sort="email">
+                            Email <span class="sort-indicator"></span>
+                        </th>
+                       
+                        <th class="sortable" data-sort="projects">
+                            Projets supervisés <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-sort="registered">
+                            Créé le <span class="sort-indicator"></span>
+                        </th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($supervisors as $supervisor): ?>
+                        <?php 
+                        $supervisor_projects = WP_BMC_Database::get_supervisor_projects($supervisor->ID);
+                        $projects_count = count($supervisor_projects);
+                        ?>
+                        <tr class="supervisor-row" data-user-id="<?php echo $supervisor->ID; ?>">
+                            <td class="supervisor-name">
+                                <strong>
+                                    <?php 
+                                    $display_name = $supervisor->display_name ?: $supervisor->first_name . ' ' . $supervisor->last_name;
+                                    echo esc_html($display_name); 
+                                    ?>
+                                </strong>
+
+                            </td>
+                            <td class="supervisor-email">
+                                <a href="mailto:<?php echo esc_attr($supervisor->user_email); ?>">
+                                    <?php echo esc_html($supervisor->user_email); ?>
+                                </a>
+                            </td>
+                           
+                            <td class="supervisor-projects">
+                                <?php if ($projects_count > 0): ?>
+                                    <strong><?php echo $projects_count; ?></strong> projet<?php echo $projects_count > 1 ? 's' : ''; ?>
+                                    <button class="button button-small view-supervisor-projects" 
+                                            data-supervisor-id="<?php echo $supervisor->ID; ?>"
+                                            title="Voir les projets">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                <?php else: ?>
+                                    <span class="no-projects">Aucun projet</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="supervisor-registered">
+                                <?php echo date('d/m/Y', strtotime($supervisor->user_registered)); ?>
+                            </td>
+                            <td class="supervisor-actions">
+                                <div class="action-buttons">
+                                    <button class="button button-small button-secondary view-supervisor-profile"
+                                        data-supervisor-id="<?php echo $supervisor->ID; ?>"
+                                        title="Voir le profil">
+                                        <i class="fas fa-user"></i>
+                                    </button>
+
+                                    <button class="button button-small button-secondary reset-supervisor-password"
+                                        data-supervisor-id="<?php echo $supervisor->ID; ?>"
+                                        title="Réinitialiser le mot de passe">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+
+                                    <?php 
+                                    // Ne pas permettre la suppression du superviseur connecté
+                                    $current_user_id = get_current_user_id();
+                                    if ($supervisor->ID != $current_user_id): 
+                                    ?>
+                                        <button class="button button-small button-link-delete delete-supervisor-btn"
+                                            data-supervisor-id="<?php echo $supervisor->ID; ?>"
+                                            data-supervisor-name="<?php echo esc_attr($display_name); ?>"
+                                            title="Supprimer le superviseur">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="current-user-badge" title="Vous ne pouvez pas vous supprimer vous-même">
+                                            <i class="fas fa-user-shield"></i> Vous
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <div class="users-pagination">
+                <div class="pagination-info">
+                    <span id="supervisors-count"><?php echo count($supervisors); ?> superviseur(s) au total</span>
                 </div>
             </div>
         <?php endif; ?>

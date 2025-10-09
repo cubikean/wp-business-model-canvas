@@ -115,6 +115,14 @@ jQuery(document).ready(function($) {
         var searchTerm = $(this).val().toLowerCase();
         filterUsers(searchTerm);
     });
+
+    // ========================================
+    // RECHERCHE DE SUPERVISEURS
+    // ========================================
+    $('#supervisors-search').on('input', function() {
+        var searchTerm = $(this).val().toLowerCase();
+        filterSupervisors(searchTerm);
+    });
     
     // ========================================
     // FILTRAGE PAR STATUT
@@ -567,6 +575,135 @@ jQuery(document).ready(function($) {
             // Restaurer le bouton
             $('#wp-bmc-export-users-btn').prop('disabled', false).html('<i class="fas fa-download"></i> Exporter les utilisateurs');
         });
+    }
+    
+    // ========================================
+    // GESTION DES SUPERVISEURS
+    // ========================================
+    
+    // Supprimer un superviseur
+    $(document).on('click', '.delete-supervisor-btn', function() {
+        var supervisorId = $(this).data('supervisor-id');
+        var supervisorName = $(this).data('supervisor-name');
+        
+        if (!supervisorId || supervisorId === 'undefined' || supervisorId === 'null') {
+            WP_BMC_Toast.error('ID superviseur invalide');
+            return;
+        }
+
+        // Confirmation avec avertissement
+        if (!confirm('⚠️ ATTENTION : Vous êtes sur le point de supprimer le superviseur "' + supervisorName + '".\n\nCette action supprimera :\n- Le compte administrateur WordPress\n- Toutes ses associations aux projets\n\nLes projets supervisés seront conservés.\n\nÊtes-vous sûr de vouloir continuer ?')) {
+            return;
+        }
+
+        var $deleteBtn = $(this);
+        var originalText = $deleteBtn.html();
+        $deleteBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.post(wp_bmc_admin_ajax.ajax_url, {
+            action: 'wp_bmc_delete_supervisor',
+            supervisor_id: supervisorId,
+            nonce: wp_bmc_admin_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('Superviseur supprimé avec succès !');
+                
+                // Supprimer la ligne du tableau
+                $('.supervisor-row[data-user-id="' + supervisorId + '"]').fadeOut(500, function() {
+                    $(this).remove();
+                    updateSupervisorsCount();
+                });
+                
+            } else {
+                WP_BMC_Toast.error('Erreur lors de la suppression : ' + response.data);
+                $deleteBtn.prop('disabled', false).html(originalText);
+            }
+        }).fail(function(xhr, status, error) {
+            WP_BMC_Toast.error('Erreur de connexion lors de la suppression : ' + error);
+            $deleteBtn.prop('disabled', false).html(originalText);
+        });
+    });
+
+    // Voir le profil d'un superviseur
+    $(document).on('click', '.view-supervisor-profile', function() {
+        var supervisorId = $(this).data('supervisor-id');
+        // Rediriger vers la page de profil WordPress
+        window.location.href = wp_bmc_admin_ajax.admin_url + 'user-edit.php?user_id=' + supervisorId;
+    });
+
+    // Réinitialiser le mot de passe d'un superviseur
+    $(document).on('click', '.reset-supervisor-password', function() {
+        var supervisorId = $(this).data('supervisor-id');
+        
+        if (!confirm('Voulez-vous vraiment réinitialiser le mot de passe de ce superviseur ?\n\nUn email avec un nouveau mot de passe sera envoyé.')) {
+            return;
+        }
+
+        var $btn = $(this);
+        var originalText = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.post(wp_bmc_admin_ajax.ajax_url, {
+            action: 'wp_bmc_reset_supervisor_password',
+            supervisor_id: supervisorId,
+            nonce: wp_bmc_admin_ajax.nonce
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        })
+        .fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion lors de la réinitialisation');
+        })
+        .always(function() {
+            $btn.prop('disabled', false).html(originalText);
+        });
+    });
+
+    // Voir les projets d'un superviseur
+    $(document).on('click', '.view-supervisor-projects', function() {
+        var supervisorId = $(this).data('supervisor-id');
+        // Rediriger vers la page des projets avec filtre
+        window.location.href = wp_bmc_admin_ajax.admin_url + 'admin.php?page=wp-business-model-canvas-projects&supervisor=' + supervisorId;
+    });
+
+    // ========================================
+    // FONCTIONS UTILITAIRES - SUPERVISEURS
+    // ========================================
+    
+    function filterSupervisors(searchTerm) {
+        var visibleCount = 0;
+        
+        $('#supervisors-table tbody tr').each(function() {
+            var $row = $(this);
+            var name = $row.find('.supervisor-name').text().toLowerCase();
+            var email = $row.find('.supervisor-email').text().toLowerCase();
+            
+            var matchesSearch = name.includes(searchTerm) || 
+                              email.includes(searchTerm);
+            
+            if (matchesSearch) {
+                $row.show();
+                visibleCount++;
+            } else {
+                $row.hide();
+            }
+        });
+        
+        // Mettre à jour le compteur
+        var totalCount = $('#supervisors-table tbody tr').length;
+        if (searchTerm) {
+            $('#supervisors-count').html(visibleCount + ' sur ' + totalCount + ' superviseur(s)');
+        } else {
+            $('#supervisors-count').html(totalCount + ' superviseur(s) au total');
+        }
+    }
+    
+    function updateSupervisorsCount() {
+        var count = $('#supervisors-table tbody tr').length;
+        $('#supervisors-count').html(count + ' superviseur(s) au total');
     }
     
 });
