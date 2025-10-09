@@ -43,9 +43,54 @@ $all_users = WP_BMC_Database::get_all_users();
         </div>
     </div>
     
+    <!-- Import CSV Projets -->
+    <div class="wp-bmc-section">
+        <h2>📁 Importer des projets via CSV</h2>
+        <p class="description">Importez plusieurs projets en une seule fois depuis un fichier CSV. Le fichier doit contenir : <strong>Nom du projet</strong>, <strong>Résumé du projet</strong>, <strong>E-mail</strong> (utilisateur), <strong>Coordonnées du tuteur</strong> (superviseur).</p>
+        
+        <div class="csv-import-container">
+            <form id="import-projects-csv-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
+                
+                <div class="csv-upload-area">
+                    <input type="file" id="csv-projects-file" name="csv_file" accept=".csv" required>
+                    <label for="csv-projects-file" class="csv-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Choisir un fichier CSV</span>
+                        <small>ou glisser-déposer ici</small>
+                    </label>
+                    <div class="csv-projects-file-name" style="display: none;"></div>
+                </div>
+
+                <div class="csv-info-box">
+                    <h4>📋 Format attendu du CSV :</h4>
+                    <ul>
+                        <li><strong>Nom du projet</strong> : Titre du projet</li>
+                        <li><strong>Résumé du projet</strong> : Description du projet</li>
+                        <li><strong>E-mail</strong> : Email de l'utilisateur (étudiant) à assigner</li>
+                        <li><strong>Coordonnées du tuteur</strong> : Email du superviseur à assigner</li>
+                    </ul>
+                    <p><small><strong>Note :</strong> Les utilisateurs et superviseurs doivent déjà exister dans la base de données.</small></p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary button-large">
+                        <i class="fas fa-upload"></i> Importer les projets
+                    </button>
+                </div>
+            </form>
+
+            <div id="csv-projects-import-results" style="display: none;">
+                <h3>Résultats de l'import</h3>
+                <div class="import-stats"></div>
+                <div class="import-details"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Création d'un nouveau projet -->
     <div class="wp-bmc-section">
-        <h2>➕ Créer un nouveau projet</h2>
+        <h2>➕ Créer un projet individuel</h2>
         <form id="create-project-form" class="wp-bmc-form">
             <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
             <div class="form-group">

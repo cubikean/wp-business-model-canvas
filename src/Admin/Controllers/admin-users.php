@@ -139,9 +139,52 @@ $supervisors = get_users(array(
         </form>
     </div>
 
+    <!-- Import CSV Superviseurs -->
+    <div class="wp-bmc-section">
+        <h2>📁 Importer des superviseurs via CSV</h2>
+        <p class="description">Importez plusieurs superviseurs en une seule fois depuis un fichier CSV. Le fichier doit contenir les colonnes : <strong>Tuteur</strong>, <strong>Coordonnées du tuteur</strong>.</p>
+        
+        <div class="csv-import-container">
+            <form id="import-supervisors-csv-form" enctype="multipart/form-data">
+                <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
+                
+                <div class="csv-upload-area">
+                    <input type="file" id="csv-supervisors-file" name="csv_file" accept=".csv" required>
+                    <label for="csv-supervisors-file" class="csv-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Choisir un fichier CSV</span>
+                        <small>ou glisser-déposer ici</small>
+                    </label>
+                    <div class="csv-supervisors-file-name" style="display: none;"></div>
+                </div>
+
+                <div class="csv-info-box">
+                    <h4>📋 Format attendu du CSV :</h4>
+                    <ul>
+                        <li><strong>Tuteur</strong> : Nom complet du superviseur (Ex: "Jean Dupont")</li>
+                        <li><strong>Coordonnées du tuteur</strong> : Adresse email (doit être unique)</li>
+                    </ul>
+                    <p><small><strong>Note :</strong> Le mot de passe sera automatiquement généré : <code>Prénom + 6 caractères aléatoires</code></small></p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary button-large">
+                        <i class="fas fa-upload"></i> Importer les superviseurs
+                    </button>
+                </div>
+            </form>
+
+            <div id="csv-supervisors-import-results" style="display: none;">
+                <h3>Résultats de l'import</h3>
+                <div class="import-stats"></div>
+                <div class="import-details"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Création d'un superviseur (admin) -->
     <div class="wp-bmc-section">
-        <h2>👨‍💼 Créer un superviseur</h2>
+        <h2>👨‍💼 Créer un superviseur individuel</h2>
         <p class="description">Les superviseurs sont des administrateurs qui peuvent gérer les projets et les utilisateurs.</p>
         <form id="create-supervisor-form" class="wp-bmc-form">
             <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
