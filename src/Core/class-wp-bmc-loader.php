@@ -382,6 +382,22 @@ class WP_BMC_Loader {
             true
         );
         
+        // Charger le système de présence (temps réel)
+        wp_enqueue_style(
+            'wp-bmc-presence',
+            WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-presence.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
+        wp_enqueue_script(
+            'wp-bmc-presence',
+            WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-presence.js',
+            array('jquery', 'heartbeat'),
+            WP_BMC_VERSION,
+            true
+        );
+        
         // Si c'est un admin, charger aussi les styles admin
         if (current_user_can('manage_options')) {
             // Charger les polices pour l'admin
@@ -414,6 +430,25 @@ class WP_BMC_Loader {
         wp_localize_script('wp-bmc-public', 'wp_bmc_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('wp_bmc_nonce')
+        ));
+        
+        // Localiser le project_id pour le système de présence
+        $current_project_id = null;
+        if (WP_BMC_Auth::is_logged_in()) {
+            $current_user = WP_BMC_Auth::get_current_user();
+            if (isset($_GET['project_id'])) {
+                $current_project_id = intval($_GET['project_id']);
+            } else {
+                $user_projects = WP_BMC_Database::get_user_projects($current_user->user_id);
+                if (!empty($user_projects)) {
+                    $current_project_id = $user_projects[0]->id;
+                }
+            }
+        }
+        
+        wp_localize_script('wp-bmc-presence', 'wp_bmc_presence_config', array(
+            'project_id' => $current_project_id,
+            'heartbeat_interval' => 15
         ));
     }
     

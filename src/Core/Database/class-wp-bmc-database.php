@@ -230,6 +230,21 @@ class WP_BMC_Database {
             KEY config_type (config_type)
         ) $charset_collate;";
         
+        // Table des sessions utilisateur (présence temps réel)
+        $table_user_sessions = $wpdb->prefix . 'bmc_user_sessions';
+        $sql_user_sessions = "CREATE TABLE $table_user_sessions (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            project_id mediumint(9) NOT NULL,
+            section varchar(50) DEFAULT NULL,
+            is_editing tinyint(1) DEFAULT 0,
+            last_ping datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY user_project (user_id, project_id),
+            KEY project_id (project_id),
+            KEY last_ping (last_ping)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -242,6 +257,7 @@ class WP_BMC_Database {
         dbDelta($sql_project_users);
         dbDelta($sql_project_supervisors);
         dbDelta($sql_canvas_config);
+        dbDelta($sql_user_sessions);
     }
     
         /**
@@ -1725,6 +1741,7 @@ class WP_BMC_Database {
             $wpdb->prefix . 'bmc_project_users',
             $wpdb->prefix . 'bmc_project_supervisors',
             $wpdb->prefix . 'bmc_admin_students',
+            $wpdb->prefix . 'bmc_user_sessions',
             $wpdb->prefix . 'bmc_projects',
             $wpdb->prefix . 'bmc_users'
         );
@@ -2144,6 +2161,134 @@ class WP_BMC_Database {
         }
         
         return $configs;
+    }
+    
+    // ========================================
+    // GESTION DES SESSIONS UTILISATEUR (PRÉSENCE TEMPS RÉEL)
+    // ========================================
+    
+    /**
+     * Mettre à jour la session d'un utilisateur (présence)
+     */
+    public static function update_user_session($user_id, $project_id, $section = null, $is_editing = 0) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        // Utiliser REPLACE pour créer ou mettre à jour
+        $result = $wpdb->replace(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'project_id' => $project_id,
+                'section' => $section,
+                'is_editing' => $is_editing,
+                'last_ping' => current_time('mysql')
+            ),
+            array('%d', '%d', '%s', '%d', '%s')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Récupérer les utilisateurs actifs sur un projet (excluant l'utilisateur actuel)
+     * Inclut les utilisateurs BMC ET les admins WordPress
+     */
+    public static function get_active_project_users($project_id, $exclude_user_id = null) {
+        global $wpdb;
+        
+        $table_sessions = $wpdb->prefix . 'bmc_user_sessions';
+        $table_bmc_users = $wpdb->prefix . 'bmc_users';
+        $table_wp_users = $wpdb->base_prefix . 'users';
+        
+        $exclude_clause = $exclude_user_id ? $wpdb->prepare("AND s.user_id != %d", $exclude_user_id) : "";
+        
+        // Récupérer les sessions actives en utilisant wp_users (pour inclure les admins)
+        // LEFT JOIN avec bmc_users pour avoir les infos si disponibles, sinon utiliser wp_users
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT 
+                s.user_id,
+                s.section,
+                s.is_editing,
+                s.last_ping,
+                COALESCE(bu.first_name, wpu.display_name) as first_name,
+                COALESCE(bu.last_name, '') as last_name,
+                COALESCE(bu.email, wpu.user_email) as email
+            FROM $table_sessions s
+            LEFT JOIN $table_bmc_users bu ON s.user_id = bu.user_id
+            INNER JOIN $table_wp_users wpu ON s.user_id = wpu.ID
+            WHERE s.project_id = %d 
+            AND s.last_ping > DATE_SUB(NOW(), INTERVAL 60 SECOND)
+            $exclude_clause
+            ORDER BY s.last_ping DESC
+        ", $project_id));
+        
+        // Post-traiter pour séparer le display_name en first_name et last_name si nécessaire
+        foreach ($results as $result) {
+            if (empty($result->last_name) && !empty($result->first_name)) {
+                // Si last_name est vide, essayer de séparer le display_name
+                $name_parts = explode(' ', $result->first_name, 2);
+                $result->first_name = $name_parts[0];
+                $result->last_name = isset($name_parts[1]) ? $name_parts[1] : $name_parts[0];
+            }
+        }
+        
+        return $results;
+    }
+    
+    /**
+     * Nettoyer les sessions inactives (plus de 2 minutes)
+     */
+    public static function cleanup_inactive_sessions() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        $result = $wpdb->query("
+            DELETE FROM $table 
+            WHERE last_ping < DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+        ");
+        
+        if ($result !== false) {
+            error_log("wp_bmc_cleanup_sessions - Sessions nettoyées : $result");
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Supprimer la session d'un utilisateur sur un projet
+     */
+    public static function remove_user_session($user_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        $result = $wpdb->delete(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'project_id' => $project_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir le nom de la section formaté pour affichage
+     */
+    public static function get_section_display_name($section_key) {
+        // Charger la configuration des sections
+        if (!function_exists('wp_bmc_get_canvas_sections')) {
+            include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+        }
+        
+        $sections = wp_bmc_get_canvas_sections('global', false);
+        
+        return isset($sections[$section_key]['title']) ? $sections[$section_key]['title'] : $section_key;
     }
 
 }

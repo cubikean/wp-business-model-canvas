@@ -4124,3 +4124,107 @@ function wp_bmc_save_canvas_configs_handler() {
         wp_send_json_error('Erreur lors de la sauvegarde de certaines configurations.');
     }
 }
+
+// ========================================
+// GESTION DE LA PRÉSENCE EN TEMPS RÉEL (HEARTBEAT API)
+// ========================================
+
+/**
+ * Hook Heartbeat pour gérer la présence des utilisateurs
+ */
+add_filter('heartbeat_received', 'wp_bmc_heartbeat_received', 10, 2);
+function wp_bmc_heartbeat_received($response, $data) {
+    // Vérifier si l'utilisateur est connecté au plugin
+    if (!WP_BMC_Auth::is_logged_in()) {
+        error_log('WP_BMC_Heartbeat : Utilisateur non connecté au plugin');
+        return $response;
+    }
+    
+    // Vérifier si des données de présence BMC sont envoyées
+    if (!isset($data['wp_bmc_presence'])) {
+        return $response;
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    if (!$user) {
+        error_log('WP_BMC_Heartbeat : Utilisateur non trouvé');
+        return $response;
+    }
+    
+    $activity = $data['wp_bmc_presence'];
+    
+    $project_id = intval($activity['project_id']);
+    $section = isset($activity['section']) ? sanitize_text_field($activity['section']) : null;
+    $is_editing = isset($activity['is_editing']) ? intval($activity['is_editing']) : 0;
+    
+    error_log('WP_BMC_Heartbeat : Ping reçu - User: ' . $user->user_id . ' (' . $user->first_name . ' ' . $user->last_name . '), Project: ' . $project_id . ', Section: ' . ($section ?? 'NULL') . ', Editing: ' . $is_editing);
+    
+    if (!$project_id) {
+        error_log('WP_BMC_Heartbeat : Project ID manquant');
+        return $response;
+    }
+    
+    // Vérifier que l'utilisateur a accès au projet
+    $is_admin = current_user_can('manage_options');
+    
+    // Les admins ont accès à tous les projets, pas besoin de vérifier
+    if (!$is_admin) {
+        $has_project_access = WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+        
+        if (!$has_project_access) {
+            error_log('WP_BMC_Heartbeat : Accès refusé au projet ' . $project_id . ' pour l\'utilisateur ' . $user->user_id . ' (non assigné)');
+            return $response;
+        }
+        
+        error_log('WP_BMC_Heartbeat : Accès autorisé - Utilisateur assigné au projet');
+    } else {
+        error_log('WP_BMC_Heartbeat : Accès autorisé - Admin (bypass)');
+    }
+    
+    // Mettre à jour la session de l'utilisateur
+    WP_BMC_Database::update_user_session(
+        $user->user_id,
+        $project_id,
+        $section,
+        $is_editing
+    );
+    
+    // Récupérer les autres utilisateurs actifs sur ce projet
+    $active_users = WP_BMC_Database::get_active_project_users($project_id, $user->user_id);
+    
+    // Formater les données pour le frontend
+    $formatted_users = array();
+    foreach ($active_users as $u) {
+        $section_title = $u->section ? WP_BMC_Database::get_section_display_name($u->section) : null;
+        
+        $formatted_users[] = array(
+            'user_id' => intval($u->user_id),
+            'full_name' => $u->first_name . ' ' . $u->last_name,
+            'first_name' => $u->first_name,
+            'last_name' => $u->last_name,
+            'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+            'section' => $u->section,
+            'section_title' => $section_title,
+            'is_editing' => intval($u->is_editing) === 1,
+            'last_ping' => $u->last_ping,
+            'seconds_ago' => time() - strtotime($u->last_ping)
+        );
+    }
+    
+    $response['wp_bmc_active_users'] = $formatted_users;
+    
+    return $response;
+}
+
+/**
+ * Configurer l'intervalle Heartbeat pour les pages du canvas
+ */
+add_filter('heartbeat_settings', 'wp_bmc_heartbeat_settings');
+function wp_bmc_heartbeat_settings($settings) {
+    // Vérifier si on est sur une page du canvas ou du dashboard
+    if (is_page('business-model-canvas') || is_page('dashboard')) {
+        $settings['interval'] = 15; // 15 secondes pour la réactivité
+    }
+    
+    return $settings;
+}

@@ -124,7 +124,38 @@ function wp_bmc_check_update() {
 register_deactivation_hook(__FILE__, 'wp_bmc_deactivate');
 function wp_bmc_deactivate() {
     flush_rewrite_rules();
+    
+    // Désactiver le cron de nettoyage des sessions
+    $timestamp = wp_next_scheduled('wp_bmc_cleanup_sessions');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wp_bmc_cleanup_sessions');
+    }
 }
+
+// ========================================
+// CRON JOB - NETTOYAGE DES SESSIONS
+// ========================================
+
+// Planifier le nettoyage des sessions toutes les 2 minutes
+add_action('wp', 'wp_bmc_schedule_session_cleanup');
+function wp_bmc_schedule_session_cleanup() {
+    if (!wp_next_scheduled('wp_bmc_cleanup_sessions')) {
+        wp_schedule_event(time(), 'every_two_minutes', 'wp_bmc_cleanup_sessions');
+    }
+}
+
+// Définir un intervalle personnalisé pour le cron
+add_filter('cron_schedules', 'wp_bmc_add_cron_intervals');
+function wp_bmc_add_cron_intervals($schedules) {
+    $schedules['every_two_minutes'] = array(
+        'interval' => 120, // 2 minutes
+        'display' => __('Toutes les 2 minutes')
+    );
+    return $schedules;
+}
+
+// Action de nettoyage des sessions
+add_action('wp_bmc_cleanup_sessions', array('WP_BMC_Database', 'cleanup_inactive_sessions'));
 
 // Fonction utilitaire pour inclure le template d'édition
 function wp_bmc_include_edit_section($context = 'public', $section = '') {
