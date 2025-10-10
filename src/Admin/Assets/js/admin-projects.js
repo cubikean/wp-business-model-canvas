@@ -506,7 +506,7 @@ jQuery(document).ready(function($) {
                 $container.html(html);
                 
                 // Gérer l'ajout d'utilisateurs
-                $('.add-user-btn').on('click', function() {
+                $('.add-btn').on('click', function() {
                     var $btn = $(this);
                     var userId = $btn.data('user-id');
                     var projectId = $btn.data('project-id');
@@ -533,7 +533,7 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
-                $button.closest('.user-item').fadeOut(300, function() {
+                $button.closest('.list-item').fadeOut(300, function() {
                     $(this).remove();
                 });
                 // Recharger la liste des utilisateurs du projet
@@ -559,7 +559,7 @@ jQuery(document).ready(function($) {
         $.post(ajaxurl, formData, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
-                $button.closest('.user-item').fadeOut(300, function() {
+                $button.closest('.list-item').fadeOut(300, function() {
                     $(this).remove();
                 });
             } else {
@@ -617,7 +617,7 @@ jQuery(document).ready(function($) {
                 $container.html(html);
                 
                 // Gérer l'ajout de superviseurs
-                $('.add-admin-btn').on('click', function() {
+                $('.add-btn').on('click', function() {
                     var $btn = $(this);
                     var adminId = $btn.data('admin-id');
                     var projectId = $btn.data('project-id');
@@ -644,7 +644,7 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
-                $button.closest('.admin-item').fadeOut(300, function() {
+                $button.closest('.list-item').fadeOut(300, function() {
                     $(this).remove();
                 });
                 // Recharger la liste des superviseurs du projet

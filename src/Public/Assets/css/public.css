@@ -2914,7 +2914,6 @@ body.popup-open {
 .action-plan .no-todos {
   text-align: center;
   padding: 2rem;
-  color: var(--text-muted);
 }
 
 .action-plan .no-todos i {
@@ -3197,7 +3196,7 @@ body.popup-open {
 .no-todos {
   text-align: center;
   padding: 2rem;
-  color: var(--text-muted);
+  color: white;
 }
 
 .no-todos i {
@@ -3214,7 +3213,9 @@ body.popup-open {
 
 .no-todos small {
   font-size: 0.875rem;
-  color: var(--text-muted);
+  line-height: 1.2;
+  text-wrap: balance;
+  display: block;
 }
 
 /* Animation pour l'ajout/suppression de tâches */

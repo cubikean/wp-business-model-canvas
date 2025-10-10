@@ -225,9 +225,9 @@ jQuery(document).ready(function($) {
 
         console.log('openEditView appelée');
 
-        const mainElement = document.querySelector('.wp-bmc-canvas-container');
+        const mainElement = document.querySelector('.wp-bmc-dashboard');
 
-        mainElement.scrollIntoView({ behavior: "smooth" })
+        mainElement?.scrollIntoView({ behavior: "smooth" })
 
         // Définir la section actuellement éditée (priorité à la variable globale)
         currentEditingSection = sectionName;

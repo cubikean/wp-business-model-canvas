@@ -1510,24 +1510,15 @@ function wp_bmc_get_canvas_handler() {
         wp_send_json_error('ID de projet invalide.');
     }
     
-    // Vérifier que l'utilisateur possède ce projet (sauf pour les admins)
-    if (!current_user_can('manage_options')) {
-        $user = WP_BMC_Auth::get_current_user();
-        $projects = WP_BMC_Database::get_user_projects($user->user_id);
-        $user_has_project = false;
-        
-        foreach ($projects as $project) {
-            if ($project->id == $project_id) {
-                $user_has_project = true;
-                break;
-            }
-        }
-        
-        if (!$user_has_project) {
-            wp_send_json_error('Vous n\'avez pas accès à ce projet.');
-        }
+    // Vérifier que l'utilisateur a accès à ce projet
+    $user = WP_BMC_Auth::get_current_user();
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if (!$has_access) {
+        wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
-    // Les admins peuvent accéder à tous les projets
     
     $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
     
@@ -1551,19 +1542,13 @@ function wp_bmc_delete_project_handler() {
         wp_send_json_error('ID de projet invalide.');
     }
     
-    // Vérifier que l'utilisateur possède ce projet
+    // Vérifier que l'utilisateur a accès à ce projet
     $user = WP_BMC_Auth::get_current_user();
-    $projects = WP_BMC_Database::get_user_projects($user->user_id);
-    $user_has_project = false;
     
-    foreach ($projects as $project) {
-        if ($project->id == $project_id) {
-            $user_has_project = true;
-            break;
-        }
-    }
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
     
-    if (!$user_has_project) {
+    if (!$has_access) {
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
     
@@ -2227,7 +2212,11 @@ function wp_bmc_get_section_revisions_handler() {
     }
     
     $user = WP_BMC_Auth::get_current_user();
-    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if (!$has_access) {
         wp_send_json_error('Accès non autorisé à ce projet.');
     }
     
@@ -2268,7 +2257,11 @@ function wp_bmc_get_section_revision_handler() {
     }
     
     $user = WP_BMC_Auth::get_current_user();
-    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $revision->project_id);
+    
+    if (!$has_access) {
         wp_send_json_error('Accès non autorisé à cette révision.');
     }
     

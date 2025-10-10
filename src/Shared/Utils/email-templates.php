@@ -118,3 +118,5 @@ function wp_bmc_send_password_reset_email($email, $display_name, $new_password) 
     );
 }
 
+
+
