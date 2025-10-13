@@ -206,3 +206,33 @@ function wp_bmc_create_pages() {
         }
     }
 }
+
+// Ajouter la classe 'bmc-main' au body sur les pages BMC
+add_filter('body_class', 'wp_bmc_add_body_class');
+function wp_bmc_add_body_class($classes) {
+    global $post;
+    
+    // Vérifier si nous sommes sur une page avec contenu
+    if (!is_a($post, 'WP_Post')) {
+        return $classes;
+    }
+    
+    // Liste des shortcodes BMC à détecter
+    $bmc_shortcodes = array(
+        'wp_bmc_login',
+        'wp_bmc_register',
+        'wp_bmc_dashboard',
+        'wp_bmc_canvas',
+        'wp_bmc_change_password'
+    );
+    
+    // Vérifier si la page contient l'un des shortcodes BMC
+    foreach ($bmc_shortcodes as $shortcode) {
+        if (has_shortcode($post->post_content, $shortcode)) {
+            $classes[] = 'bmc-main '.$shortcode;
+            break;
+        }
+    }
+    
+    return $classes;
+}
