@@ -86,8 +86,10 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
     <?php endif; ?>
 </div>
 
+
+<?php wp_bmc_include_edit_section('public'); ?>
+
+
 <button id="wp-bmc-generate-pdf" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" data-project-id="<?php echo $project_id; ?>">
     <i class="fas fa-file-pdf"></i> Exporter le canvas
 </button>
-
-<?php wp_bmc_include_edit_section('public'); ?>

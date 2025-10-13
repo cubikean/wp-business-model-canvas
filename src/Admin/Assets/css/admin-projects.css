@@ -147,14 +147,8 @@
 
 #wp-bmc-reset-database-btn i {
   margin-right: 8px;
-  animation: shake 2s infinite;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
-}
 
 .danger-text {
   color: #721c24;
