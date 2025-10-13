@@ -177,6 +177,13 @@ jQuery(document).ready(function($) {
                 if (typeof window.WP_BMC_Public !== 'undefined' && window.WP_BMC_Public.updateCanvasGrid) {
                     window.WP_BMC_Public.updateCanvasGrid();
                 }
+                // Forcer la mise à jour des indicateurs de présence après le rechargement de la vue
+                if (typeof window.WP_BMC_Presence !== 'undefined' && window.WP_BMC_Presence.initialized) {
+                    setTimeout(function() {
+                        window.WP_BMC_Presence.previousActiveUsers = [];
+                        window.WP_BMC_Presence.updateSectionIndicators();
+                    }, 100);
+                }
             } else {
                 $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
             }

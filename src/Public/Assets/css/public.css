@@ -301,6 +301,10 @@
   background: var(--dashboard-dark-blue);
 }
 
+#wp-bmc-generate-pdf{
+  margin-top: 32px;
+}
+
 .wp-bmc-canvas-container,
 .wp-bmc-dashboard {
   max-width: 1400px;

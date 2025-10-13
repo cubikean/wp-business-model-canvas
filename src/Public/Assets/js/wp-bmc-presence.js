@@ -1,10 +1,16 @@
 /**
  * WP Business Model Canvas - Système de Présence en Temps Réel
  * Utilise WordPress Heartbeat API pour afficher les utilisateurs actifs
+ * 
+ * STATUS: DÉSACTIVÉ - En attente de corrections
+ * Pour réactiver: mettre PRESENCE_ENABLED à true
  */
 
 (function($) {
     'use strict';
+    
+    // FLAG D'ACTIVATION - Mettre à true pour réactiver la fonctionnalité
+    var PRESENCE_ENABLED = false;
     
     var WP_BMC_Presence = {
         currentProjectId: null,
@@ -18,6 +24,11 @@
          * Initialiser le système de présence
          */
         init: function(projectId) {
+            if (!PRESENCE_ENABLED) {
+                console.log('WP_BMC_Presence : Fonctionnalité désactivée (PRESENCE_ENABLED = false)');
+                return;
+            }
+            
             if (this.initialized) {
                 console.log('WP_BMC_Presence : Déjà initialisé');
                 return;
@@ -49,12 +60,12 @@
                     is_editing: self.isEditing ? 1 : 0
                 };
                 
-                console.log('WP_BMC_Presence : Envoi heartbeat', {
-                    project_id: self.currentProjectId,
-                    section: self.currentSection,
-                    is_editing: self.isEditing,
-                    is_editing_value: self.isEditing ? 1 : 0
-                });
+                console.log('====================================');
+                console.log('WP_BMC_Presence : ENVOI HEARTBEAT');
+                console.log('  Project ID:', self.currentProjectId);
+                console.log('  Section:', self.currentSection);
+                console.log('  Is Editing:', self.isEditing, '(valeur envoyée:', self.isEditing ? 1 : 0, ')');
+                console.log('====================================');
             });
             
             // Recevoir les utilisateurs actifs
@@ -95,11 +106,18 @@
             // Détecter l'ouverture de la vue d'édition (bouton "Éditer la brique")
             $(document).on('click', '.edit-brick-btn', function() {
                 var sectionKey = $(this).data('section');
+                console.log('WP_BMC_Presence : Clic sur edit-brick-btn - section:', sectionKey);
+                
                 if (sectionKey) {
+                    // Vérifier si on change de section
+                    if (self.currentSection !== sectionKey) {
+                        console.log('WP_BMC_Presence : Changement de section - ancienne:', self.currentSection, '- nouvelle:', sectionKey);
+                    }
+                    
                     self.currentSection = sectionKey;
                     self.isEditing = true;
                     self.sendPresencePing();
-                    console.log('WP_BMC_Presence : Ouverture édition', sectionKey);
+                    console.log('WP_BMC_Presence : Ouverture édition pour', sectionKey);
                 }
             });
             
@@ -109,11 +127,19 @@
                 var $editView = $('#wp-bmc-edit-view');
                 if ($editView.is(':visible')) {
                     var sectionKey = $editView.data('section');
-                    if (sectionKey && !self.isEditing) {
-                        self.currentSection = sectionKey;
-                        self.isEditing = true;
-                        self.sendPresencePing(); // Ping immédiat pour signaler l'édition
-                        console.log('WP_BMC_Presence : Focus dans éditeur (interaction détectée)', sectionKey);
+                    
+                    if (sectionKey) {
+                        // Vérifier si la section a changé ou si ce n'est pas encore en mode édition
+                        if (self.currentSection !== sectionKey || !self.isEditing) {
+                            if (self.currentSection !== sectionKey) {
+                                console.log('WP_BMC_Presence : Changement de section dans éditeur - ancienne:', self.currentSection, '- nouvelle:', sectionKey);
+                            }
+                            
+                            self.currentSection = sectionKey;
+                            self.isEditing = true;
+                            self.sendPresencePing(); // Ping immédiat pour signaler l'édition
+                            console.log('WP_BMC_Presence : Focus dans éditeur (interaction détectée)', sectionKey);
+                        }
                     }
                 }
             });
@@ -121,18 +147,30 @@
             // Vérifier périodiquement si la vue d'édition est ouverte
             setInterval(function() {
                 var $editView = $('#wp-bmc-edit-view');
-                if ($editView.is(':visible') && !self.isEditing) {
+                
+                if ($editView.is(':visible')) {
                     var sectionKey = $editView.data('section');
+                    
                     if (sectionKey) {
-                        self.currentSection = sectionKey;
-                        self.isEditing = true;
-                        console.log('WP_BMC_Presence : Vue d\'édition ouverte (détection périodique)', sectionKey);
+                        // Vérifier si la section a changé
+                        if (self.currentSection !== sectionKey) {
+                            console.log('WP_BMC_Presence : Changement de section détecté - ancienne:', self.currentSection, '- nouvelle:', sectionKey);
+                            self.currentSection = sectionKey;
+                            self.isEditing = true;
+                            self.sendPresencePing();
+                        } else if (!self.isEditing) {
+                            // Première détection
+                            self.currentSection = sectionKey;
+                            self.isEditing = true;
+                            console.log('WP_BMC_Presence : Vue d\'édition ouverte (détection périodique)', sectionKey);
+                        }
                     }
-                } else if (!$editView.is(':visible') && self.isEditing) {
+                } else if (self.isEditing) {
                     // La vue d'édition est fermée mais on était en mode édition
+                    console.log('WP_BMC_Presence : Vue d\'édition fermée (détection périodique)');
                     self.isEditing = false;
                     self.currentSection = null;
-                    console.log('WP_BMC_Presence : Vue d\'édition fermée (détection périodique)');
+                    self.sendPresencePing();
                 }
             }, 3000); // Vérifier toutes les 3 secondes
             
@@ -174,9 +212,15 @@
             }
             
             // Détecter le changement de vue (simple/synthetic)
-            $(document).on('click', '.view-toggle-button', function() {
+            $(document).on('click', '.view-toggle-button, [data-view]', function() {
+                // Nettoyer tous les indicateurs car la vue va être rechargée
+                $('.section-editing-indicator').remove();
+                console.log('WP_BMC_Presence : Changement de vue - nettoyage des indicateurs');
+                
                 setTimeout(function() {
-                    self.setupEditTracking();
+                    // Forcer une mise à jour immédiate après le changement de vue
+                    self.previousActiveUsers = []; // Réinitialiser pour forcer la mise à jour
+                    self.sendPresencePing();
                 }, 500);
             });
         },
@@ -205,76 +249,103 @@
             
             // Filtrer uniquement les utilisateurs en train d'éditer
             var editingUsers = this.activeUsers.filter(function(user) {
-                return user.is_editing && user.section;
+                return user.is_editing === true && user.section;
             });
             
-            // Créer une clé unique pour chaque état d'édition
+            console.log('WP_BMC_Presence : Utilisateurs en édition', editingUsers.length);
+            editingUsers.forEach(function(user) {
+                console.log('  -', user.full_name, 'édite', user.section);
+            });
+            
+            // Créer une clé unique pour chaque état d'édition (basée sur les utilisateurs en édition uniquement)
             var currentState = editingUsers.map(function(user) {
-                return user.user_id + ':' + user.section + ':' + user.is_editing;
+                return user.user_id + ':' + user.section;
             }).sort().join('|');
             
-            var previousState = this.previousActiveUsers.map(function(user) {
-                if (user.is_editing && user.section) {
-                    return user.user_id + ':' + user.section + ':' + user.is_editing;
-                }
-                return null;
-            }).filter(function(s) { return s !== null; }).sort().join('|');
+            // Filtrer les utilisateurs en édition de l'état précédent
+            var previousEditingUsers = this.previousActiveUsers.filter(function(user) {
+                return user.is_editing === true && user.section;
+            });
+            
+            var previousState = previousEditingUsers.map(function(user) {
+                return user.user_id + ':' + user.section;
+            }).sort().join('|');
             
             // Comparer avec l'état précédent
             if (currentState === previousState) {
-                console.log('WP_BMC_Presence : État inchangé, pas de mise à jour des indicateurs');
-                return; // Aucun changement, ne rien faire
+                console.log('WP_BMC_Presence : État d\'édition inchangé, pas de mise à jour des indicateurs');
+                return;
             }
             
-            console.log('WP_BMC_Presence : État changé, mise à jour des indicateurs');
+            console.log('WP_BMC_Presence : État d\'édition changé, mise à jour des indicateurs');
             console.log('  Ancien état :', previousState);
             console.log('  Nouvel état :', currentState);
             
-            // Supprimer les indicateurs qui ne sont plus valides
+            // D'abord, supprimer TOUS les indicateurs existants
             $('.section-editing-indicator').each(function() {
                 var $indicator = $(this);
-                var userId = $indicator.data('user-id');
-                var section = $indicator.closest('.canvas-section').data('section');
+                var userId = parseInt($indicator.data('user-id'));
+                var sectionKey = $indicator.data('section');
                 
                 // Vérifier si cet utilisateur édite toujours cette section
                 var stillEditing = editingUsers.some(function(user) {
-                    return user.user_id === userId && user.section === section;
+                    return parseInt(user.user_id) === userId && user.section === sectionKey;
                 });
                 
                 if (!stillEditing) {
-                    // Supprimer avec animation
+                    console.log('WP_BMC_Presence : Suppression indicateur pour user', userId, 'sur', sectionKey);
                     $indicator.fadeOut(200, function() {
                         $(this).remove();
                     });
-                    console.log('WP_BMC_Presence : Indicateur supprimé pour user', userId, 'sur', section);
                 }
             });
             
-            // Ajouter les nouveaux indicateurs
+            // Ensuite, ajouter/mettre à jour les indicateurs pour les utilisateurs en édition
             editingUsers.forEach(function(user) {
+                console.log('WP_BMC_Presence : Recherche section pour user', user.full_name, '- section:', user.section);
+                
+                // Déboguer : lister toutes les sections disponibles
+                var availableSections = [];
+                $('.canvas-section[data-section]').each(function() {
+                    availableSections.push($(this).data('section'));
+                });
+                console.log('WP_BMC_Presence : Sections disponibles dans le DOM:', availableSections);
+                
                 var $section = $('.canvas-section[data-section="' + user.section + '"]');
+                console.log('WP_BMC_Presence : Section trouvée ? ', $section.length > 0, '(', $section.length, 'élément(s))');
                 
                 if ($section.length > 0) {
                     // Vérifier si un indicateur existe déjà pour cet utilisateur sur cette section
-                    var indicatorExists = $section.find('.section-editing-indicator[data-user-id="' + user.user_id + '"]').length > 0;
+                    var $existingIndicator = $('.section-editing-indicator[data-user-id="' + user.user_id + '"][data-section="' + user.section + '"]');
                     
-                    if (!indicatorExists) {
-                        var $indicator = $('<div class="section-editing-indicator" data-user-id="' + user.user_id + '">')
+                    if ($existingIndicator.length === 0) {
+                        // Créer le nouvel indicateur avec les bonnes data attributes
+                        var $indicator = $('<div class="section-editing-indicator">')
+                            .attr('data-user-id', user.user_id)
+                            .attr('data-section', user.section)
                             .html('<span class="edit-icon">✏️</span> <strong>' + user.first_name + ' ' + user.last_name + '</strong> édite cette section')
-                            .hide()
-                            .fadeIn(300);
+                            .hide();
                         
                         // Insérer l'indicateur juste après le header de la section
                         var $header = $section.find('.canvas-section-header, .section-header');
+                        console.log('WP_BMC_Presence : Header trouvé ?', $header.length > 0);
+                        
                         if ($header.length > 0) {
                             $header.after($indicator);
+                            console.log('WP_BMC_Presence : Indicateur inséré après le header');
                         } else {
                             // Fallback : insérer au début de la section
                             $section.prepend($indicator);
+                            console.log('WP_BMC_Presence : Indicateur inséré au début de la section (fallback)');
                         }
                         
+                        $indicator.fadeIn(300);
                         console.log('WP_BMC_Presence : Indicateur ajouté pour', user.full_name, 'sur', user.section);
+                    } else {
+                        console.log('WP_BMC_Presence : Indicateur déjà présent pour', user.full_name, 'sur', user.section);
                     }
+                } else {
+                    console.warn('WP_BMC_Presence : Section "' + user.section + '" non trouvée dans le DOM pour user', user.full_name);
                 }
             });
             
@@ -308,6 +379,11 @@
     
     // Initialiser automatiquement si la variable globale existe
     $(document).ready(function() {
+        if (!PRESENCE_ENABLED) {
+            console.log('WP_BMC_Presence : Auto-initialisation annulée (fonctionnalité désactivée)');
+            return;
+        }
+        
         // Attendre un peu pour s'assurer que tout est chargé
         setTimeout(function() {
             var projectId = null;

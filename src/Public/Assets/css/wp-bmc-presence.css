@@ -1,7 +1,19 @@
 /**
  * WP Business Model Canvas - Styles de Présence
  * Indicateurs d'édition en temps réel par section
+ * 
+ * STATUS: DÉSACTIVÉ - Fonctionnalité en standby
+ * Pour réactiver: supprimer la règle display: none ci-dessous
  */
+
+/* ========================================
+   DÉSACTIVATION TEMPORAIRE
+   Pour réactiver: supprimer la ligne ci-dessous
+   ======================================== */
+
+.section-editing-indicator {
+    display: none !important;
+}
 
 /* ========================================
    INDICATEURS PAR SECTION
