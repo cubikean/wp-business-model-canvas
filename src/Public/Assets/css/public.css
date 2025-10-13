@@ -2890,7 +2890,7 @@ body.popup-open {
   flex: 1;
 }
 
-.action-plan .todo-checkbox {
+.todo-content .todo-checkbox {
   margin-right: 0.75rem;
   cursor: pointer;
   transition: transform 0.2s ease;
