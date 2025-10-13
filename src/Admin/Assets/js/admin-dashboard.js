@@ -2,14 +2,32 @@
  * JavaScript pour le dashboard administrateur WP Business Model Canvas
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function ($) {
  
   // ========================================
   // RECHERCHE D'UTILISATEURS
   // ========================================
-  $("#users-search").on("input", function () {
+  $("#projects-search").on("input", function () {
     var searchTerm = $(this).val().toLowerCase();
-    filterUsers(searchTerm);
+    filterProjects(searchTerm);
   });
 
   // ========================================
@@ -176,7 +194,7 @@ jQuery(document).ready(function ($) {
       let projectId = $(".wp-bmc-dashboard").data("project-id");
       let section = $("#wp-bmc-edit-view").data("section");
       let defSection = $("#wp-bmc-edit-view")
-      console.log('Section:', section);
+      log('Section:', section);
       let sectionTitle = $("#wp-bmc-edit-view #edit-section-title").text();
         
       openGradingModal(projectId, section, sectionTitle);
@@ -189,15 +207,13 @@ jQuery(document).ready(function ($) {
   // ========================================
 
   // Filtrer les utilisateurs par terme de recherche
-  function filterUsers(searchTerm) {
+  function filterProjects(searchTerm) {
+    log('Filtrer les projets par terme de recherche:', searchTerm);
     $(".user-row").each(function () {
       var $row = $(this);
-      var name = $row.find(".user-name").text().toLowerCase();
-      var email = $row.find(".user-email").text().toLowerCase();
+      var title = $row.find(".project-title").text().toLowerCase();
 
-      if (
-        name.includes(searchTerm) ||
-        email.includes(searchTerm)      ) {
+      if (title.includes(searchTerm)) {
         $row.show();
       } else {
         $row.hide();
@@ -537,10 +553,10 @@ jQuery(document).ready(function ($) {
   // Fonction pour ouvrir la modal de notation
   function openGradingModal(projectId, section, sectionTitle) {
     
-    console.log('=== openGradingModal appelée ===');
-    console.log('Project ID reçu:', projectId);
-    console.log('Section reçue:', section);
-    console.log('Section Title reçu:', sectionTitle);
+    log('=== openGradingModal appelée ===');
+    log('Project ID reçu:', projectId);
+    log('Section reçue:', section);
+    log('Section Title reçu:', sectionTitle);
     
     // Supprimer les modals de notation existants pour éviter les conflits
     $('.grading-modal').remove();
@@ -630,7 +646,7 @@ jQuery(document).ready(function ($) {
 
       $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
         if (response.success) {
-          console.log(response);
+          log(response);
           WP_BMC_Toast.success("Note sauvegardée avec succès !");
           modal.fadeOut(300, function () {
             modal.remove();
@@ -654,7 +670,7 @@ jQuery(document).ready(function ($) {
           }
           
         } else {
-          console.log(response);
+          log(response);
           WP_BMC_Toast.error("Erreur lors de la sauvegarde : " + response.data);
         }
       }).always(function () {
@@ -698,11 +714,11 @@ jQuery(document).ready(function ($) {
 
   // Afficher la note d'une section
   function displaySectionRating(rating) {
-    console.log("rating:", rating);
+    log("rating:", rating);
     $("#rating-score-number").text(rating.rating);
 
     if (rating.comment) {
-      console.log("rating.comment:", rating.comment);
+      log("rating.comment:", rating.comment);
       $("#rating-comment").html("<p>" + rating.comment + "</p>");
     } else {
       $("#rating-comment").html('<p class="no-comment">Aucun commentaire</p>');
@@ -737,7 +753,7 @@ jQuery(document).ready(function ($) {
     var openSection = urlParams.get("open_section");
     
     if (openSection) {
-      console.log('Auto-ouverture de la section:', openSection);
+      log('Auto-ouverture de la section:', openSection);
       
       // Attendre que le DOM soit prêt
       setTimeout(function() {
@@ -745,7 +761,7 @@ jQuery(document).ready(function ($) {
         var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
         
         if ($editBtn.length > 0) {
-          console.log('Bouton d\'édition trouvé pour la section:', openSection);
+          log('Bouton d\'édition trouvé pour la section:', openSection);
           // Simuler un clic sur le bouton d'édition
           $editBtn.trigger('click');
           
@@ -754,7 +770,7 @@ jQuery(document).ready(function ($) {
           newUrl.searchParams.delete('open_section');
           window.history.replaceState({}, document.title, newUrl.toString());
         } else {
-          console.log('Bouton d\'édition non trouvé pour la section:', openSection);
+          log('Bouton d\'édition non trouvé pour la section:', openSection);
         }
       }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
     }

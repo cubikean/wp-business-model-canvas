@@ -307,7 +307,7 @@
 
 .wp-bmc-canvas-container,
 .wp-bmc-dashboard {
-  max-width: 1400px;
+  max-width: 1200px;
   padding-top: 150px;
   margin-inline: auto;
 }
@@ -1102,7 +1102,7 @@
   color: var(--dashboard-text);
   padding: 24px;
   padding-bottom: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.2;
 }

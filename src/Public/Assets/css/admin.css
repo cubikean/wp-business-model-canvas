@@ -40,7 +40,7 @@
     background: var(--dashboard-primary);
     color: white;
     margin: 0;
-    padding: 15px 25px;
+    padding: 20px 25px;
     font-size: 1.2em;
     font-weight: 600;
     text-transform: uppercase;
@@ -179,6 +179,7 @@
     border-radius: 99px;
     width: fit-content;
     color: var(--dashboard-dark-blue);
+    line-height: 1.2;
 }
 #users-table tbody td .users-list .user-badge:not(:last-child){
     margin-bottom: 4px;
@@ -587,12 +588,13 @@
 }
 
 .grading-requests-header {
-    background: var(--dashboard-dark-blue);
+    background: var(--dashboard-orange);
     color: white;
     padding: 20px 25px;
 }
 
 .grading-requests-header h3 {
+    color: white;
     margin: 0;
     font-size: 1.4em;
     font-weight: 600;
@@ -604,9 +606,15 @@
 .grading-count {
     background: rgba(255,255,255,0.2);
     padding: 4px 8px;
-    border-radius: 12px;
+    border-radius: 99px;
     font-size: 18px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
 }
 
 .grading-requests-list {
@@ -701,16 +709,17 @@
 }
 
 .request-actions .grade-section-btn {
-    background: var(--dashboard-dark-blue);
+    background: var(--dashboard-orange);
     border: none;
     color: white;
-    border: 1px solid var(--dashboard-dark-blue);
+    border: 1px solid var(--dashboard-orange);
+    padding: 6px 16px;
 }
 
 .request-actions .grade-section-btn:hover {
     background: transparent;
-    color: var(--dashboard-dark-blue);
-    border-color: var(--dashboard-dark-blue);
+    color: var(--dashboard-orange);
+    border-color: var(--dashboard-orange);
     box-shadow: 0 4px 8px rgba(21, 60, 168, 0.3);
 }
 

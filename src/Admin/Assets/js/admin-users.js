@@ -3,6 +3,24 @@
  * Fonctionnalités : recherche, tri, actions sur les utilisateurs, création, gestion des statuts
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function($) {
     
     // ========================================
@@ -59,7 +77,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Réponse AJAX:', response);
+                log('Réponse AJAX:', response);
                 
                 if (response.success) {
                     WP_BMC_Toast.success(response.data.message);
@@ -86,7 +104,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error);
+                logError('Erreur AJAX:', xhr, status, error);
                 WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
             },
             complete: function() {
@@ -183,7 +201,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Réponse AJAX superviseurs:', response);
+                log('Réponse AJAX superviseurs:', response);
                 
                 if (response.success) {
                     WP_BMC_Toast.success(response.data.message);
@@ -210,7 +228,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error);
+                logError('Erreur AJAX:', xhr, status, error);
                 WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
             },
             complete: function() {
@@ -283,10 +301,10 @@ jQuery(document).ready(function($) {
             last_name: $("#user_last_name").val(),
         };
 
-        console.log('Envoi AJAX:', formData); // Debug
+        log('Envoi AJAX:', formData); // Debug
 
         $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
-            console.log('Réponse AJAX:', response); // Debug
+            log('Réponse AJAX:', response); // Debug
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
                 setTimeout(function () {
@@ -297,7 +315,7 @@ jQuery(document).ready(function($) {
             }
         })
             .fail(function (xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error); // Debug
+                logError('Erreur AJAX:', xhr, status, error); // Debug
                 WP_BMC_Toast.error("Erreur lors de la création de l'utilisateur: " + error);
             })
             .always(function () {
@@ -333,10 +351,10 @@ jQuery(document).ready(function($) {
             last_name: $("#supervisor_last_name").val(),
         };
 
-        console.log('Envoi AJAX superviseur:', formData);
+        log('Envoi AJAX superviseur:', formData);
 
         $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
-            console.log('Réponse AJAX:', response);
+            log('Réponse AJAX:', response);
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
                 $form[0].reset();
@@ -348,7 +366,7 @@ jQuery(document).ready(function($) {
             }
         })
             .fail(function (xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error);
+                logError('Erreur AJAX:', xhr, status, error);
                 WP_BMC_Toast.error("Erreur lors de la création du superviseur: " + error);
             })
             .always(function () {
@@ -468,7 +486,7 @@ jQuery(document).ready(function($) {
     
     // Trier le tableau des utilisateurs
     function sortUsersTable(column, order) {
-        console.log('sortUsersTable appelée:', column, order); // Debug
+        log('sortUsersTable appelée:', column, order); // Debug
         var $tbody = $('#users-table tbody');
         var $rows = $tbody.find('.user-row').toArray();
         
@@ -536,7 +554,7 @@ jQuery(document).ready(function($) {
             
             // Debug pour les 2 premiers éléments
             if ($rows.indexOf(a) < 2 && $rows.indexOf(b) < 2) {
-                console.log('Comparaison:', aVal, 'vs', bVal, 'ordre:', order, 'résultat:', result);
+                log('Comparaison:', aVal, 'vs', bVal, 'ordre:', order, 'résultat:', result);
             }
             
             return result;

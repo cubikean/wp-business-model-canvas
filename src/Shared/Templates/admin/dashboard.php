@@ -259,7 +259,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests($curre
 
         <div class="wp-bmc-users-controls">
             <div class="users-search">
-                <input type="text" id="users-search" placeholder="Rechercher un projet..." class="regular-text">
+                <input type="text" id="projects-search" placeholder="Rechercher un projet..." class="regular-text">
             </div>
             <div class="users-filters">
                 <select id="users-filter-grading">

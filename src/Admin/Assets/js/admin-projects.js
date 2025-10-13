@@ -3,6 +3,24 @@
  * WP Business Model Canvas v2.0
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function($) {
     // ========================================
     // IMPORT CSV COMPLET (UNIFIÉ)
@@ -53,7 +71,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Réponse AJAX import complet:', response);
+                log('Réponse AJAX import complet:', response);
                 
                 if (response.success) {
                     WP_BMC_Toast.success(response.data.message);
@@ -75,7 +93,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error);
+                logError('Erreur AJAX:', xhr, status, error);
                 WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
             },
             complete: function() {
@@ -188,7 +206,7 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Réponse AJAX projets:', response);
+                log('Réponse AJAX projets:', response);
                 
                 if (response.success) {
                     WP_BMC_Toast.success(response.data.message);
@@ -215,7 +233,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erreur AJAX:', xhr, status, error);
+                logError('Erreur AJAX:', xhr, status, error);
                 WP_BMC_Toast.error("Erreur lors de l'import du CSV: " + error);
             },
             complete: function() {
