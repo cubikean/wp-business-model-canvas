@@ -4,20 +4,20 @@
  */
 
 // Système de logs conditionnels pour production
-var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+var WP_BMC_DEBUG = true; // Mettre à true pour activer les logs
 function log() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
-        log.apply(console, arguments);
+    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
+        console.log.apply(console, arguments);
     }
 }
 function logWarn() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
-        logWarn.apply(console, arguments);
+    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
+        console.warn.apply(console, arguments);
     }
 }
 function logError() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
-        logError.apply(console, arguments);
+    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
+        console.error.apply(console, arguments);
     }
 }
 
@@ -48,9 +48,28 @@ jQuery(document).ready(function($) {
     
     // Fonction utilitaire pour obtenir le bon nonce et URL AJAX
     function getAjaxConfig() {
+        var nonce = null;
+        var url = null;
+        
+        // Priorité au nonce admin si disponible
+        if (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) {
+            nonce = wp_bmc_admin_ajax.nonce;
+            url = wp_bmc_admin_ajax.ajax_url;
+        }
+        // Sinon utiliser le nonce public
+        else if (typeof wp_bmc_ajax !== 'undefined' && wp_bmc_ajax.nonce) {
+            nonce = wp_bmc_ajax.nonce;
+            url = wp_bmc_ajax.ajax_url;
+        }
+        
+        if (!nonce || !url) {
+            logError('getAjaxConfig - Configuration AJAX manquante. wp_bmc_admin_ajax:', typeof wp_bmc_admin_ajax, 'wp_bmc_ajax:', typeof wp_bmc_ajax);
+            return null;
+        }
+        
         return {
-            nonce: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce,
-            url: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url
+            nonce: nonce,
+            url: url
         };
     }
     
@@ -178,11 +197,12 @@ jQuery(document).ready(function($) {
         log('loadCanvasView - view:', view);
         
         // Charger le contenu via AJAX
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_load_canvas_view',
             view: view,
             project_id: projectId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             log('loadCanvasView - response:', response);
             if (response.success) {
@@ -696,10 +716,11 @@ jQuery(document).ready(function($) {
         }
         
         // Vérifier si l'utilisateur a accès à ce projet
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_check_project_access',
             project_id: projectId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (!response.success) {
                 WP_BMC_Toast.error('Vous n\'avez pas accès à ce projet.');
@@ -1435,11 +1456,12 @@ jQuery(document).ready(function($) {
         // Afficher le loader pour les révisions
         $('#revisions-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des révisions...</span></div>');
         
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_get_section_revisions',
             section: section,
             project_id: projectId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (response.success) {
                 displayRevisions(response.data.revisions, section);
@@ -1458,11 +1480,12 @@ jQuery(document).ready(function($) {
         // Afficher le loader pour la note
         $('#rating-section').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement de la note...</span></div>');
         
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_get_section_rating',
             section: section,
             project_id: projectId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (response.success && response.data && response.data.rating) {
                 log('data:', response.data);
@@ -1613,10 +1636,11 @@ jQuery(document).ready(function($) {
     
     // Visualiser une révision dans un popup
     function viewRevision(revisionId) {
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_get_section_revision',
             revision_id: revisionId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (response.success) {
                 showRevisionPopup(response.data.revision);
@@ -1716,14 +1740,15 @@ jQuery(document).ready(function($) {
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
+        var ajaxConfig = getAjaxConfig();
         var formData = {
             action: 'wp_bmc_get_section_todos',
-            nonce: wp_bmc_ajax.nonce,
+            nonce: ajaxConfig.nonce,
             section: sectionName,
             project_id: projectId
         };
 
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+        $.post(ajaxConfig.url, formData, function(response) {
             if (response.success) {
                 // Mettre en cache
                 todoCache[sectionName] = {
@@ -2268,21 +2293,44 @@ jQuery(document).ready(function($) {
     // GESTION DU CHANGEMENT DE MOT DE PASSE
     // ========================================
     
-    // Vérifier si l'utilisateur doit changer son mot de passe
-    checkPasswordChangeRequired();
+    // Vérifier si l'utilisateur doit changer son mot de passe (avec délai pour s'assurer que les scripts sont chargés)
+    setTimeout(checkPasswordChangeRequired, 500);
     
     // Fonction pour vérifier si un changement de mot de passe est requis
     function checkPasswordChangeRequired() {
+        // Vérifier si les variables AJAX sont disponibles (si elles ne le sont pas, l'utilisateur n'est pas connecté)
+        if (typeof wp_bmc_ajax === 'undefined' && typeof wp_bmc_admin_ajax === 'undefined') {
+            log('checkPasswordChangeRequired - Variables AJAX non disponibles, utilisateur probablement non connecté, vérification ignorée');
+            return;
+        }
+        
+        // Vérifier si on est sur une page de dashboard (évite les vérifications sur les pages publiques)
+        if (!window.location.pathname.includes('/dashboard') && !window.location.pathname.includes('/business-model-canvas')) {
+            log('checkPasswordChangeRequired - Pas sur une page de dashboard, vérification ignorée');
+            return;
+        }
+        
         // Vérifier si c'est une première connexion (utilisateur avec statut 'pending' qui vient de se connecter)
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        
+        // Vérification supplémentaire
+        if (!ajaxConfig.nonce || !ajaxConfig.url) {
+            logError('Configuration AJAX invalide:', ajaxConfig);
+            return;
+        }
+        
+        log('checkPasswordChangeRequired - URL:', ajaxConfig.url, 'Nonce:', ajaxConfig.nonce, 'Page:', window.location.pathname);
+        
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_check_password_change_required',
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
+            log('checkPasswordChangeRequired - Réponse:', response);
             if (response.success && response.data.required) {
                 showChangePasswordPopup();
             }
-        }).fail(function() {
-            logError('Erreur lors de la vérification du changement de mot de passe');
+        }).fail(function(xhr, status, error) {
+            logError('Erreur lors de la vérification du changement de mot de passe:', xhr.responseText, 'Status:', status, 'Error:', error);
         });
     }
     
@@ -2291,9 +2339,10 @@ jQuery(document).ready(function($) {
         // Ajouter le popup au DOM s'il n'existe pas
         if (!$('#wp-bmc-change-password-popup').length) {
             // Charger le template du popup
-            $.get(wp_bmc_ajax.ajax_url, {
+            var ajaxConfig = getAjaxConfig();
+            $.get(ajaxConfig.url, {
                 action: 'wp_bmc_get_change_password_popup',
-                nonce: wp_bmc_ajax.nonce
+                nonce: ajaxConfig.nonce
             }, function(response) {
                 if (response.success) {
                     $('body').append(response.data.html);
@@ -2389,9 +2438,10 @@ jQuery(document).ready(function($) {
         $btnLoader.show();
         
         // Envoyer la requête
-        $.post(wp_bmc_ajax.ajax_url, {
+        var ajaxConfig = getAjaxConfig();
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_change_password',
-            nonce: wp_bmc_ajax.nonce,
+            nonce: ajaxConfig.nonce,
             current_password: currentPassword,
             new_password: newPassword,
             confirm_password: confirmPassword

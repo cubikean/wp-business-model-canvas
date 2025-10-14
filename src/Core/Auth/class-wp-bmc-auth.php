@@ -118,19 +118,28 @@ class WP_BMC_Auth {
         $login = sanitize_text_field($_POST['login']);
         $password = sanitize_text_field($_POST['password']);
         
+        error_log("handle_login - Tentative de connexion avec login: " . $login);
+        
         // Validation
         if (empty($login) || empty($password)) {
+            error_log("handle_login - Champs manquants");
             wp_send_json_error('Email/nom d\'utilisateur et mot de passe requis.');
         }
         
         // Vérifier les identifiants (accepte email ou pseudonyme)
         $user = WP_BMC_Database::verify_login($login, $password);
         
+        error_log("handle_login - Résultat verify_login: " . print_r($user, true));
+        
         if ($user === 'account_disabled') {
+            error_log("handle_login - Compte désactivé");
             wp_send_json_error('Votre compte a été désactivé. Veuillez contacter un administrateur pour plus d\'informations.');
         } elseif ($user) {
+            error_log("handle_login - Connexion réussie pour user_id: " . $user->user_id);
+            
             // Si l'utilisateur est en pending, marquer qu'il doit changer son mot de passe
             if ($user->status === 'pending') {
+                error_log("handle_login - Utilisateur en statut pending, marquage changement mot de passe requis");
                 // Marquer que l'utilisateur doit changer son mot de passe
                 update_user_meta($user->user_id, 'wp_bmc_password_change_required', true);
             }
@@ -139,12 +148,15 @@ class WP_BMC_Auth {
             wp_set_current_user($user->user_id);
             wp_set_auth_cookie($user->user_id);
             
+            error_log("handle_login - Utilisateur connecté avec succès");
+            
             wp_send_json_success(array(
                 'message' => 'Connexion réussie !',
                 'redirect_url' => home_url('/dashboard/'),
                 'password_change_required' => ($user->status === 'pending')
             ));
         } else {
+            error_log("handle_login - Identifiants incorrects");
             wp_send_json_error('Email/nom d\'utilisateur ou mot de passe incorrect.');
         }
     }

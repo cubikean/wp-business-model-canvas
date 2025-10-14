@@ -461,63 +461,7 @@ function wp_bmc_import_csv_supervisors_handler() {
             'username' => $username,
             'password' => $password
         );
-        
-        // Envoyer un email au superviseur avec ses identifiants
-        $email_subject = 'Bienvenue - Accès Superviseur WP Business Model Canvas';
-        
-        $email_message = '
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background-color: #27ae60; color: white; padding: 20px; text-align: center; }
-                .content { padding: 30px; background-color: #f8f9fa; }
-                .credentials { background-color: #d4edda; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0; }
-                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-                .badge { display: inline-block; background-color: #28a745; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🛡️ WP Business Model Canvas</h1>
-                    <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
-                </div>
-                <div class="content">
-                    <h2>Bienvenue ' . esc_html($first_name) . ' ' . esc_html($last_name) . ' !</h2>
-                    
-                    <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
-                    
-                    <div class="credentials">
-                        <h3>🔑 Vos identifiants de connexion :</h3>
-                        <p><strong>Adresse email :</strong> ' . esc_html($email) . '</p>
-                        <p><strong>Nom d\'utilisateur :</strong> ' . esc_html($username) . '</p>
-                        <p><strong>Mot de passe :</strong> ' . esc_html($password) . '</p>
-                    </div>
-                    
-                    <h3>📋 Vos privilèges superviseur :</h3>
-                    <ul>
-                        <li>✅ Créer et gérer des projets</li>
-                        <li>✅ Créer et gérer des utilisateurs</li>
-                        <li>✅ Superviser les Business Model Canvas</li>
-                        <li>✅ Noter et commenter les sections</li>
-                        <li>✅ Accéder au tableau de bord administrateur</li>
-                    </ul>
-                    
-                    <p><strong>🔒 Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
-                    
-                    <p>Cordialement,<br>L\'équipe WP Business Model Canvas</p>
-                </div>
-                <div class="footer">
-                    <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-        
+       
         // Envoyer l'email seulement si l'option est activée
         if ($send_emails) {
             wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
@@ -3801,7 +3745,21 @@ function wp_bmc_delete_user_handler() {
 // Handler pour vérifier si un changement de mot de passe est requis
 add_action('wp_ajax_wp_bmc_check_password_change_required', 'wp_bmc_check_password_change_required_handler');
 function wp_bmc_check_password_change_required_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    // Accepter les deux types de nonces (admin et public)
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+    }
+    
+    if (!$nonce_valid) {
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
     
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Connexion requise');
@@ -3835,7 +3793,21 @@ function wp_bmc_check_password_change_required_handler() {
 // Handler pour obtenir le template du popup de changement de mot de passe
 add_action('wp_ajax_wp_bmc_get_change_password_popup', 'wp_bmc_get_change_password_popup_handler');
 function wp_bmc_get_change_password_popup_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    // Accepter les deux types de nonces (admin et public)
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+    }
+    
+    if (!$nonce_valid) {
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
     
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Connexion requise');
@@ -3854,7 +3826,21 @@ function wp_bmc_get_change_password_popup_handler() {
 // Handler pour changer le mot de passe
 add_action('wp_ajax_wp_bmc_change_password', 'wp_bmc_change_password_handler');
 function wp_bmc_change_password_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    // Accepter les deux types de nonces (admin et public)
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+    }
+    
+    if (!$nonce_valid) {
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
     
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Connexion requise');

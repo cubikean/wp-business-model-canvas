@@ -16,7 +16,7 @@
     font-family: var(--font-family);
 }
 
-.wrap h1 {
+body:not(.wp-admin) .wrap h1 {
     color: white;
     font-size: 1.8em;
     font-weight: 600;

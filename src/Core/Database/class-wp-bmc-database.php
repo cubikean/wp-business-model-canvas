@@ -301,19 +301,31 @@ class WP_BMC_Database {
             )
         );
         
-        if ($user && wp_check_password($password, $user->password)) {
-            // Vérifier le statut de l'utilisateur
-            if ($user->status === 'disabled') {
-                return 'account_disabled'; // Code spécifique pour compte désactivé
+        if ($user) {
+            
+            if (wp_check_password($password, $user->password)) {
+                // Vérifier le statut de l'utilisateur
+                if ($user->status === 'disabled') {
+                    return 'account_disabled'; // Code spécifique pour compte désactivé
+                }
+                return $user;
+            } else {
             }
-            return $user;
         }
         
-        // Si pas trouvé par email, essayer par pseudonyme WordPress
+        // Essayer d'abord par pseudonyme
         $wp_user = get_user_by('login', $login);
+        
+        // Si pas trouvé par pseudonyme, essayer par email WordPress
+        if (!$wp_user) {
+            $wp_user = get_user_by('email', $login);
+        } 
+        
         if ($wp_user) {
+            
             // Vérifier le mot de passe WordPress
             if (wp_check_password($password, $wp_user->user_pass)) {
+                
                 // Chercher dans notre table BMC
                 $bmc_user = $wpdb->get_row(
                     $wpdb->prepare(
@@ -340,8 +352,8 @@ class WP_BMC_Database {
                         'is_admin' => true
                     );
                 }
-            }
-        }
+            } 
+        } 
         
         return false;
     }
