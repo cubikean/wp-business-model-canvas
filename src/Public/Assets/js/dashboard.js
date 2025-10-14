@@ -3,24 +3,6 @@
  * Gère la création de projet, la sauvegarde, les vues et les popups d'édition
  */
 
-// Système de logs conditionnels pour production
-var WP_BMC_DEBUG = true; // Mettre à true pour activer les logs
-function log() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
-        console.log.apply(console, arguments);
-    }
-}
-function logWarn() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
-        console.warn.apply(console, arguments);
-    }
-}
-function logError() {
-    if (WP_BMC_DEBUG && typeof console !== 'undefined') {
-        console.error.apply(console, arguments);
-    }
-}
-
 jQuery(document).ready(function($) {
     
     // ========================================
@@ -48,28 +30,9 @@ jQuery(document).ready(function($) {
     
     // Fonction utilitaire pour obtenir le bon nonce et URL AJAX
     function getAjaxConfig() {
-        var nonce = null;
-        var url = null;
-        
-        // Priorité au nonce admin si disponible
-        if (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) {
-            nonce = wp_bmc_admin_ajax.nonce;
-            url = wp_bmc_admin_ajax.ajax_url;
-        }
-        // Sinon utiliser le nonce public
-        else if (typeof wp_bmc_ajax !== 'undefined' && wp_bmc_ajax.nonce) {
-            nonce = wp_bmc_ajax.nonce;
-            url = wp_bmc_ajax.ajax_url;
-        }
-        
-        if (!nonce || !url) {
-            logError('getAjaxConfig - Configuration AJAX manquante. wp_bmc_admin_ajax:', typeof wp_bmc_admin_ajax, 'wp_bmc_ajax:', typeof wp_bmc_ajax);
-            return null;
-        }
-        
         return {
-            nonce: nonce,
-            url: url
+            nonce: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce,
+            url: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url
         };
     }
     
@@ -137,12 +100,12 @@ jQuery(document).ready(function($) {
                     });
                 }
                 
-                log('Opérations sauvegardées avec succès');
+                console.log('Opérations sauvegardées avec succès');
             } else {
-                logError('Erreur lors de la sauvegarde:', response.data);
+                console.error('Erreur lors de la sauvegarde:', response.data);
             }
         }).fail(function() {
-            logError('Erreur AJAX lors de la sauvegarde');
+            console.error('Erreur AJAX lors de la sauvegarde');
         });
     }
     
@@ -193,18 +156,17 @@ jQuery(document).ready(function($) {
         var projectId = $('.wp-bmc-dashboard').data('project-id') || 
                        $('.wp-bmc-canvas-container').data('project-id');
         
-        log('loadCanvasView - projectId:', projectId);
-        log('loadCanvasView - view:', view);
+        console.log('loadCanvasView - projectId:', projectId);
+        console.log('loadCanvasView - view:', view);
         
         // Charger le contenu via AJAX
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_load_canvas_view',
             view: view,
             project_id: projectId,
-            nonce: ajaxConfig.nonce
+            nonce: wp_bmc_ajax.nonce
         }, function(response) {
-            log('loadCanvasView - response:', response);
+            console.log('loadCanvasView - response:', response);
             if (response.success) {
                 $canvasContainer.html(response.data.html);
                 // Réinitialiser les événements pour les nouveaux éléments
@@ -226,7 +188,7 @@ jQuery(document).ready(function($) {
                 $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
             }
         }).fail(function(xhr, status, error) {
-            logError('loadCanvasView - AJAX error:', error, xhr.responseText);
+            console.error('loadCanvasView - AJAX error:', error, xhr.responseText);
             $canvasContainer.html('<div class="wp-bmc-error">Erreur de connexion. Veuillez réessayer.</div>');
         });
     }
@@ -268,7 +230,7 @@ jQuery(document).ready(function($) {
         // Sauvegarder les todos de la section actuelle avant de changer
         forceSave();
 
-        log('openEditView appelée');
+        console.log('openEditView appelée');
 
         const mainElement = document.querySelector('.wp-bmc-dashboard');
 
@@ -292,9 +254,9 @@ jQuery(document).ready(function($) {
         // $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
         
         // Debug: vérifier que l'attribut est bien défini
-        log('Vue d\'édition ouverte pour la section:', sectionName);
-        log('Variable globale définie:', currentEditingSection);
-        log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
+        console.log('Vue d\'édition ouverte pour la section:', sectionName);
+        console.log('Variable globale définie:', currentEditingSection);
+        console.log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
         
         // Initialiser l'éditeur WYSIWYG
         let decodedContent = cleanContent(content);
@@ -418,7 +380,7 @@ jQuery(document).ready(function($) {
              if (action === 'view') {
                  // Ouvrir le fichier dans un nouvel onglet
                  var fileUrl = $(this).closest('.file-item').find('.file-name').data('url');
-                 log(fileUrl);
+                 console.log(fileUrl);
                  if (fileUrl) {
                      window.open(fileUrl, '_blank');
                  }
@@ -548,7 +510,7 @@ jQuery(document).ready(function($) {
                 canvas_data: canvasData
             };
             
-            log('Sending formData:', formData);
+            console.log('Sending formData:', formData);
             
             $.post(ajaxUrl, formData, function(response) {
                 if (response.success) {
@@ -568,7 +530,7 @@ jQuery(document).ready(function($) {
     
     // Charger les fichiers de la section
     function loadSectionFiles(sectionName) {
-        log('Chargement des fichiers pour la section:', sectionName);
+        console.log('Chargement des fichiers pour la section:', sectionName);
         
         var formData = {
             action: 'wp_bmc_get_section_files',
@@ -586,13 +548,13 @@ jQuery(document).ready(function($) {
         $('#files-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des fichiers...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            log('Réponse chargement fichiers:', response);
+            console.log('Réponse chargement fichiers:', response);
             
             if (response.success) {
-                log('Fichiers chargés:', response.data.files);
+                console.log('Fichiers chargés:', response.data.files);
                 displayFiles(response.data.files);
             } else {
-                log('Aucun fichier trouvé ou erreur');
+                console.log('Aucun fichier trouvé ou erreur');
                 // Afficher un message d'erreur
                 $('#files-list').html('<div class="no-files">Aucun fichier attaché</div>');
             }
@@ -716,11 +678,10 @@ jQuery(document).ready(function($) {
         }
         
         // Vérifier si l'utilisateur a accès à ce projet
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_check_project_access',
             project_id: projectId,
-            nonce: ajaxConfig.nonce
+            nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (!response.success) {
                 WP_BMC_Toast.error('Vous n\'avez pas accès à ce projet.');
@@ -739,11 +700,11 @@ jQuery(document).ready(function($) {
     
     // Ouvrir l'uploader de fichiers
     function openFileUploader() {
-        log('openFileUploader appelée');
+        console.log('openFileUploader appelée');
         
         // Vérifier que la vue d'édition est ouverte
         if (!$('#wp-bmc-edit-view').is(':visible')) {
-            logError('Vue d\'édition non ouverte');
+            console.error('Vue d\'édition non ouverte');
             WP_BMC_Toast.warning('Veuillez d\'abord ouvrir une section pour éditer');
             return;
         }
@@ -767,12 +728,12 @@ jQuery(document).ready(function($) {
         
         // Debug: vérifier si la section est définie
         if (!sectionName) {
-            logError('Section non définie pour l\'upload de fichiers');
+            console.error('Section non définie pour l\'upload de fichiers');
             WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour l\'upload');
             return;
         }
         
-        log('Upload de fichiers pour la section:', sectionName);
+        console.log('Upload de fichiers pour la section:', sectionName);
         var formData = new FormData();
         
         formData.append('action', 'wp_bmc_upload_file');
@@ -801,21 +762,21 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                log('Réponse upload:', response);
+                console.log('Réponse upload:', response);
                 
                 if (response.success) {
-                    log('Upload réussi, rechargement des fichiers...');
+                    console.log('Upload réussi, rechargement des fichiers...');
                     loadSectionFiles(sectionName);
                     
                     // Afficher le message de succès
                     WP_BMC_Toast.success('Fichiers uploadés avec succès !');
                 } else {
-                    logError('Erreur upload:', response.data);
+                    console.error('Erreur upload:', response.data);
                     WP_BMC_Toast.error('Erreur lors de l\'upload : ' + response.data);
                 }
             },
             error: function(xhr, status, error) {
-                logError('Erreur AJAX upload:', error);
+                console.error('Erreur AJAX upload:', error);
                 WP_BMC_Toast.error('Erreur lors de l\'upload des fichiers.');
             },
             complete: function() {
@@ -827,7 +788,7 @@ jQuery(document).ready(function($) {
     
     // Ouvrir le viewer de documents
     function openDocumentsViewer() {
-        log('openDocumentsViewer appelée');
+        console.log('openDocumentsViewer appelée');
         
         var $btn = $('#view-documents-btn');
         
@@ -835,12 +796,12 @@ jQuery(document).ready(function($) {
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         
         if (!sectionName) {
-            logError('Section non définie pour charger les documents');
+            console.error('Section non définie pour charger les documents');
             WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour charger les documents');
             return;
         }
         
-        log('Chargement des documents pour la section:', sectionName);
+        console.log('Chargement des documents pour la section:', sectionName);
         
         // Ajouter l'état de chargement au bouton
         $btn.addClass('btn-loading').prop('disabled', true);
@@ -884,7 +845,7 @@ jQuery(document).ready(function($) {
     
     // Charger les documents
     function loadDocuments(sectionName) {
-        log('loadDocuments appelée avec la section:', sectionName);
+        console.log('loadDocuments appelée avec la section:', sectionName);
         
         var formData = {
             action: 'wp_bmc_get_documents',
@@ -896,10 +857,10 @@ jQuery(document).ready(function($) {
         $('#documents-grid').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des documents...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            log('Réponse chargement documents:', response);
+            console.log('Réponse chargement documents:', response);
             
             if (response.success) {
-                log('Documents chargés:', response.data.documents);
+                console.log('Documents chargés:', response.data.documents);
                 displayDocuments(response.data.documents);
             } else {
                 // Afficher un message d'erreur
@@ -913,12 +874,12 @@ jQuery(document).ready(function($) {
     
          // Afficher les documents
      function displayDocuments(documents) {
-         log('displayDocuments appelée avec:', documents);
+         console.log('displayDocuments appelée avec:', documents);
          
          var documentsHtml = '';
          
          if (documents && documents.length > 0) {
-             log('Affichage de', documents.length, 'documents');
+             console.log('Affichage de', documents.length, 'documents');
              documents.forEach(function(doc) {
                  documentsHtml += `
                      <div class="document-item" data-doc-id="${doc.id}">
@@ -938,7 +899,7 @@ jQuery(document).ready(function($) {
                  `;
              });
          } else {
-             log('Aucun document à afficher');
+             console.log('Aucun document à afficher');
              documentsHtml = '<div class="no-documents">Aucun document disponible</div>';
          }
          
@@ -1122,28 +1083,28 @@ jQuery(document).ready(function($) {
     });
     
     function autoSaveCanvas() {
-        log('=== autoSaveCanvas called ===');
+        console.log('=== autoSaveCanvas called ===');
         
         // Collecter toutes les données du canvas
         var canvasData = {};
         $('.canvas-content').each(function() {
             var section = $(this).closest('[data-section]').data('section');
             canvasData[section] = $(this).html();
-            log('Auto-save canvas data for section', section, 'length:', canvasData[section].length);
+            console.log('Auto-save canvas data for section', section, 'length:', canvasData[section].length);
         });
         
         // Récupérer le project_id depuis le conteneur
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        log('Auto-save Project ID from dashboard:', $('.wp-bmc-dashboard').data('project-id'));
-        log('Auto-save Project ID from canvas-container:', $('.wp-bmc-canvas-container').data('project-id'));
-        log('Auto-save Final Project ID:', projectId);
+        console.log('Auto-save Project ID from dashboard:', $('.wp-bmc-dashboard').data('project-id'));
+        console.log('Auto-save Project ID from canvas-container:', $('.wp-bmc-canvas-container').data('project-id'));
+        console.log('Auto-save Final Project ID:', projectId);
         
         // Utiliser le nonce admin si disponible, sinon le nonce public
         var nonce = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce;
         var ajaxUrl = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url;
         
-        log('Auto-save using nonce:', nonce ? 'admin' : 'public');
-        log('Auto-save AJAX URL:', ajaxUrl);
+        console.log('Auto-save using nonce:', nonce ? 'admin' : 'public');
+        console.log('Auto-save AJAX URL:', ajaxUrl);
         
         var formData = {
             action: 'wp_bmc_save_canvas',
@@ -1152,12 +1113,12 @@ jQuery(document).ready(function($) {
             canvas_data: canvasData
         };
         
-        log('Auto-save sending formData:', formData);
+        console.log('Auto-save sending formData:', formData);
         
         $.post(ajaxUrl, formData, function(response) {
-            log('=== Auto-save AJAX Response ===');
-            log('Auto-save response success:', response.success);
-            log('Auto-save response data:', response.data);
+            console.log('=== Auto-save AJAX Response ===');
+            console.log('Auto-save response success:', response.success);
+            console.log('Auto-save response data:', response.data);
             
             if (response.success) {
                 $('#auto-save-status').text('Sauvegarde automatique activée');
@@ -1165,20 +1126,20 @@ jQuery(document).ready(function($) {
                 // Afficher le toast de succès seulement après validation
                 WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
             } else {
-                logError('Auto-save failed:', response.data);
+                console.error('Auto-save failed:', response.data);
                 // Afficher le toast d'erreur
                 WP_BMC_Toast.error('Erreur lors de la sauvegarde : ' + (response.data || 'Erreur inconnue'));
             }
         }).fail(function(xhr, status, error) {
-            logError('=== Auto-save AJAX Request Failed ===');
-            logError('Auto-save status:', status);
-            logError('Auto-save error:', error);
-            logError('Auto-save response text:', xhr.responseText);
+            console.error('=== Auto-save AJAX Request Failed ===');
+            console.error('Auto-save status:', status);
+            console.error('Auto-save error:', error);
+            console.error('Auto-save response text:', xhr.responseText);
             // Afficher le toast d'erreur de connexion
             WP_BMC_Toast.error('Erreur de connexion lors de la sauvegarde');
         });
         
-        log('=== autoSaveCanvas finished ===');
+        console.log('=== autoSaveCanvas finished ===');
     }
     
     // ========================================
@@ -1229,17 +1190,17 @@ jQuery(document).ready(function($) {
     // GÉNÉRATION PDF AVEC GOTENBERG
     // ========================================
     $('#wp-bmc-generate-pdf').on('click', function() {
-        log('=== DÉBUT GÉNÉRATION PDF CLIENT ===');
+        console.log('=== DÉBUT GÉNÉRATION PDF CLIENT ===');
         var $btn = $(this);
         var originalText = $btn.html();
         var projectId = $btn.data('project-id');
         
-        log('PDF Client: Project ID =', projectId);
-        log('PDF Client: AJAX URL =', wp_bmc_ajax.ajax_url);
-        log('PDF Client: Nonce =', wp_bmc_ajax.nonce);
+        console.log('PDF Client: Project ID =', projectId);
+        console.log('PDF Client: AJAX URL =', wp_bmc_ajax.ajax_url);
+        console.log('PDF Client: Nonce =', wp_bmc_ajax.nonce);
         
         if (!projectId) {
-            logError('PDF Client: ID de projet manquant');
+            console.error('PDF Client: ID de projet manquant');
             WP_BMC_Toast.error('ID de projet manquant');
             return;
         }
@@ -1253,21 +1214,21 @@ jQuery(document).ready(function($) {
             project_id: projectId
         };
         
-        log('PDF Client: Données envoyées =', formData);
+        console.log('PDF Client: Données envoyées =', formData);
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            log('PDF Client: Réponse reçue =', response);
+            console.log('PDF Client: Réponse reçue =', response);
             
             if (response.success) {
-                log('PDF Client: Succès, URL PDF =', response.data.pdf_url);
-                log('PDF Client: Filename =', response.data.filename);
-                log('PDF Client: Debug HTML =', response.data.debug_html_url);
+                console.log('PDF Client: Succès, URL PDF =', response.data.pdf_url);
+                console.log('PDF Client: Filename =', response.data.filename);
+                console.log('PDF Client: Debug HTML =', response.data.debug_html_url);
                 
                 WP_BMC_Toast.success(response.data.message);
                 
                 // Afficher l'URL de debug dans la console
                 if (response.data.debug_html_url) {
-                    log('🔍 HTML de debug disponible:', response.data.debug_html_url);
+                    console.log('🔍 HTML de debug disponible:', response.data.debug_html_url);
                 }
                 
                 // Télécharger automatiquement le PDF
@@ -1279,13 +1240,13 @@ jQuery(document).ready(function($) {
                 link.click();
                 document.body.removeChild(link);
                 
-                log('PDF Client: Téléchargement déclenché');
+                console.log('PDF Client: Téléchargement déclenché');
             } else {
-                logError('PDF Client: Erreur serveur =', response.data);
+                console.error('PDF Client: Erreur serveur =', response.data);
                 WP_BMC_Toast.error('Erreur: ' + response.data);
             }
         }).fail(function(xhr, status, error) {
-            logError('PDF Client: Erreur AJAX =', {
+            console.error('PDF Client: Erreur AJAX =', {
                 status: status,
                 error: error,
                 responseText: xhr.responseText,
@@ -1295,18 +1256,18 @@ jQuery(document).ready(function($) {
             // Essayer de parser la réponse pour plus d'infos
             try {
                 var errorResponse = JSON.parse(xhr.responseText);
-                logError('PDF Client: Réponse d\'erreur parsée =', errorResponse);
+                console.error('PDF Client: Réponse d\'erreur parsée =', errorResponse);
                 WP_BMC_Toast.error('Erreur serveur: ' + (errorResponse.data || error));
             } catch (e) {
                 WP_BMC_Toast.error('Erreur lors de la génération du PDF: ' + error);
             }
         }).always(function() {
-            log('PDF Client: Réactivation du bouton');
+            console.log('PDF Client: Réactivation du bouton');
             // Réactiver le bouton
             $btn.prop('disabled', false).html(originalText);
         });
         
-        log('=== FIN GÉNÉRATION PDF CLIENT ===');
+        console.log('=== FIN GÉNÉRATION PDF CLIENT ===');
     });
     
         
@@ -1420,7 +1381,7 @@ jQuery(document).ready(function($) {
         
         var userId = $(this).data('user-id');
         if (!userId) {
-            logError('ID utilisateur manquant');
+            console.error('ID utilisateur manquant');
             return;
         }
         
@@ -1435,7 +1396,7 @@ jQuery(document).ready(function($) {
         
         var projectId = $(this).data('project-id');
         if (!projectId) {
-            logError('ID projet manquant');
+            console.error('ID projet manquant');
             return;
         }
         
@@ -1450,45 +1411,43 @@ jQuery(document).ready(function($) {
     
     // Charger les révisions d'une section
     function loadSectionRevisions(section) {
-        log('Chargement des révisions pour la section:', section);
+        console.log('Chargement des révisions pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
         // Afficher le loader pour les révisions
         $('#revisions-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des révisions...</span></div>');
         
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_revisions',
             section: section,
             project_id: projectId,
-            nonce: ajaxConfig.nonce
+            nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success) {
                 displayRevisions(response.data.revisions, section);
             } else {
-                logError('Erreur lors du chargement des révisions:', response.data);
+                console.error('Erreur lors du chargement des révisions:', response.data);
             }
         }).fail(function() {
-            logError('Erreur de connexion lors du chargement des révisions');
+            console.error('Erreur de connexion lors du chargement des révisions');
         });
     }
 
     function loadSectionRating(section) {
-        log('Chargement de la note pour la section:', section);
+        console.log('Chargement de la note pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
         // Afficher le loader pour la note
         $('#rating-section').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement de la note...</span></div>');
         
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_rating',
             section: section,
             project_id: projectId,
-            nonce: ajaxConfig.nonce
+            nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success && response.data && response.data.rating) {
-                log('data:', response.data);
+                console.log('data:', response.data);
                 // Restaurer la structure HTML de la section rating avant d'afficher
                 $('#rating-section').html(`
                     <div class="rating-display" id="rating-display">
@@ -1507,11 +1466,11 @@ jQuery(document).ready(function($) {
                 `);
                 displaySectionRating(response.data.rating);
             } else {    
-                log('Aucune note trouvée pour cette section');
+                console.log('Aucune note trouvée pour cette section');
                 displayNoRating();
             }
         }).fail(function() {
-            logError('Erreur de connexion lors du chargement de la note');
+            console.error('Erreur de connexion lors du chargement de la note');
             $('#rating-section').html('<div class="no-rating">Erreur de connexion</div>');
         });
     }
@@ -1524,7 +1483,7 @@ jQuery(document).ready(function($) {
         }
         
         $('#rating-score-number').text(rating.rating);
-        log(rating.comment);
+        console.log(rating.comment);
         if(rating.comment !== null && rating.comment !== undefined && rating.comment !== '') {
             $('#rating-comment').text(rating.comment);
         } else {
@@ -1636,19 +1595,18 @@ jQuery(document).ready(function($) {
     
     // Visualiser une révision dans un popup
     function viewRevision(revisionId) {
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_get_section_revision',
             revision_id: revisionId,
-            nonce: ajaxConfig.nonce
+            nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success) {
                 showRevisionPopup(response.data.revision);
             } else {
-                logError('Erreur lors du chargement de la révision:', response.data);
+                console.error('Erreur lors du chargement de la révision:', response.data);
             }
         }).fail(function() {
-            logError('Erreur de connexion lors du chargement de la révision');
+            console.error('Erreur de connexion lors du chargement de la révision');
         });
     }
     
@@ -1697,15 +1655,15 @@ jQuery(document).ready(function($) {
     
     // Événements pour les révisions
     $(document).on('click', '#load-revisions-btn', function() {
-        log('Section actuelle (variable):', currentEditingSection);
-        log('Section actuelle (attribut):', $('#wp-bmc-edit-view').data('section'));
+        console.log('Section actuelle (variable):', currentEditingSection);
+        console.log('Section actuelle (attribut):', $('#wp-bmc-edit-view').data('section'));
         
         var section = currentEditingSection || $('#wp-bmc-edit-view').data('section');
         
         if (section) {
             loadSectionRevisions(section);
         } else {
-            logError('Aucune section trouvée pour charger les révisions');
+            console.error('Aucune section trouvée pour charger les révisions');
             $('#revisions-list').html(`
                 <div class="no-revisions">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -1740,15 +1698,14 @@ jQuery(document).ready(function($) {
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
-        var ajaxConfig = getAjaxConfig();
         var formData = {
             action: 'wp_bmc_get_section_todos',
-            nonce: ajaxConfig.nonce,
+            nonce: wp_bmc_ajax.nonce,
             section: sectionName,
             project_id: projectId
         };
 
-        $.post(ajaxConfig.url, formData, function(response) {
+        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
             if (response.success) {
                 // Mettre en cache
                 todoCache[sectionName] = {
@@ -1759,11 +1716,11 @@ jQuery(document).ready(function($) {
                 currentSectionStats = response.data.stats;
                 displayTodos(response.data.todos, response.data.stats);
             } else {
-                logError('Erreur lors du chargement des todos:', response.data);
+                console.error('Erreur lors du chargement des todos:', response.data);
                 displayTodos([], { total: 0, completed: 0, pending: 0 });
             }
         }).fail(function() {
-            logError('Erreur AJAX lors du chargement des todos');
+            console.error('Erreur AJAX lors du chargement des todos');
             displayTodos([], { total: 0, completed: 0, pending: 0 });
         });
     }
@@ -1868,7 +1825,7 @@ jQuery(document).ready(function($) {
         
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         if (!sectionName) {
-            logError('Section non définie');
+            console.error('Section non définie');
             return;
         }
         
@@ -2007,7 +1964,7 @@ jQuery(document).ready(function($) {
         }
         
         if (!$todoItem || $todoItem.length === 0) {
-            logError('Todo item not found:', todoId);
+            console.error('Todo item not found:', todoId);
             return;
         }
         
@@ -2206,7 +2163,7 @@ jQuery(document).ready(function($) {
             
             $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
                 if (!response.success) {
-                    logError('Erreur lors de la mise à jour de la tâche:', response.data);
+                    console.error('Erreur lors de la mise à jour de la tâche:', response.data);
                     // Restaurer l'état précédent en cas d'erreur
                     $(this).prop('checked', !isChecked);
                     if (isChecked) {
@@ -2216,7 +2173,7 @@ jQuery(document).ready(function($) {
                     }
                 }
             }).fail(function() {
-                logError('Erreur AJAX lors de la mise à jour de la tâche');
+                console.error('Erreur AJAX lors de la mise à jour de la tâche');
                 // Restaurer l'état précédent en cas d'erreur
                 $(this).prop('checked', !isChecked);
                 if (isChecked) {
@@ -2263,7 +2220,7 @@ jQuery(document).ready(function($) {
         var openSection = urlParams.get("open_section");
         
         if (openSection) {
-            log('Auto-ouverture de la section:', openSection);
+            console.log('Auto-ouverture de la section:', openSection);
             
             // Attendre que le DOM soit prêt
             setTimeout(function() {
@@ -2271,7 +2228,7 @@ jQuery(document).ready(function($) {
                 var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
                 
                 if ($editBtn.length > 0) {
-                    log('Bouton d\'édition trouvé pour la section:', openSection);
+                    console.log('Bouton d\'édition trouvé pour la section:', openSection);
                     // Simuler un clic sur le bouton d'édition
                     $editBtn.trigger('click');
                     
@@ -2280,7 +2237,7 @@ jQuery(document).ready(function($) {
                     newUrl.searchParams.delete('open_section');
                     window.history.replaceState({}, document.title, newUrl.toString());
                 } else {
-                    log('Bouton d\'édition non trouvé pour la section:', openSection);
+                    console.log('Bouton d\'édition non trouvé pour la section:', openSection);
                 }
             }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
         }
@@ -2293,8 +2250,8 @@ jQuery(document).ready(function($) {
     // GESTION DU CHANGEMENT DE MOT DE PASSE
     // ========================================
     
-    // Vérifier si l'utilisateur doit changer son mot de passe (avec délai pour s'assurer que les scripts sont chargés)
-    setTimeout(checkPasswordChangeRequired, 500);
+    // Vérifier si l'utilisateur doit changer son mot de passe
+    setTimeout(checkPasswordChangeRequired, 1000);
     
     // Fonction pour vérifier si un changement de mot de passe est requis
     function checkPasswordChangeRequired() {
@@ -2333,16 +2290,16 @@ jQuery(document).ready(function($) {
             logError('Erreur lors de la vérification du changement de mot de passe:', xhr.responseText, 'Status:', status, 'Error:', error);
         });
     }
+
     
     // Afficher le popup de changement de mot de passe
     function showChangePasswordPopup() {
         // Ajouter le popup au DOM s'il n'existe pas
         if (!$('#wp-bmc-change-password-popup').length) {
             // Charger le template du popup
-            var ajaxConfig = getAjaxConfig();
-            $.get(ajaxConfig.url, {
+            $.get(wp_bmc_ajax.ajax_url, {
                 action: 'wp_bmc_get_change_password_popup',
-                nonce: ajaxConfig.nonce
+                nonce: wp_bmc_ajax.nonce
             }, function(response) {
                 if (response.success) {
                     $('body').append(response.data.html);
@@ -2438,10 +2395,9 @@ jQuery(document).ready(function($) {
         $btnLoader.show();
         
         // Envoyer la requête
-        var ajaxConfig = getAjaxConfig();
-        $.post(ajaxConfig.url, {
+        $.post(wp_bmc_ajax.ajax_url, {
             action: 'wp_bmc_change_password',
-            nonce: ajaxConfig.nonce,
+            nonce: wp_bmc_ajax.nonce,
             current_password: currentPassword,
             new_password: newPassword,
             confirm_password: confirmPassword
