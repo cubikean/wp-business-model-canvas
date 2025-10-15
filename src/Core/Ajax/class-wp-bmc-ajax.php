@@ -2837,149 +2837,102 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     error_log('PDF: Template chargé, taille: ' . strlen($template_content) . ' caractères');
     
     // Compiler le template avec le moteur Handlebars-like
-    error_log('PDF: Compilation du template avec moteur complet...');
+    error_log('PDF: Compilation du template');
     $compiled_html = compile_handlebars_template($template_content, $pdf_data);
     error_log('PDF: Template compilé, taille: ' . strlen($compiled_html) . ' caractères');
     
-    // Sauvegarder le HTML compilé pour debug
-    $debug_html_path = WP_CONTENT_DIR . '/uploads/debug-canvas.html';
-    file_put_contents($debug_html_path, $compiled_html);
-    error_log('PDF: HTML debug sauvegardé: ' . $debug_html_path);
+    // Sauvegarder le HTML temporairement pour Gotenberg
+    $temp_html_path = WP_CONTENT_DIR . '/uploads/temp-canvas-' . $project_id . '.html';
+    file_put_contents($temp_html_path, $compiled_html);
+    error_log('PDF: HTML temp sauvegardé: ' . $temp_html_path);
     
-    // Faire la requête à Gotenberg v8 - tester plusieurs adresses pour Docker
-    $gotenberg_hosts = array(
-        'gotenberg-gotenberg-1:3000', // Nom du container Gotenberg
-        'host.docker.internal:3000',  // Docker Desktop Windows/Mac
-        '172.17.0.1:3000',            // Docker Linux gateway
-        'localhost:3000',             // Si pas dans un container
-        '127.0.0.1:3000'              // Fallback localhost
-    );
-    
-    $gotenberg_url = null;
-    $working_host = null;
-    
-    foreach ($gotenberg_hosts as $host) {
-        error_log('PDF: Test connexion à: ' . $host);
-        $test_response = wp_remote_get('http://' . $host . '/health', array('timeout' => 5));
-        
-        if (!is_wp_error($test_response) && wp_remote_retrieve_response_code($test_response) === 200) {
-            $working_host = $host;
-            $gotenberg_url = 'http://' . $host . '/forms/chromium/convert/html';
-            error_log('PDF: Gotenberg trouvé sur: ' . $host);
-            break;
-        } else {
-            error_log('PDF: Échec connexion à: ' . $host . ' - ' . (is_wp_error($test_response) ? $test_response->get_error_message() : 'Code: ' . wp_remote_retrieve_response_code($test_response)));
-        }
-    }
-    
-    if (!$gotenberg_url) {
-        error_log('PDF: Aucun serveur Gotenberg accessible');
-        wp_send_json_error('Gotenberg inaccessible sur toutes les adresses testées. Vérifiez que Gotenberg est démarré.');
-    }
-    
+    // Envoi à Gotenberg avec curl (comme wp_bmc_test_gotenberg)
+    $gotenberg_url = 'https://gotenberg.beekom.fr/forms/chromium/convert/html';
     error_log('PDF: URL Gotenberg: ' . $gotenberg_url);
     
-    // Utiliser wp_remote_post avec les fichiers pour Gotenberg v8
-    $boundary = 'wpbmc' . uniqid();
+    $ch = curl_init($gotenberg_url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => 1,
+        CURLOPT_POSTFIELDS => [
+            'files' => curl_file_create($temp_html_path, 'text/html', 'index.html'),
+            'paperWidth' => '11.7',
+            'paperHeight' => '8.3',
+            'marginTop' => '0',
+            'marginBottom' => '0',
+            'marginLeft' => '0',
+            'marginRight' => '0',
+            'landscape' => 'true',
+            'printBackground' => 'true',
+            'scale' => '1.0',
+            'waitDelay' => '1s'
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_HTTPHEADER => [
+            'X-Api-Key: Wh7YgK72Q6aWwDwyoiq2'
+        ]
+    ]);
     
-    // Construire la requête multipart manuellement
-    $post_data = '';
+    error_log('PDF: Envoi requête à Gotenberg');
+    $pdf_content = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    curl_close($ch);
     
-    // Ajouter le fichier HTML avec la syntaxe correcte pour Gotenberg v8
-    $post_data .= "--{$boundary}\r\n";
-    $post_data .= "Content-Disposition: form-data; name=\"files\"; filename=\"index.html\"\r\n";
-    $post_data .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
-    $post_data .= $compiled_html . "\r\n";
-    
-    // Paramètres pour Gotenberg v8
-    $params = array(
-        'paperWidth' => '11.7',
-        'paperHeight' => '8.3',
-        'marginTop' => '0',
-        'marginBottom' => '0',
-        'marginLeft' => '0',
-        'marginRight' => '0',
-        'landscape' => 'true',
-        'printBackground' => 'true',
-        'scale' => '1.0',
-        'waitDelay' => '1s'
-    );
-    
-    foreach ($params as $name => $value) {
-        $post_data .= "--{$boundary}\r\n";
-        $post_data .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
-        $post_data .= $value . "\r\n";
+    // Supprimer le fichier temporaire
+    if (file_exists($temp_html_path)) {
+        unlink($temp_html_path);
     }
     
-    $post_data .= "--{$boundary}--\r\n";
+    error_log('PDF: Code HTTP: ' . $http_code);
     
-    error_log('PDF: Taille des données POST: ' . strlen($post_data) . ' bytes');
-    error_log('PDF: Début des données POST: ' . substr($post_data, 0, 300));
-    
-    // Faire la requête
-    error_log('PDF: Envoi de la requête à Gotenberg...');
-    $response = wp_remote_post($gotenberg_url, array(
-        'body' => $post_data,
-        'headers' => array(
-            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
-            'Content-Length' => strlen($post_data)
-        ),
-        'timeout' => 60
-    ));
-    
-    if (is_wp_error($response)) {
-        error_log('PDF: Erreur wp_remote_post: ' . $response->get_error_message());
-        wp_send_json_error('Erreur lors de la connexion à Gotenberg: ' . $response->get_error_message());
+    if ($curl_error) {
+        error_log('PDF: Erreur cURL: ' . $curl_error);
+        wp_send_json_error('Erreur de connexion à Gotenberg: ' . $curl_error);
     }
     
-    $response_code = wp_remote_retrieve_response_code($response);
-    $response_headers = wp_remote_retrieve_headers($response);
-    $response_body = wp_remote_retrieve_body($response);
-    
-    error_log('PDF: Code de réponse Gotenberg: ' . $response_code);
-    error_log('PDF: Headers de réponse: ' . print_r($response_headers, true));
-    error_log('PDF: Taille du body: ' . strlen($response_body) . ' bytes');
-    
-    if ($response_code !== 200) {
-        error_log('PDF: Erreur Gotenberg, body: ' . substr($response_body, 0, 1000));
-        wp_send_json_error('Erreur Gotenberg (Code: ' . $response_code . '): ' . substr($response_body, 0, 500));
+    if ($http_code !== 200) {
+        error_log('PDF: Erreur Gotenberg (Code ' . $http_code . '): ' . substr($pdf_content, 0, 500));
+        wp_send_json_error('Erreur Gotenberg (Code ' . $http_code . '): ' . substr($pdf_content, 0, 500));
     }
-    
-    $pdf_content = $response_body;
     
     // Vérifier que c'est bien un PDF
-    $pdf_header = substr($pdf_content, 0, 4);
-    if ($pdf_header !== '%PDF') {
-        error_log('PDF: Le contenu reçu n\'est pas un PDF. Header: ' . bin2hex(substr($pdf_content, 0, 20)));
-        error_log('PDF: Début du contenu: ' . substr($pdf_content, 0, 200));
+    if (substr($pdf_content, 0, 4) !== '%PDF') {
+        error_log('PDF: Le contenu reçu n\'est pas un PDF');
         wp_send_json_error('Le contenu reçu n\'est pas un PDF valide');
     }
     
     // Sauvegarder le PDF dans le dossier uploads
     $upload_dir = wp_upload_dir();
-    $pdf_filename = 'canvas-' . $pdf_data['project']['id'] . '-' . date('Y-m-d-H-i-s') . '.pdf';
+    
+    // Créer un nom de fichier basé sur le titre du projet
+    $project_title_clean = sanitize_file_name($project->title);
+    $project_title_clean = preg_replace('/[^a-zA-Z0-9_-]/', '_', $project_title_clean);
+    $project_title_clean = preg_replace('/_+/', '_', $project_title_clean);
+    $date_iso = date('Ymd');
+    
+    $pdf_filename = $project_title_clean . '_' . $date_iso . '.pdf';
     $pdf_path = $upload_dir['path'] . '/' . $pdf_filename;
     $pdf_url = $upload_dir['url'] . '/' . $pdf_filename;
-    
-    error_log('PDF: Sauvegarde vers: ' . $pdf_path);
     
     if (file_put_contents($pdf_path, $pdf_content) === false) {
         error_log('PDF: Erreur lors de la sauvegarde');
         wp_send_json_error('Erreur lors de la sauvegarde du PDF.');
     }
     
-    error_log('PDF: Sauvegarde réussie, taille fichier: ' . filesize($pdf_path) . ' bytes');
-    error_log('PDF: Data: ' . print_r($pdf_data, true));
-    error_log('=== FIN GÉNÉRATION PDF GOTENBERG ===');
+    error_log('PDF: PDF généré avec succès: ' . $pdf_filename . ' (' . strlen($pdf_content) . ' bytes)');
+    error_log('=== FIN GÉNÉRATION PDF ===');
     
-    wp_send_json_success(array(
+    wp_send_json_success([
         'pdf_url' => $pdf_url,
         'pdf_path' => $pdf_path,
         'filename' => $pdf_filename,
-        'message' => 'PDF généré avec succès!',
-        'debug_html_url' => content_url('/uploads/debug-canvas.html')
-    ));
+        'message' => 'PDF généré avec succès!'
+    ]);
 }
+
 
 /**
  * Moteur de template Handlebars corrigé pour canvas-dashboard-template.html
