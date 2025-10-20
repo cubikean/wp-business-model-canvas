@@ -44,6 +44,8 @@ jQuery(document).ready(function($) {
                 autoSaveCanvas();
             }, 2000); // Sauvegarde automatique après 2 secondes d'inactivité
         });
+
+
         
         // Initialiser la grille du canvas
         updateCanvasGrid();

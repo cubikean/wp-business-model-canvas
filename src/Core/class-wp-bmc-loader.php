@@ -53,6 +53,9 @@ class WP_BMC_Loader {
         // Hooks pour le front-end
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public_scripts'));
         add_action('wp_head', array($this, 'add_custom_styles'));
+        // Routes publiques
+        add_action('init', array($this, 'register_public_rewrites'));
+        add_action('template_redirect', array($this, 'handle_public_routes'));
     }
     
     /**
@@ -432,6 +435,17 @@ class WP_BMC_Loader {
             'nonce' => wp_create_nonce('wp_bmc_nonce')
         ));
         
+        // Localiser aussi les variables AJAX pour le script dashboard
+        wp_localize_script('wp-bmc-dashboard', 'wp_bmc_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wp_bmc_nonce')
+        ));
+        
+        // Exposer des URLs utiles côté public
+        $urls = WP_BMC_Paths::get_page_urls();
+        wp_localize_script('wp-bmc-public', 'wp_bmc_urls', $urls);
+        wp_localize_script('wp-bmc-dashboard', 'wp_bmc_urls', $urls);
+        
         // Localiser le project_id pour le système de présence
         $current_project_id = null;
         if (WP_BMC_Auth::is_logged_in()) {
@@ -450,6 +464,35 @@ class WP_BMC_Loader {
             'project_id' => $current_project_id,
             'heartbeat_interval' => 15
         ));
+    }
+    
+    /**
+     * Déclarer les règles de réécriture pour les routes publiques
+     */
+    public function register_public_rewrites() {
+        add_rewrite_rule('^logout/?$', 'index.php?wp_bmc_route=logout', 'top');
+        add_rewrite_tag('%wp_bmc_route%', '([^&]+)');
+    }
+    
+    /**
+     * Gérer le routage des pages publiques (logout uniquement)
+     */
+    public function handle_public_routes() {
+        $route = get_query_var('wp_bmc_route');
+        error_log('handle_public_routes - Route détectée: ' . ($route ? $route : 'aucune'));
+        error_log('handle_public_routes - URL actuelle: ' . $_SERVER['REQUEST_URI']);
+        
+        if (!$route) {
+            return;
+        }
+        
+        if ($route === 'logout') {
+            error_log('handle_public_routes - Déconnexion demandée');
+            // Déconnexion et redirection vers la page de login
+            wp_logout();
+            wp_safe_redirect(home_url('/login/'));
+            exit;
+        }
     }
     
     /**
@@ -502,6 +545,54 @@ class WP_BMC_Loader {
                 background: #f8d7da;
                 color: #721c24;
                 border: 1px solid #f5c6cb;
+            }
+            
+            /* Styles pour le menu utilisateur */
+            .dashboard-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            .user-menu {
+                display: flex;
+                align-items: center;
+            }
+            .user-info {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+            .user-name {
+                font-weight: 600;
+                color: #333;
+            }
+            .user-actions {
+                display: flex;
+                gap: 10px;
+            }
+            .btn-sm {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            .canvas-controls {
+                margin-left: auto;
+            }
+            @media (max-width: 768px) {
+                .dashboard-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 15px;
+                }
+                .canvas-controls {
+                    margin-left: 0;
+                    width: 100%;
+                }
+                .user-actions {
+                    flex-direction: column;
+                    gap: 8px;
+                }
             }
         </style>';
     }

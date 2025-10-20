@@ -265,7 +265,6 @@ jQuery(document).ready(function($) {
         $(formSelector + ' input').removeClass('error valid');
         $('.password-match-indicator, .password-strength-indicator').remove();
     }
-    
     // Exposer les fonctions globalement si nécessaire
     window.WP_BMC_Auth = {
         clearForm: clearForm

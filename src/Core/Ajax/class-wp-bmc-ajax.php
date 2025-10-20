@@ -3698,31 +3698,42 @@ function wp_bmc_delete_user_handler() {
 // Handler pour vérifier si un changement de mot de passe est requis
 add_action('wp_ajax_wp_bmc_check_password_change_required', 'wp_bmc_check_password_change_required_handler');
 function wp_bmc_check_password_change_required_handler() {
+    error_log('=== DEBUG CHANGEMENT MOT DE PASSE PHP ===');
+    error_log('wp_bmc_check_password_change_required_handler - Début de la vérification');
+    
     // Accepter les deux types de nonces (admin et public)
     $nonce_valid = false;
     
     // Essayer d'abord le nonce admin
     if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
         $nonce_valid = true;
+        error_log('wp_bmc_check_password_change_required_handler - Nonce admin valide');
     }
     // Sinon essayer le nonce public
     elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
         $nonce_valid = true;
+        error_log('wp_bmc_check_password_change_required_handler - Nonce public valide');
     }
     
     if (!$nonce_valid) {
+        error_log('wp_bmc_check_password_change_required_handler - Nonce invalide');
         wp_send_json_error('Nonce de sécurité invalide.');
     }
     
     if (!WP_BMC_Auth::is_logged_in()) {
+        error_log('wp_bmc_check_password_change_required_handler - Utilisateur non connecté');
         wp_send_json_error('Connexion requise');
     }
     
     $current_user = WP_BMC_Auth::get_current_user();
     
     if (!$current_user) {
+        error_log('wp_bmc_check_password_change_required_handler - Utilisateur non trouvé');
         wp_send_json_error('Utilisateur non trouvé');
     }
+    
+    error_log('wp_bmc_check_password_change_required_handler - Utilisateur trouvé: ' . $current_user->email);
+    error_log('wp_bmc_check_password_change_required_handler - Statut utilisateur: ' . (isset($current_user->status) ? $current_user->status : 'non défini'));
     
     // Vérifier si l'utilisateur a le statut 'pending' (première connexion)
     // ou s'il a un flag de changement de mot de passe requis
@@ -3730,13 +3741,17 @@ function wp_bmc_check_password_change_required_handler() {
     
     if (isset($current_user->status) && $current_user->status === 'pending') {
         $required = true;
+        error_log('wp_bmc_check_password_change_required_handler - Changement requis: statut pending');
     }
     
     // Vérifier aussi dans les meta utilisateur WordPress
     $password_change_required = get_user_meta($current_user->user_id, 'wp_bmc_password_change_required', true);
     if ($password_change_required) {
         $required = true;
+        error_log('wp_bmc_check_password_change_required_handler - Changement requis: meta wp_bmc_password_change_required');
     }
+    
+    error_log('wp_bmc_check_password_change_required_handler - Résultat final: ' . ($required ? 'requis' : 'non requis'));
     
     wp_send_json_success(array(
         'required' => $required
@@ -3746,31 +3761,17 @@ function wp_bmc_check_password_change_required_handler() {
 // Handler pour obtenir le template du popup de changement de mot de passe
 add_action('wp_ajax_wp_bmc_get_change_password_popup', 'wp_bmc_get_change_password_popup_handler');
 function wp_bmc_get_change_password_popup_handler() {
-    // Accepter les deux types de nonces (admin et public)
-    $nonce_valid = false;
-    
-    // Essayer d'abord le nonce admin
-    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
-        $nonce_valid = true;
-    }
-    // Sinon essayer le nonce public
-    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
-        $nonce_valid = true;
-    }
-    
-    if (!$nonce_valid) {
-        wp_send_json_error('Nonce de sécurité invalide.');
-    }
-    
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+
     if (!WP_BMC_Auth::is_logged_in()) {
         wp_send_json_error('Connexion requise');
     }
-    
+
     // Charger le template du popup
     ob_start();
     include WP_BMC_PLUGIN_DIR . 'src/Shared/Templates/public/change-password-popup.php';
     $html = ob_get_clean();
-    
+
     wp_send_json_success(array(
         'html' => $html
     ));

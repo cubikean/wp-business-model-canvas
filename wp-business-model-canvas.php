@@ -41,6 +41,7 @@ require_once WP_BMC_CORE_DIR . 'Database/class-wp-bmc-database.php';
 require_once WP_BMC_CORE_DIR . 'Auth/class-wp-bmc-auth.php';
 require_once WP_BMC_CORE_DIR . 'Shortcodes/class-wp-bmc-shortcodes.php';
 require_once WP_BMC_CORE_DIR . 'Ajax/class-wp-bmc-ajax.php';
+require_once WP_BMC_CORE_DIR . 'class-wp-bmc-paths.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-loader.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-template-loader.php';
 require_once WP_BMC_SHARED_DIR . 'Config/class-wp-bmc-canvas-config.php';
@@ -235,4 +236,24 @@ function wp_bmc_add_body_class($classes) {
     }
     
     return $classes;
+}
+
+
+add_filter('body_class', 'wp_bmc_add_body_class_logged');
+function wp_bmc_add_body_class_logged($classes){
+    if(WP_BMC_Auth::is_logged_in()){
+        $classes[] = 'bmc-logged-in';
+    }
+    return $classes;
+}
+
+// Flusher les règles de réécriture lors de l'activation du plugin
+register_activation_hook(__FILE__, 'wp_bmc_flush_rewrite_rules');
+function wp_bmc_flush_rewrite_rules() {
+    // Enregistrer les règles de réécriture
+    add_rewrite_rule('^logout/?$', 'index.php?wp_bmc_route=logout', 'top');
+    add_rewrite_tag('%wp_bmc_route%', '([^&]+)');
+    
+    // Flusher les règles
+    flush_rewrite_rules();
 }

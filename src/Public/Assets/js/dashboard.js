@@ -30,9 +30,27 @@ jQuery(document).ready(function($) {
     
     // Fonction utilitaire pour obtenir le bon nonce et URL AJAX
     function getAjaxConfig() {
+        // Vérifier d'abord si wp_bmc_admin_ajax est défini et disponible
+        if (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce && wp_bmc_admin_ajax.ajax_url) {
+            return {
+                nonce: wp_bmc_admin_ajax.nonce,
+                url: wp_bmc_admin_ajax.ajax_url
+            };
+        }
+        
+        // Sinon utiliser wp_bmc_ajax (qui devrait toujours être disponible)
+        if (typeof wp_bmc_ajax !== 'undefined' && wp_bmc_ajax.nonce && wp_bmc_ajax.ajax_url) {
+            return {
+                nonce: wp_bmc_ajax.nonce,
+                url: wp_bmc_ajax.ajax_url
+            };
+        }
+        
+        // Fallback si aucune variable AJAX n'est disponible
+        logError('getAjaxConfig - Aucune variable AJAX disponible');
         return {
-            nonce: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce,
-            url: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url
+            nonce: null,
+            url: null
         };
     }
     
@@ -2145,42 +2163,35 @@ jQuery(document).ready(function($) {
     
     // Vérifier si l'utilisateur doit changer son mot de passe
     setTimeout(checkPasswordChangeRequired, 1000);
-    
+
     // Fonction pour vérifier si un changement de mot de passe est requis
     function checkPasswordChangeRequired() {
-        // Vérifier si les variables AJAX sont disponibles (si elles ne le sont pas, l'utilisateur n'est pas connecté)
-        if (typeof wp_bmc_ajax === 'undefined' && typeof wp_bmc_admin_ajax === 'undefined') {
-            log('checkPasswordChangeRequired - Variables AJAX non disponibles, utilisateur probablement non connecté, vérification ignorée');
-            return;
-        }
-        
-        // Vérifier si on est sur une page de dashboard (évite les vérifications sur les pages publiques)
         if (!window.location.pathname.includes('/dashboard') && !window.location.pathname.includes('/business-model-canvas')) {
-            log('checkPasswordChangeRequired - Pas sur une page de dashboard, vérification ignorée');
+            console.log('checkPasswordChangeRequired - Pas sur une page de dashboard, vérification ignorée');
+            console.log('URL actuelle:', window.location.pathname);
             return;
         }
         
         // Vérifier si c'est une première connexion (utilisateur avec statut 'pending' qui vient de se connecter)
         var ajaxConfig = getAjaxConfig();
         
+        
         // Vérification supplémentaire
         if (!ajaxConfig.nonce || !ajaxConfig.url) {
-            logError('Configuration AJAX invalide:', ajaxConfig);
+            console.error('Configuration AJAX invalide:', ajaxConfig);
             return;
         }
         
-        log('checkPasswordChangeRequired - URL:', ajaxConfig.url, 'Nonce:', ajaxConfig.nonce, 'Page:', window.location.pathname);
         
         $.post(ajaxConfig.url, {
             action: 'wp_bmc_check_password_change_required',
             nonce: ajaxConfig.nonce
         }, function(response) {
-            log('checkPasswordChangeRequired - Réponse:', response);
             if (response.success && response.data.required) {
                 showChangePasswordPopup();
-            }
+            } 
         }).fail(function(xhr, status, error) {
-            logError('Erreur lors de la vérification du changement de mot de passe:', xhr.responseText, 'Status:', status, 'Error:', error);
+            console.error('Erreur lors de la vérification du changement de mot de passe:', xhr.responseText, 'Status:', status, 'Error:', error);
         });
     }
 
@@ -2198,7 +2209,9 @@ jQuery(document).ready(function($) {
                     $('body').append(response.data.html);
                     initChangePasswordEvents();
                     $('#wp-bmc-change-password-popup').fadeIn(300);
-                }
+                } 
+            }).fail(function(xhr, status, error) {
+                logError('Erreur AJAX lors du chargement du template:', xhr.responseText, 'Status:', status, 'Error:', error);
             });
         } else {
             $('#wp-bmc-change-password-popup').fadeIn(300);
@@ -2207,10 +2220,37 @@ jQuery(document).ready(function($) {
     
     // Initialiser les événements du popup de changement de mot de passe
     function initChangePasswordEvents() {
-        // Fermer le popup
-        $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
-            // Ne pas permettre de fermer le popup - c'est obligatoire
-            WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+        // Vérifier le statut utilisateur pour déterminer si la fermeture est autorisée
+        var ajaxConfig = getAjaxConfig();
+        
+        $.get(ajaxConfig.url, {
+            action: 'wp_bmc_check_password_change_required',
+            nonce: ajaxConfig.nonce
+        }, function(response) {
+            var canClosePopup = true;
+            
+            if (response.success && response.data) {
+                // Si le changement de mot de passe est requis, empêcher la fermeture
+                if (response.data.password_change_required) {
+                    canClosePopup = false;
+                }
+            }
+            
+            // Configurer les événements de fermeture selon le statut
+            $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
+                if (!canClosePopup) {
+                    WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+                } else {
+                    $('#wp-bmc-change-password-popup').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            });
+        }).fail(function() {
+            // En cas d'erreur, empêcher la fermeture par sécurité
+            $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
+                WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+            });
         });
         
         // Gestion de l'affichage/masquage des mots de passe
@@ -2297,9 +2337,16 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success('Mot de passe changé avec succès !');
+                setTimeout(() => {
+                    WP_BMC_Toast.info('Vous allez être redirigé pour vous reconnecter avec votre nouveau mot de passe')
+                }, 400);
                 $('#wp-bmc-change-password-popup').fadeOut(300, function() {
                     $(this).remove();
                 });
+            // Si le mot de passe est changé avec succès, déconnecter l'utilisateur et rediriger vers la page de login
+                setTimeout(function() {
+                    window.location.href = wp_bmc_ajax.login_url || '/login';
+                }, 3000); // Laisser le toast s'afficher avant de rediriger
             } else {
                 WP_BMC_Toast.error(response.data || 'Erreur lors du changement de mot de passe');
             }
@@ -2312,6 +2359,12 @@ jQuery(document).ready(function($) {
             $btnLoader.hide();
         });
     }
+
+    // Gestionnaire pour le bouton de changement de mot de passe dans le menu
+    $(document).on('click', '#wp-bmc-change-password-btn', function(e) {
+        e.preventDefault();
+        showChangePasswordPopup();
+    });
     
 });
 
@@ -2327,3 +2380,4 @@ function initProgressChart() {
         progressCircle.style.setProperty('--progress-offset', currentOffset);
     }
 }
+
