@@ -19,6 +19,7 @@ class WP_BMC_Auth {
         add_action('wp_ajax_nopriv_wp_bmc_login', array($this, 'handle_login'));
         add_action('wp_ajax_wp_bmc_logout', array($this, 'handle_logout'));
         add_action('wp_ajax_nopriv_wp_bmc_logout', array($this, 'handle_logout'));
+        add_action('wp_ajax_wp_bmc_get_user_menu_data', array($this, 'handle_get_user_menu_data'));
         
         // Hook pour vérifier l'authentification avant l'affichage du contenu
         add_action('wp', array($this, 'check_page_access'));
@@ -216,6 +217,101 @@ class WP_BMC_Auth {
                 $current_user_id
             )
         );
+    }
+    
+    /**
+     * Générer les initiales d'un utilisateur
+     */
+    public static function get_user_initials($user) {
+        if (!$user) {
+            return 'U';
+        }
+        
+        $first_name = $user->first_name ?: '';
+        $last_name = $user->last_name ?: '';
+        
+        // Si pas de prénom/nom, utiliser l'email
+        if (empty($first_name) && empty($last_name)) {
+            $email = $user->email ?: '';
+            if (!empty($email)) {
+                return strtoupper(substr($email, 0, 1));
+            }
+            return 'U';
+        }
+        
+        $initials = '';
+        if (!empty($first_name)) {
+            $initials .= strtoupper(substr($first_name, 0, 1));
+        }
+        if (!empty($last_name)) {
+            $initials .= strtoupper(substr($last_name, 0, 1));
+        }
+        
+        return $initials ?: 'U';
+    }
+    
+    /**
+     * Obtenir le nom complet formaté d'un utilisateur
+     */
+    public static function get_user_full_name($user) {
+        if (!$user) {
+            return 'Utilisateur';
+        }
+        
+        $first_name = $user->first_name ?: '';
+        $last_name = $user->last_name ?: '';
+        
+        $full_name = trim($first_name . ' ' . $last_name);
+        
+        // Si pas de nom complet, utiliser l'email
+        if (empty($full_name)) {
+            $email = $user->email ?: '';
+            if (!empty($email)) {
+                return $email;
+            }
+            return 'Utilisateur';
+        }
+        
+        return $full_name;
+    }
+    
+    /**
+     * Obtenir les données utilisateur formatées pour le menu
+     */
+    public static function get_user_menu_data() {
+        $user = self::get_current_user();
+        if (!$user) {
+            return false;
+        }
+        
+        return array(
+            'user_id' => $user->user_id,
+            'email' => $user->email,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'full_name' => self::get_user_full_name($user),
+            'initials' => self::get_user_initials($user),
+            'is_admin' => isset($user->is_admin) ? $user->is_admin : false
+        );
+    }
+    
+    /**
+     * Gérer la récupération des données utilisateur pour le menu
+     */
+    public function handle_get_user_menu_data() {
+        check_ajax_referer('wp_bmc_nonce', 'nonce');
+        
+        if (!self::is_logged_in()) {
+            wp_send_json_error('Vous devez être connecté.');
+        }
+        
+        $user_data = self::get_user_menu_data();
+        
+        if ($user_data) {
+            wp_send_json_success($user_data);
+        } else {
+            wp_send_json_error('Impossible de récupérer les données utilisateur.');
+        }
     }
     
     /**

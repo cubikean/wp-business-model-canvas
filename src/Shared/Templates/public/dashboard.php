@@ -16,6 +16,9 @@ if (!$current_user) {
     exit;
 }
 
+// Obtenir les données utilisateur formatées pour le menu
+$user_menu_data = WP_BMC_Auth::get_user_menu_data();
+
 // Gestion des paramètres d'URL
 $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
 $view_mode = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'synthetic';

@@ -6,6 +6,101 @@
 jQuery(document).ready(function($) {
     
     // ========================================
+    // GESTION DU MENU UTILISATEUR
+    // ========================================
+    
+    // Initialiser le menu utilisateur
+    initUserMenu();
+    
+    function initUserMenu() {
+        // Clic sur l'avatar pour ouvrir/fermer le menu
+        $(document).on('click', '#wp-bmc-user-avatar', function(e) {
+            e.stopPropagation();
+            toggleUserDropdown();
+        });
+        
+        // Clic en dehors pour fermer le menu
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.wp-bmc-user-menu').length) {
+                closeUserDropdown();
+            }
+        });
+        
+        // Actions du menu
+        $(document).on('click', '#wp-bmc-logout-btn', function(e) {
+            e.preventDefault();
+            handleLogout();
+        });
+        
+        $(document).on('click', '#wp-bmc-add-account-btn', function(e) {
+            e.preventDefault();
+            handleAddAccount();
+        });
+    }
+    
+    function toggleUserDropdown() {
+        const dropdown = $('#wp-bmc-user-dropdown');
+        if (dropdown.hasClass('show')) {
+            closeUserDropdown();
+        } else {
+            openUserDropdown();
+        }
+    }
+    
+    function openUserDropdown() {
+        const dropdown = $('#wp-bmc-user-dropdown');
+        dropdown.addClass('show');
+        
+        // Animation d'ouverture
+        dropdown.css({
+            'transform': 'translateY(0)',
+            'opacity': '1',
+            'visibility': 'visible'
+        });
+    }
+    
+    function closeUserDropdown() {
+        const dropdown = $('#wp-bmc-user-dropdown');
+        dropdown.removeClass('show');
+        
+        // Animation de fermeture
+        dropdown.css({
+            'transform': 'translateY(-10px)',
+            'opacity': '0',
+            'visibility': 'hidden'
+        });
+    }
+    
+    function handleLogout() {
+        WP_BMC_Toast.info('Déconnexion en cours...');
+        
+        const ajaxConfig = getAjaxConfig();
+        
+        $.post(ajaxConfig.url, {
+            action: 'wp_bmc_logout',
+            nonce: ajaxConfig.nonce
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success(response.data.message);
+                setTimeout(function() {
+                    window.location.href = response.data.redirect_url;
+                }, 1000);
+            } else {
+                WP_BMC_Toast.error(response.data);
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion lors de la déconnexion');
+        });
+    }
+    
+    function handleAddAccount() {
+        WP_BMC_Toast.info('Redirection vers la page de connexion...');
+        setTimeout(function() {
+            window.location.href = '/login/';
+        }, 500);
+    }
+    
+    // ========================================
     // SYSTÈME D'OPTIMISATION DES TODOS
     // ========================================
     

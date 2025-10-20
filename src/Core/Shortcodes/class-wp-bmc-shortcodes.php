@@ -18,6 +18,7 @@ class WP_BMC_Shortcodes {
         add_shortcode('wp_bmc_dashboard', array($this, 'dashboard'));
         add_shortcode('wp_bmc_canvas', array($this, 'canvas'));
         add_shortcode('wp_bmc_change_password', array($this, 'change_password'));
+        add_shortcode('wp_bmc_user_menu', array($this, 'user_menu'));
     }
     
     /**
@@ -88,12 +89,84 @@ class WP_BMC_Shortcodes {
     }
     
     /**
-     * Page de changement de mot de passe obligatoire
+     * Menu utilisateur pour intégration dans le thème
      */
-    public function change_password() {
-        WP_BMC_Auth::require_login();
+    public function user_menu($atts) {
+        // Paramètres par défaut
+        $atts = shortcode_atts(array(
+            'style' => 'default', // default, compact, minimal
+            'position' => 'right', // left, right, center
+            'show_name' => 'true', // true, false
+            'show_email' => 'true', // true, false
+            'size' => 'medium' // small, medium, large
+        ), $atts);
         
-        return WP_BMC_Template_Loader::get_template_content('public/change-password');
+        // Si l'utilisateur n'est pas connecté, ne rien afficher
+        if (!WP_BMC_Auth::is_logged_in()) {
+            return '';
+        }
+        
+        $user_menu_data = WP_BMC_Auth::get_user_menu_data();
+        if (!$user_menu_data) {
+            return '';
+        }
+        
+        // Générer un ID unique pour éviter les conflits
+        $unique_id = 'wp-bmc-user-menu-' . uniqid();
+        
+        // Classes CSS selon les paramètres
+        $classes = array('wp-bmc-user-menu-shortcode');
+        $classes[] = 'wp-bmc-style-' . sanitize_html_class($atts['style']);
+        $classes[] = 'wp-bmc-position-' . sanitize_html_class($atts['position']);
+        $classes[] = 'wp-bmc-size-' . sanitize_html_class($atts['size']);
+        
+        if ($atts['show_name'] === 'false') {
+            $classes[] = 'wp-bmc-hide-name';
+        }
+        if ($atts['show_email'] === 'false') {
+            $classes[] = 'wp-bmc-hide-email';
+        }
+        
+        ob_start();
+        ?>
+        <div class="<?php echo esc_attr(implode(' ', $classes)); ?>" id="<?php echo esc_attr($unique_id); ?>">
+            <div class="wp-bmc-user-avatar">
+                <span class="wp-bmc-user-initials"><?php echo esc_html($user_menu_data['initials']); ?></span>
+            </div>
+            
+            <!-- Menu déroulant -->
+            <div class="wp-bmc-user-dropdown">
+                <div class="wp-bmc-user-dropdown-header">
+                    <div class="wp-bmc-user-dropdown-avatar">
+                        <span class="wp-bmc-user-dropdown-initials"><?php echo esc_html($user_menu_data['initials']); ?></span>
+                    </div>
+                    <div class="wp-bmc-user-dropdown-info">
+                        <?php if ($atts['show_name'] !== 'false'): ?>
+                        <div class="wp-bmc-user-dropdown-name"><?php echo esc_html($user_menu_data['full_name']); ?></div>
+                        <?php endif; ?>
+                        <?php if ($atts['show_email'] !== 'false'): ?>
+                        <div class="wp-bmc-user-dropdown-email"><?php echo esc_html($user_menu_data['email']); ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <div class="wp-bmc-user-dropdown-separator"></div>
+                
+                <div class="wp-bmc-user-dropdown-actions">
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-change-password">
+                        <i class="fas fa-plus"></i>
+                        <span>Changer de mot de passe</span>
+                    </button>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Se déconnecter</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php
+        
+        return ob_get_clean();
     }
 }
 
