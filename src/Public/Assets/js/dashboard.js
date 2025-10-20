@@ -2313,6 +2313,9 @@ jQuery(document).ready(function($) {
         }
     }
     
+    // Exposer la fonction globalement pour qu'elle soit disponible partout
+    window.showChangePasswordPopup = showChangePasswordPopup;
+    
     // Initialiser les événements du popup de changement de mot de passe
     function initChangePasswordEvents() {
         // Vérifier le statut utilisateur pour déterminer si la fermeture est autorisée

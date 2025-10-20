@@ -74,6 +74,7 @@
 }
 
 .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-name {
+    line-height: 1.2;
     font-size: 16px;
     font-weight: 600;
     color: #2f52a0;
@@ -83,6 +84,7 @@
 
 .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-email {
     font-size: 14px;
+    line-height: 1.2;
     color: #666666;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

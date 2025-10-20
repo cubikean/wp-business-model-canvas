@@ -235,7 +235,7 @@ function wp_bmc_public_scripts() {
     
     // Charger les styles et scripts du menu utilisateur shortcode
     wp_enqueue_style('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-user-menu-shortcode.css', array(), WP_BMC_VERSION);
-    wp_enqueue_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
+    wp_enqueue_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast', 'wp-bmc-dashboard'), WP_BMC_VERSION, true);
     
     // Localiser les variables AJAX
     wp_localize_script('wp-bmc-public', 'wp_bmc_ajax', array(

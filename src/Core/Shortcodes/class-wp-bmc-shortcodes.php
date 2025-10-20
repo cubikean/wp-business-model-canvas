@@ -154,7 +154,7 @@ class WP_BMC_Shortcodes {
                 
                 <div class="wp-bmc-user-dropdown-actions">
                     <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-change-password">
-                        <i class="fas fa-plus"></i>
+                        <i class="fas fa-key"></i>
                         <span>Changer de mot de passe</span>
                     </button>
                     <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-logout-btn">

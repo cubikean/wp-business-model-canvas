@@ -65,20 +65,7 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
         <div class="dashboard-header" data-project-name="<?php echo $project ? esc_html($project->title) : ""; ?>">
             <h2 class="dashboard-header-title">Vue synthétique du projet : <?php echo $project ? esc_html($project->title) : ""; ?></h2>
 
-            <!-- Menu utilisateur -->
-            <div class="user-menu">
-                <div class="user-info">
-                    <span class="user-name"><?php echo esc_html($current_user->first_name . ' ' . $current_user->last_name); ?></span>
-                    <div class="user-actions">
-                        <button id="wp-bmc-change-password-btn" class="wp-bmc-btn wp-bmc-btn-secondary btn-sm">
-                            <i class="fas fa-key"></i> Changer le mot de passe
-                        </button>
-                        <a href="/logout/" class="wp-bmc-btn wp-bmc-btn-secondary btn-sm">
-                            <i class="fas fa-sign-out-alt"></i> Déconnexion
-                        </a>
-                    </div>
-                </div>
-            </div>
+          
 
             <div class="canvas-controls">
                 <div class="view-toggle">

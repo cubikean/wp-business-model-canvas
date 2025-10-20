@@ -546,54 +546,7 @@ class WP_BMC_Loader {
                 color: #721c24;
                 border: 1px solid #f5c6cb;
             }
-            
-            /* Styles pour le menu utilisateur */
-            .dashboard-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 20px;
-                flex-wrap: wrap;
-            }
-            .user-menu {
-                display: flex;
-                align-items: center;
-            }
-            .user-info {
-                display: flex;
-                align-items: center;
-                gap: 15px;
-            }
-            .user-name {
-                font-weight: 600;
-                color: #333;
-            }
-            .user-actions {
-                display: flex;
-                gap: 10px;
-            }
-            .btn-sm {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            .canvas-controls {
-                margin-left: auto;
-            }
-            @media (max-width: 768px) {
-                .dashboard-header {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 15px;
-                }
-                .canvas-controls {
-                    margin-left: 0;
-                    width: 100%;
-                }
-                .user-actions {
-                    flex-direction: column;
-                    gap: 8px;
-                }
-            }
+        
         </style>';
     }
 }

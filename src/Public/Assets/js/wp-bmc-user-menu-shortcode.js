@@ -30,6 +30,8 @@ jQuery(document).ready(function($) {
                 handleShortcodeLogout();
             } else if (action.attr('id').includes('add-account-btn')) {
                 handleShortcodeAddAccount();
+            } else if (action.attr('id').includes('change-password')) {
+                handleShortcodeChangePassword();
             }
         });
     }
@@ -154,6 +156,23 @@ jQuery(document).ready(function($) {
         setTimeout(function() {
             window.location.href = '/login/';
         }, 500);
+    }
+    
+    function handleShortcodeChangePassword() {
+        // Fermer le menu déroulant
+        closeAllShortcodeUserDropdowns();
+        
+        // Appeler la fonction existante showChangePasswordPopup
+        if (typeof window.showChangePasswordPopup === 'function') {
+            window.showChangePasswordPopup();
+        } else if (typeof showChangePasswordPopup === 'function') {
+            showChangePasswordPopup();
+        } else {
+            // Fallback si la fonction n'existe pas
+            if (typeof WP_BMC_Toast !== 'undefined') {
+                WP_BMC_Toast.error('Fonction de changement de mot de passe non disponible.');
+            }
+        }
     }
     
     // Initialiser le menu
