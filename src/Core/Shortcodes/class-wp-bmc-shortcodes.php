@@ -153,6 +153,10 @@ class WP_BMC_Shortcodes {
                 <div class="wp-bmc-user-dropdown-separator"></div>
                 
                 <div class="wp-bmc-user-dropdown-actions">
+                    <a href="<?php echo home_url('/dashboard/'); ?>" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-dashboard-btn">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
                     <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-change-password">
                         <i class="fas fa-key"></i>
                         <span>Changer de mot de passe</span>

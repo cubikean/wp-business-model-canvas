@@ -33,6 +33,9 @@ jQuery(document).ready(function($) {
             } else if (action.attr('id').includes('change-password')) {
                 handleShortcodeChangePassword();
             }
+            else if (action.attr('id').includes('dashboard-btn')) {
+                window.location.href = '/dashboard/';
+            }
         });
     }
     
