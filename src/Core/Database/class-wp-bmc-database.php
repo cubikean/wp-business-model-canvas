@@ -24,8 +24,8 @@ class WP_BMC_Database {
             return '';
         }
         
-        // Convertir la date UTC en fuseau horaire local WordPress
-        $timestamp = strtotime($date_string . ' UTC');
+        // Convertir la date en timestamp (sans forcer UTC car current_time() retourne déjà le bon fuseau)
+        $timestamp = strtotime($date_string);
         
         switch ($format) {
             case 'date':
