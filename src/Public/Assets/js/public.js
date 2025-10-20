@@ -2,6 +2,24 @@
  * JavaScript pour le plugin WP Business Model Canvas
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function($) {
     
     // Initialisation générale
@@ -26,6 +44,8 @@ jQuery(document).ready(function($) {
                 autoSaveCanvas();
             }, 2000); // Sauvegarde automatique après 2 secondes d'inactivité
         });
+
+
         
         // Initialiser la grille du canvas
         updateCanvasGrid();
@@ -235,9 +255,9 @@ jQuery(document).ready(function($) {
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success) {
-                console.log('data:', response.data);
+                log('data:', response.data);
             } else {
-                console.error('Erreur lors de la génération du PDF:', response.data);
+                logError('Erreur lors de la génération du PDF:', response.data);
             }
         });
     });

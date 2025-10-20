@@ -30,9 +30,27 @@ jQuery(document).ready(function($) {
     
     // Fonction utilitaire pour obtenir le bon nonce et URL AJAX
     function getAjaxConfig() {
+        // Vérifier d'abord si wp_bmc_admin_ajax est défini et disponible
+        if (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce && wp_bmc_admin_ajax.ajax_url) {
+            return {
+                nonce: wp_bmc_admin_ajax.nonce,
+                url: wp_bmc_admin_ajax.ajax_url
+            };
+        }
+        
+        // Sinon utiliser wp_bmc_ajax (qui devrait toujours être disponible)
+        if (typeof wp_bmc_ajax !== 'undefined' && wp_bmc_ajax.nonce && wp_bmc_ajax.ajax_url) {
+            return {
+                nonce: wp_bmc_ajax.nonce,
+                url: wp_bmc_ajax.ajax_url
+            };
+        }
+        
+        // Fallback si aucune variable AJAX n'est disponible
+        logError('getAjaxConfig - Aucune variable AJAX disponible');
         return {
-            nonce: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce,
-            url: (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url
+            nonce: null,
+            url: null
         };
     }
     
@@ -100,13 +118,8 @@ jQuery(document).ready(function($) {
                     });
                 }
                 
-                console.log('Opérations sauvegardées avec succès');
-            } else {
-                console.error('Erreur lors de la sauvegarde:', response.data);
-            }
-        }).fail(function() {
-            console.error('Erreur AJAX lors de la sauvegarde');
-        });
+            } 
+        })
     }
     
     // Fonction pour forcer la sauvegarde immédiate
@@ -118,40 +131,10 @@ jQuery(document).ready(function($) {
     }
     
     // ========================================
-    // CRÉATION DU PREMIER CANVAS
+    // CRÉATION DU PREMIER CANVAS (v2.0 - désactivé)
     // ========================================
-    $('#wp-bmc-create-first-canvas-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        var $form = $(this);
-        var $submitBtn = $form.find('button[type="submit"]');
-        
-        // Désactiver le bouton pendant la soumission
-        $submitBtn.prop('disabled', true).text('Création en cours...');
-        
-        var formData = {
-            action: 'wp_bmc_create_project',
-            nonce: wp_bmc_ajax.nonce,
-            title: $('#project_title').val(),
-            description: $('#project_description').val()
-        };
-        
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            if (response.success) {
-                WP_BMC_Toast.success(response.data.message);
-                setTimeout(function() {
-                    window.location.reload(); // Recharger pour afficher le canvas
-                }, 1500);
-            } else {
-                WP_BMC_Toast.error(response.data);
-            }
-        }).fail(function() {
-            WP_BMC_Toast.error('Erreur lors de la création du projet. Veuillez réessayer.');
-        }).always(function() {
-            // Réactiver le bouton
-            $submitBtn.prop('disabled', false).text('Créer mon canvas');
-        });
-    });
+    // La création de projets est maintenant gérée par les admins
+    // Les utilisateurs ne peuvent plus créer de projets directement
     
     // ========================================
     // CHANGEMENT DE VUE (SYNTHÉTIQUE/GLOBALE)
@@ -186,8 +169,6 @@ jQuery(document).ready(function($) {
         var projectId = $('.wp-bmc-dashboard').data('project-id') || 
                        $('.wp-bmc-canvas-container').data('project-id');
         
-        console.log('loadCanvasView - projectId:', projectId);
-        console.log('loadCanvasView - view:', view);
         
         // Charger le contenu via AJAX
         $.post(wp_bmc_ajax.ajax_url, {
@@ -196,7 +177,6 @@ jQuery(document).ready(function($) {
             project_id: projectId,
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
-            console.log('loadCanvasView - response:', response);
             if (response.success) {
                 $canvasContainer.html(response.data.html);
                 // Réinitialiser les événements pour les nouveaux éléments
@@ -207,11 +187,17 @@ jQuery(document).ready(function($) {
                 if (typeof window.WP_BMC_Public !== 'undefined' && window.WP_BMC_Public.updateCanvasGrid) {
                     window.WP_BMC_Public.updateCanvasGrid();
                 }
+                // Forcer la mise à jour des indicateurs de présence après le rechargement de la vue
+                if (typeof window.WP_BMC_Presence !== 'undefined' && window.WP_BMC_Presence.initialized) {
+                    setTimeout(function() {
+                        window.WP_BMC_Presence.previousActiveUsers = [];
+                        window.WP_BMC_Presence.updateSectionIndicators();
+                    }, 100);
+                }
             } else {
                 $canvasContainer.html('<div class="wp-bmc-error">Erreur lors du chargement de la vue.</div>');
             }
         }).fail(function(xhr, status, error) {
-            console.error('loadCanvasView - AJAX error:', error, xhr.responseText);
             $canvasContainer.html('<div class="wp-bmc-error">Erreur de connexion. Veuillez réessayer.</div>');
         });
     }
@@ -252,7 +238,12 @@ jQuery(document).ready(function($) {
     function openEditView(sectionName, sectionTitle, sectionPlaceholder, content) {
         // Sauvegarder les todos de la section actuelle avant de changer
         forceSave();
-        
+
+
+        const mainElement = document.querySelector('.wp-bmc-dashboard');
+
+        mainElement?.scrollIntoView({ behavior: "smooth" })
+
         // Définir la section actuellement éditée (priorité à la variable globale)
         currentEditingSection = sectionName;
         
@@ -271,9 +262,9 @@ jQuery(document).ready(function($) {
         // $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
         
         // Debug: vérifier que l'attribut est bien défini
-        console.log('Vue d\'édition ouverte pour la section:', sectionName);
-        console.log('Variable globale définie:', currentEditingSection);
-        console.log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
+        log('Vue d\'édition ouverte pour la section:', sectionName);
+        log('Variable globale définie:', currentEditingSection);
+        log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
         
         // Initialiser l'éditeur WYSIWYG
         let decodedContent = cleanContent(content);
@@ -397,7 +388,6 @@ jQuery(document).ready(function($) {
              if (action === 'view') {
                  // Ouvrir le fichier dans un nouvel onglet
                  var fileUrl = $(this).closest('.file-item').find('.file-name').data('url');
-                 console.log(fileUrl);
                  if (fileUrl) {
                      window.open(fileUrl, '_blank');
                  }
@@ -527,7 +517,6 @@ jQuery(document).ready(function($) {
                 canvas_data: canvasData
             };
             
-            console.log('Sending formData:', formData);
             
             $.post(ajaxUrl, formData, function(response) {
                 if (response.success) {
@@ -547,7 +536,6 @@ jQuery(document).ready(function($) {
     
     // Charger les fichiers de la section
     function loadSectionFiles(sectionName) {
-        console.log('Chargement des fichiers pour la section:', sectionName);
         
         var formData = {
             action: 'wp_bmc_get_section_files',
@@ -565,13 +553,10 @@ jQuery(document).ready(function($) {
         $('#files-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des fichiers...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            console.log('Réponse chargement fichiers:', response);
             
             if (response.success) {
-                console.log('Fichiers chargés:', response.data.files);
                 displayFiles(response.data.files);
             } else {
-                console.log('Aucun fichier trouvé ou erreur');
                 // Afficher un message d'erreur
                 $('#files-list').html('<div class="no-files">Aucun fichier attaché</div>');
             }
@@ -686,13 +671,40 @@ jQuery(document).ready(function($) {
         return urlParams.get('project_id');
     }
     
+    // ========================================
+    // VÉRIFICATION D'ACCÈS AU PROJET (v2.0)
+    // ========================================
+    function checkProjectAccess(projectId) {
+        if (!projectId) {
+            return false;
+        }
+        
+        // Vérifier si l'utilisateur a accès à ce projet
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_check_project_access',
+            project_id: projectId,
+            nonce: wp_bmc_ajax.nonce
+        }, function(response) {
+            if (!response.success) {
+                WP_BMC_Toast.error('Vous n\'avez pas accès à ce projet.');
+                // Rediriger vers le dashboard
+                setTimeout(function() {
+                    window.location.href = home_url('/dashboard/');
+                }, 2000);
+                return false;
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de vérification d\'accès.');
+        });
+        
+        return true;
+    }
+    
     // Ouvrir l'uploader de fichiers
     function openFileUploader() {
-        console.log('openFileUploader appelée');
         
         // Vérifier que la vue d'édition est ouverte
         if (!$('#wp-bmc-edit-view').is(':visible')) {
-            console.error('Vue d\'édition non ouverte');
             WP_BMC_Toast.warning('Veuillez d\'abord ouvrir une section pour éditer');
             return;
         }
@@ -716,12 +728,10 @@ jQuery(document).ready(function($) {
         
         // Debug: vérifier si la section est définie
         if (!sectionName) {
-            console.error('Section non définie pour l\'upload de fichiers');
             WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour l\'upload');
             return;
         }
         
-        console.log('Upload de fichiers pour la section:', sectionName);
         var formData = new FormData();
         
         formData.append('action', 'wp_bmc_upload_file');
@@ -750,21 +760,17 @@ jQuery(document).ready(function($) {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Réponse upload:', response);
                 
                 if (response.success) {
-                    console.log('Upload réussi, rechargement des fichiers...');
                     loadSectionFiles(sectionName);
                     
                     // Afficher le message de succès
                     WP_BMC_Toast.success('Fichiers uploadés avec succès !');
                 } else {
-                    console.error('Erreur upload:', response.data);
                     WP_BMC_Toast.error('Erreur lors de l\'upload : ' + response.data);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erreur AJAX upload:', error);
                 WP_BMC_Toast.error('Erreur lors de l\'upload des fichiers.');
             },
             complete: function() {
@@ -776,7 +782,6 @@ jQuery(document).ready(function($) {
     
     // Ouvrir le viewer de documents
     function openDocumentsViewer() {
-        console.log('openDocumentsViewer appelée');
         
         var $btn = $('#view-documents-btn');
         
@@ -784,12 +789,10 @@ jQuery(document).ready(function($) {
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         
         if (!sectionName) {
-            console.error('Section non définie pour charger les documents');
             WP_BMC_Toast.error('Erreur: Impossible de déterminer la section pour charger les documents');
             return;
         }
         
-        console.log('Chargement des documents pour la section:', sectionName);
         
         // Ajouter l'état de chargement au bouton
         $btn.addClass('btn-loading').prop('disabled', true);
@@ -833,7 +836,6 @@ jQuery(document).ready(function($) {
     
     // Charger les documents
     function loadDocuments(sectionName) {
-        console.log('loadDocuments appelée avec la section:', sectionName);
         
         var formData = {
             action: 'wp_bmc_get_documents',
@@ -845,10 +847,8 @@ jQuery(document).ready(function($) {
         $('#documents-grid').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des documents...</span></div>');
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            console.log('Réponse chargement documents:', response);
             
             if (response.success) {
-                console.log('Documents chargés:', response.data.documents);
                 displayDocuments(response.data.documents);
             } else {
                 // Afficher un message d'erreur
@@ -862,12 +862,10 @@ jQuery(document).ready(function($) {
     
          // Afficher les documents
      function displayDocuments(documents) {
-         console.log('displayDocuments appelée avec:', documents);
          
          var documentsHtml = '';
          
          if (documents && documents.length > 0) {
-             console.log('Affichage de', documents.length, 'documents');
              documents.forEach(function(doc) {
                  documentsHtml += `
                      <div class="document-item" data-doc-id="${doc.id}">
@@ -887,7 +885,6 @@ jQuery(document).ready(function($) {
                  `;
              });
          } else {
-             console.log('Aucun document à afficher');
              documentsHtml = '<div class="no-documents">Aucun document disponible</div>';
          }
          
@@ -1071,28 +1068,21 @@ jQuery(document).ready(function($) {
     });
     
     function autoSaveCanvas() {
-        console.log('=== autoSaveCanvas called ===');
         
         // Collecter toutes les données du canvas
         var canvasData = {};
         $('.canvas-content').each(function() {
             var section = $(this).closest('[data-section]').data('section');
             canvasData[section] = $(this).html();
-            console.log('Auto-save canvas data for section', section, 'length:', canvasData[section].length);
         });
         
         // Récupérer le project_id depuis le conteneur
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        console.log('Auto-save Project ID from dashboard:', $('.wp-bmc-dashboard').data('project-id'));
-        console.log('Auto-save Project ID from canvas-container:', $('.wp-bmc-canvas-container').data('project-id'));
-        console.log('Auto-save Final Project ID:', projectId);
         
         // Utiliser le nonce admin si disponible, sinon le nonce public
         var nonce = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.nonce) ? wp_bmc_admin_ajax.nonce : wp_bmc_ajax.nonce;
         var ajaxUrl = (typeof wp_bmc_admin_ajax !== 'undefined' && wp_bmc_admin_ajax.ajax_url) ? wp_bmc_admin_ajax.ajax_url : wp_bmc_ajax.ajax_url;
         
-        console.log('Auto-save using nonce:', nonce ? 'admin' : 'public');
-        console.log('Auto-save AJAX URL:', ajaxUrl);
         
         var formData = {
             action: 'wp_bmc_save_canvas',
@@ -1101,12 +1091,8 @@ jQuery(document).ready(function($) {
             canvas_data: canvasData
         };
         
-        console.log('Auto-save sending formData:', formData);
         
         $.post(ajaxUrl, formData, function(response) {
-            console.log('=== Auto-save AJAX Response ===');
-            console.log('Auto-save response success:', response.success);
-            console.log('Auto-save response data:', response.data);
             
             if (response.success) {
                 $('#auto-save-status').text('Sauvegarde automatique activée');
@@ -1114,20 +1100,14 @@ jQuery(document).ready(function($) {
                 // Afficher le toast de succès seulement après validation
                 WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
             } else {
-                console.error('Auto-save failed:', response.data);
                 // Afficher le toast d'erreur
                 WP_BMC_Toast.error('Erreur lors de la sauvegarde : ' + (response.data || 'Erreur inconnue'));
             }
         }).fail(function(xhr, status, error) {
-            console.error('=== Auto-save AJAX Request Failed ===');
-            console.error('Auto-save status:', status);
-            console.error('Auto-save error:', error);
-            console.error('Auto-save response text:', xhr.responseText);
             // Afficher le toast d'erreur de connexion
             WP_BMC_Toast.error('Erreur de connexion lors de la sauvegarde');
         });
         
-        console.log('=== autoSaveCanvas finished ===');
     }
     
     // ========================================
@@ -1178,17 +1158,11 @@ jQuery(document).ready(function($) {
     // GÉNÉRATION PDF AVEC GOTENBERG
     // ========================================
     $('#wp-bmc-generate-pdf').on('click', function() {
-        console.log('=== DÉBUT GÉNÉRATION PDF CLIENT ===');
         var $btn = $(this);
         var originalText = $btn.html();
         var projectId = $btn.data('project-id');
         
-        console.log('PDF Client: Project ID =', projectId);
-        console.log('PDF Client: AJAX URL =', wp_bmc_ajax.ajax_url);
-        console.log('PDF Client: Nonce =', wp_bmc_ajax.nonce);
-        
         if (!projectId) {
-            console.error('PDF Client: ID de projet manquant');
             WP_BMC_Toast.error('ID de projet manquant');
             return;
         }
@@ -1202,22 +1176,13 @@ jQuery(document).ready(function($) {
             project_id: projectId
         };
         
-        console.log('PDF Client: Données envoyées =', formData);
         
         $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
-            console.log('PDF Client: Réponse reçue =', response);
             
             if (response.success) {
-                console.log('PDF Client: Succès, URL PDF =', response.data.pdf_url);
-                console.log('PDF Client: Filename =', response.data.filename);
-                console.log('PDF Client: Debug HTML =', response.data.debug_html_url);
                 
                 WP_BMC_Toast.success(response.data.message);
-                
-                // Afficher l'URL de debug dans la console
-                if (response.data.debug_html_url) {
-                    console.log('🔍 HTML de debug disponible:', response.data.debug_html_url);
-                }
+               
                 
                 // Télécharger automatiquement le PDF
                 var link = document.createElement('a');
@@ -1228,34 +1193,19 @@ jQuery(document).ready(function($) {
                 link.click();
                 document.body.removeChild(link);
                 
-                console.log('PDF Client: Téléchargement déclenché');
             } else {
-                console.error('PDF Client: Erreur serveur =', response.data);
                 WP_BMC_Toast.error('Erreur: ' + response.data);
             }
         }).fail(function(xhr, status, error) {
-            console.error('PDF Client: Erreur AJAX =', {
-                status: status,
-                error: error,
-                responseText: xhr.responseText,
-                statusCode: xhr.status
-            });
-            
-            // Essayer de parser la réponse pour plus d'infos
             try {
                 var errorResponse = JSON.parse(xhr.responseText);
-                console.error('PDF Client: Réponse d\'erreur parsée =', errorResponse);
                 WP_BMC_Toast.error('Erreur serveur: ' + (errorResponse.data || error));
             } catch (e) {
                 WP_BMC_Toast.error('Erreur lors de la génération du PDF: ' + error);
             }
         }).always(function() {
-            console.log('PDF Client: Réactivation du bouton');
-            // Réactiver le bouton
             $btn.prop('disabled', false).html(originalText);
         });
-        
-        console.log('=== FIN GÉNÉRATION PDF CLIENT ===');
     });
     
         
@@ -1369,12 +1319,25 @@ jQuery(document).ready(function($) {
         
         var userId = $(this).data('user-id');
         if (!userId) {
-            console.error('ID utilisateur manquant');
             return;
         }
         
         // Rediriger vers le canvas de l'utilisateur avec les paramètres admin
         var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&user_id=' + userId +'&view=global';
+        window.open(canvasUrl, '_blank');
+    });
+
+    // Voir le canvas de l'utilisateur (pour les admins)
+    $(document).on('click', '.view-project-btn', function(e) {
+        e.preventDefault();
+        
+        var projectId = $(this).data('project-id');
+        if (!projectId) {
+            return;
+        }
+        
+        // Rediriger vers le canvas de l'utilisateur avec les paramètres admin
+        var canvasUrl = window.location.origin + '/business-model-canvas/?admin_view=true&project_id=' + projectId +'&view=global';
         window.open(canvasUrl, '_blank');
     });
     
@@ -1384,7 +1347,6 @@ jQuery(document).ready(function($) {
     
     // Charger les révisions d'une section
     function loadSectionRevisions(section) {
-        console.log('Chargement des révisions pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
         // Afficher le loader pour les révisions
@@ -1398,16 +1360,12 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 displayRevisions(response.data.revisions, section);
-            } else {
-                console.error('Erreur lors du chargement des révisions:', response.data);
             }
         }).fail(function() {
-            console.error('Erreur de connexion lors du chargement des révisions');
         });
     }
 
     function loadSectionRating(section) {
-        console.log('Chargement de la note pour la section:', section);
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
         
         // Afficher le loader pour la note
@@ -1420,7 +1378,6 @@ jQuery(document).ready(function($) {
             nonce: wp_bmc_ajax.nonce
         }, function(response) {
             if (response.success && response.data && response.data.rating) {
-                console.log('data:', response.data);
                 // Restaurer la structure HTML de la section rating avant d'afficher
                 $('#rating-section').html(`
                     <div class="rating-display" id="rating-display">
@@ -1439,11 +1396,9 @@ jQuery(document).ready(function($) {
                 `);
                 displaySectionRating(response.data.rating);
             } else {    
-                console.log('Aucune note trouvée pour cette section');
                 displayNoRating();
             }
         }).fail(function() {
-            console.error('Erreur de connexion lors du chargement de la note');
             $('#rating-section').html('<div class="no-rating">Erreur de connexion</div>');
         });
     }
@@ -1456,7 +1411,6 @@ jQuery(document).ready(function($) {
         }
         
         $('#rating-score-number').text(rating.rating);
-        console.log(rating.comment);
         if(rating.comment !== null && rating.comment !== undefined && rating.comment !== '') {
             $('#rating-comment').text(rating.comment);
         } else {
@@ -1575,11 +1529,8 @@ jQuery(document).ready(function($) {
         }, function(response) {
             if (response.success) {
                 showRevisionPopup(response.data.revision);
-            } else {
-                console.error('Erreur lors du chargement de la révision:', response.data);
-            }
+            } 
         }).fail(function() {
-            console.error('Erreur de connexion lors du chargement de la révision');
         });
     }
     
@@ -1628,15 +1579,12 @@ jQuery(document).ready(function($) {
     
     // Événements pour les révisions
     $(document).on('click', '#load-revisions-btn', function() {
-        console.log('Section actuelle (variable):', currentEditingSection);
-        console.log('Section actuelle (attribut):', $('#wp-bmc-edit-view').data('section'));
         
         var section = currentEditingSection || $('#wp-bmc-edit-view').data('section');
         
         if (section) {
             loadSectionRevisions(section);
         } else {
-            console.error('Aucune section trouvée pour charger les révisions');
             $('#revisions-list').html(`
                 <div class="no-revisions">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -1689,11 +1637,9 @@ jQuery(document).ready(function($) {
                 currentSectionStats = response.data.stats;
                 displayTodos(response.data.todos, response.data.stats);
             } else {
-                console.error('Erreur lors du chargement des todos:', response.data);
                 displayTodos([], { total: 0, completed: 0, pending: 0 });
             }
         }).fail(function() {
-            console.error('Erreur AJAX lors du chargement des todos');
             displayTodos([], { total: 0, completed: 0, pending: 0 });
         });
     }
@@ -1777,7 +1723,7 @@ jQuery(document).ready(function($) {
             var $todoItem = $(this).closest('.todo-item');
             var todoId = $todoItem.data('todo-id');
             var currentText = $todoItem.find('.todo-text').text();
-            editTodo(todoId, currentText);
+            editTodo(todoId, currentText, $todoItem);
         });
         
         // Supprimer une tâche
@@ -1798,7 +1744,6 @@ jQuery(document).ready(function($) {
         
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         if (!sectionName) {
-            console.error('Section non définie');
             return;
         }
         
@@ -1850,7 +1795,13 @@ jQuery(document).ready(function($) {
     
     // Attacher les événements pour une tâche spécifique
     function attachTodoEventsForItem(todoId) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItem = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]').first();
+        
+        if (!$todoItem || $todoItem.length === 0) {
+            return;
+        }
         
         // Cocher/décocher une tâche
         $todoItem.find('.todo-checkbox').off('change').on('change', function() {
@@ -1860,7 +1811,7 @@ jQuery(document).ready(function($) {
         // Modifier une tâche
         $todoItem.find('.todo-edit-btn').off('click').on('click', function() {
             var currentText = $todoItem.find('.todo-text').text();
-            editTodo(todoId, currentText);
+            editTodo(todoId, currentText, $todoItem);
         });
         
         // Supprimer une tâche
@@ -1881,16 +1832,29 @@ jQuery(document).ready(function($) {
     
     // Basculer l'état d'une tâche (avec opération différée)
     function toggleTodo(todoId) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
-        var $checkbox = $todoItem.find('.todo-checkbox');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItems = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        if ($todoItems.length === 0) {
+            return;
+        }
+        
+        var $firstItem = $todoItems.first();
+        var $checkbox = $firstItem.find('.todo-checkbox');
         var isChecked = $checkbox.is(':checked');
         
-        // Mettre à jour l'interface immédiatement
-        if (isChecked) {
-            $todoItem.addClass('completed');
-        } else {
-            $todoItem.removeClass('completed');
-        }
+        // Mettre à jour l'interface immédiatement pour TOUS les items avec cet ID dans le conteneur visible
+        $todoItems.each(function() {
+            var $item = $(this);
+            if (isChecked) {
+                $item.addClass('completed');
+                $item.find('.todo-checkbox').prop('checked', true);
+            } else {
+                $item.removeClass('completed');
+                $item.find('.todo-checkbox').prop('checked', false);
+            }
+        });
         
         // Mettre à jour les statistiques immédiatement
         updateTodoStats();
@@ -1906,42 +1870,47 @@ jQuery(document).ready(function($) {
     }
     
     // Modifier le texte d'une tâche (avec opération différée)
-    function editTodo(todoId, currentText) {
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+    function editTodo(todoId, currentText, $contextItem) {
+        // Utiliser le contexte fourni ou chercher dans la vue visible
+        var $todoItem;
+        if ($contextItem) {
+            $todoItem = $contextItem;
+        } else {
+            // Chercher uniquement dans le conteneur visible (edit-view ou canvas actuel)
+            var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+            $todoItem = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]').first();
+        }
+        
+        if (!$todoItem || $todoItem.length === 0) {
+            return;
+        }
+        
         var $todoText = $todoItem.find('.todo-text');
+        
+        // Vérifier si déjà en mode édition
+        if ($todoItem.find('.todo-edit-input').length > 0) {
+            return;
+        }
         
         // Créer un input d'édition
         var $editInput = $('<input type="text" class="todo-edit-input">')
             .val(currentText)
-            .css({
-                'width': '100%',
-                'border': '2px solid #007cba',
-                'border-radius': '4px',
-                'padding': '8px',
-                'font-size': '14px',
-                'background': '#fff'
-            });
         
         // Créer les boutons de validation/annulation
         var $editActions = $('<div class="todo-edit-actions">')
-            .css({
-                'display': 'flex',
-                'gap': '8px',
-                'margin-top': '8px'
-            })
             .html(`
-                <button type="button" class="todo-save-edit" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                    <i class="fas fa-check"></i> Sauver
+                <button type="button" class="todo-save-edit">
+                    <i class="fas fa-check"></i>
                 </button>
-                <button type="button" class="todo-cancel-edit" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                    <i class="fas fa-times"></i> Annuler
+                <button type="button" class="todo-cancel-edit">
+                    <i class="fas fa-times"></i>
                 </button>
             `);
         
         // Remplacer le texte par l'input
         $todoText.hide();
         $todoItem.find('.todo-actions').hide();
-        $todoText.after($editInput).after($editActions);
+        $todoText.after($editActions).after($editInput);
         
         // Focus sur l'input
         $editInput.focus().select();
@@ -2009,15 +1978,21 @@ jQuery(document).ready(function($) {
             return;
         }
         
-        var $todoItem = $('.todo-item[data-todo-id="' + todoId + '"]');
+        // Chercher uniquement dans le conteneur visible
+        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
+        var $todoItems = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]');
+        
+        if ($todoItems.length === 0) {
+            return;
+        }
         
         // Supprimer l'élément de l'interface immédiatement
-        $todoItem.fadeOut(300, function() {
+        $todoItems.fadeOut(300, function() {
             $(this).remove();
             
-            // Vérifier s'il reste des tâches
-            if ($('#todo-list .todo-item').length === 0) {
-                $('#no-todos').show();
+            // Vérifier s'il reste des tâches dans le conteneur visible
+            if ($visibleContainer.find('#todo-list .todo-item').length === 0) {
+                $visibleContainer.find('#no-todos').show();
             }
             
             // Mettre à jour les statistiques
@@ -2105,7 +2080,6 @@ jQuery(document).ready(function($) {
             
             $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
                 if (!response.success) {
-                    console.error('Erreur lors de la mise à jour de la tâche:', response.data);
                     // Restaurer l'état précédent en cas d'erreur
                     $(this).prop('checked', !isChecked);
                     if (isChecked) {
@@ -2115,7 +2089,6 @@ jQuery(document).ready(function($) {
                     }
                 }
             }).fail(function() {
-                console.error('Erreur AJAX lors de la mise à jour de la tâche');
                 // Restaurer l'état précédent en cas d'erreur
                 $(this).prop('checked', !isChecked);
                 if (isChecked) {
@@ -2162,7 +2135,6 @@ jQuery(document).ready(function($) {
         var openSection = urlParams.get("open_section");
         
         if (openSection) {
-            console.log('Auto-ouverture de la section:', openSection);
             
             // Attendre que le DOM soit prêt
             setTimeout(function() {
@@ -2170,7 +2142,6 @@ jQuery(document).ready(function($) {
                 var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
                 
                 if ($editBtn.length > 0) {
-                    console.log('Bouton d\'édition trouvé pour la section:', openSection);
                     // Simuler un clic sur le bouton d'édition
                     $editBtn.trigger('click');
                     
@@ -2178,15 +2149,222 @@ jQuery(document).ready(function($) {
                     var newUrl = new URL(window.location);
                     newUrl.searchParams.delete('open_section');
                     window.history.replaceState({}, document.title, newUrl.toString());
-                } else {
-                    console.log('Bouton d\'édition non trouvé pour la section:', openSection);
-                }
+                } 
             }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
         }
     }
     
     // Exécuter l'auto-ouverture au chargement
     autoOpenSection();
+    
+    // ========================================
+    // GESTION DU CHANGEMENT DE MOT DE PASSE
+    // ========================================
+    
+    // Vérifier si l'utilisateur doit changer son mot de passe
+    setTimeout(checkPasswordChangeRequired, 1000);
+
+    // Fonction pour vérifier si un changement de mot de passe est requis
+    function checkPasswordChangeRequired() {
+        if (!window.location.pathname.includes('/dashboard') && !window.location.pathname.includes('/business-model-canvas')) {
+            console.log('checkPasswordChangeRequired - Pas sur une page de dashboard, vérification ignorée');
+            console.log('URL actuelle:', window.location.pathname);
+            return;
+        }
+        
+        // Vérifier si c'est une première connexion (utilisateur avec statut 'pending' qui vient de se connecter)
+        var ajaxConfig = getAjaxConfig();
+        
+        
+        // Vérification supplémentaire
+        if (!ajaxConfig.nonce || !ajaxConfig.url) {
+            console.error('Configuration AJAX invalide:', ajaxConfig);
+            return;
+        }
+        
+        
+        $.post(ajaxConfig.url, {
+            action: 'wp_bmc_check_password_change_required',
+            nonce: ajaxConfig.nonce
+        }, function(response) {
+            if (response.success && response.data.required) {
+                showChangePasswordPopup();
+            } 
+        }).fail(function(xhr, status, error) {
+            console.error('Erreur lors de la vérification du changement de mot de passe:', xhr.responseText, 'Status:', status, 'Error:', error);
+        });
+    }
+
+    
+    // Afficher le popup de changement de mot de passe
+    function showChangePasswordPopup() {
+        // Ajouter le popup au DOM s'il n'existe pas
+        if (!$('#wp-bmc-change-password-popup').length) {
+            // Charger le template du popup
+            $.get(wp_bmc_ajax.ajax_url, {
+                action: 'wp_bmc_get_change_password_popup',
+                nonce: wp_bmc_ajax.nonce
+            }, function(response) {
+                if (response.success) {
+                    $('body').append(response.data.html);
+                    initChangePasswordEvents();
+                    $('#wp-bmc-change-password-popup').fadeIn(300);
+                } 
+            }).fail(function(xhr, status, error) {
+                logError('Erreur AJAX lors du chargement du template:', xhr.responseText, 'Status:', status, 'Error:', error);
+            });
+        } else {
+            $('#wp-bmc-change-password-popup').fadeIn(300);
+        }
+    }
+    
+    // Initialiser les événements du popup de changement de mot de passe
+    function initChangePasswordEvents() {
+        // Vérifier le statut utilisateur pour déterminer si la fermeture est autorisée
+        var ajaxConfig = getAjaxConfig();
+        
+        $.get(ajaxConfig.url, {
+            action: 'wp_bmc_check_password_change_required',
+            nonce: ajaxConfig.nonce
+        }, function(response) {
+            var canClosePopup = true;
+            
+            if (response.success && response.data) {
+                // Si le changement de mot de passe est requis, empêcher la fermeture
+                if (response.data.password_change_required) {
+                    canClosePopup = false;
+                }
+            }
+            
+            // Configurer les événements de fermeture selon le statut
+            $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
+                if (!canClosePopup) {
+                    WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+                } else {
+                    $('#wp-bmc-change-password-popup').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            });
+        }).fail(function() {
+            // En cas d'erreur, empêcher la fermeture par sécurité
+            $('#change-password-popup-close, #wp-bmc-change-password-popup .popup-overlay').on('click', function() {
+                WP_BMC_Toast.warning('Vous devez changer votre mot de passe pour continuer');
+            });
+        });
+        
+        // Gestion de l'affichage/masquage des mots de passe
+        $('.show-password').on('click', function() {
+            var target = $(this).data('target');
+            var $input = $('#' + target);
+            var $icon = $(this).find('svg');
+            
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $icon.html('<path fill="currentColor" d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7M2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27M7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2m4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01"/>');
+            } else {
+                $input.attr('type', 'password');
+                $icon.html('<path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5s5 2.24 5 5s-2.24 5-5 5m0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3s3-1.34 3-3s-1.34-3-3-3"/>');
+            }
+        });
+        
+        // Soumission du formulaire
+        $('#wp-bmc-change-password-form').on('submit', function(e) {
+            e.preventDefault();
+            changePassword();
+        });
+        
+        // Validation en temps réel
+        $('#new-password, #confirm-password').on('input', function() {
+            validatePasswordMatch();
+        });
+    }
+    
+    // Valider que les mots de passe correspondent
+    function validatePasswordMatch() {
+        var newPassword = $('#new-password').val();
+        var confirmPassword = $('#confirm-password').val();
+        var $submitBtn = $('#change-password-submit');
+        
+        if (confirmPassword && newPassword !== confirmPassword) {
+            $('#confirm-password').addClass('error');
+            $submitBtn.prop('disabled', true);
+        } else {
+            $('#confirm-password').removeClass('error');
+            $submitBtn.prop('disabled', false);
+        }
+    }
+    
+    // Changer le mot de passe
+    function changePassword() {
+        var $form = $('#wp-bmc-change-password-form');
+        var $submitBtn = $('#change-password-submit');
+        var $btnText = $submitBtn.find('.btn-text');
+        var $btnLoader = $submitBtn.find('.btn-loader');
+        
+        // Validation côté client
+        var currentPassword = $('#current-password').val();
+        var newPassword = $('#new-password').val();
+        var confirmPassword = $('#confirm-password').val();
+        
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            WP_BMC_Toast.error('Tous les champs sont obligatoires');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            WP_BMC_Toast.error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            WP_BMC_Toast.error('Les mots de passe ne correspondent pas');
+            return;
+        }
+        
+        // Désactiver le bouton et afficher le loader
+        $submitBtn.prop('disabled', true);
+        $btnText.hide();
+        $btnLoader.show();
+        
+        // Envoyer la requête
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_change_password',
+            nonce: wp_bmc_ajax.nonce,
+            current_password: currentPassword,
+            new_password: newPassword,
+            confirm_password: confirmPassword
+        }, function(response) {
+            if (response.success) {
+                WP_BMC_Toast.success('Mot de passe changé avec succès !');
+                setTimeout(() => {
+                    WP_BMC_Toast.info('Vous allez être redirigé pour vous reconnecter avec votre nouveau mot de passe')
+                }, 400);
+                $('#wp-bmc-change-password-popup').fadeOut(300, function() {
+                    $(this).remove();
+                });
+            // Si le mot de passe est changé avec succès, déconnecter l'utilisateur et rediriger vers la page de login
+                setTimeout(function() {
+                    window.location.href = wp_bmc_ajax.login_url || '/login';
+                }, 3000); // Laisser le toast s'afficher avant de rediriger
+            } else {
+                WP_BMC_Toast.error(response.data || 'Erreur lors du changement de mot de passe');
+            }
+        }).fail(function() {
+            WP_BMC_Toast.error('Erreur de connexion. Veuillez réessayer.');
+        }).always(function() {
+            // Réactiver le bouton
+            $submitBtn.prop('disabled', false);
+            $btnText.show();
+            $btnLoader.hide();
+        });
+    }
+
+    // Gestionnaire pour le bouton de changement de mot de passe dans le menu
+    $(document).on('click', '#wp-bmc-change-password-btn', function(e) {
+        e.preventDefault();
+        showChangePasswordPopup();
+    });
     
 });
 
@@ -2202,3 +2380,4 @@ function initProgressChart() {
         progressCircle.style.setProperty('--progress-offset', currentOffset);
     }
 }
+

@@ -1,0 +1,117 @@
+/**
+ * WP Business Model Canvas - Styles de Présence
+ * Indicateurs d'édition en temps réel par section
+ * 
+ * STATUS: DÉSACTIVÉ - Fonctionnalité en standby
+ * Pour réactiver: supprimer la règle display: none ci-dessous
+ */
+
+/* ========================================
+   DÉSACTIVATION TEMPORAIRE
+   Pour réactiver: supprimer la ligne ci-dessous
+   ======================================== */
+
+.section-editing-indicator {
+    display: none !important;
+}
+
+/* ========================================
+   INDICATEURS PAR SECTION
+   ======================================== */
+
+.section-editing-indicator {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin: 15px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideInDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), pulseGlow 2s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.section-editing-indicator .edit-icon {
+    font-size: 18px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.section-editing-indicator strong {
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Effet hover */
+.section-editing-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.5);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(52, 152, 219, 0.6);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+    .section-editing-indicator {
+        font-size: 13px;
+        padding: 10px 16px;
+        margin: 12px 20px;
+    }
+    
+    .section-editing-indicator .edit-icon {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-editing-indicator {
+        font-size: 12px;
+        padding: 8px 12px;
+        margin: 10px 15px;
+        gap: 8px;
+    }
+    
+    .section-editing-indicator .edit-icon {
+        font-size: 14px;
+    }
+}
+
+/* ========================================
+   PRINT (MASQUER EN IMPRESSION)
+   ======================================== */
+
+@media print {
+    .section-editing-indicator {
+        display: none !important;
+    }
+}
+

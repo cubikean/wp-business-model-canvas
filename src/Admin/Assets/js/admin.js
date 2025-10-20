@@ -14,8 +14,6 @@ jQuery(document).ready(function($) {
         // Initialiser les tooltips
         initTooltips();
         
-        // Gérer les confirmations de suppression
-        initDeleteConfirmations();
         
         // Ajouter des fonctionnalités de tri aux tableaux
         initTableSorting();
@@ -40,21 +38,7 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Gérer les confirmations de suppression
-    function initDeleteConfirmations() {
-        $('.button-link-delete').on('click', function(e) {
-            const action = $(this).data('action');
-            const itemName = $(this).data('item-name');
-            
-            if (!confirm(`Êtes-vous sûr de vouloir supprimer ${action} "${itemName}" ? Cette action est irréversible.`)) {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Afficher un indicateur de chargement
-            $(this).prop('disabled', true).text('Suppression...');
-        });
-    }
+
     
     // Tri des tableaux
     function initTableSorting() {

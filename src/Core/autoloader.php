@@ -133,6 +133,7 @@ function wp_bmc_load_essential_classes() {
         'WP_BMC_Complete_Check',
         'WP_BMC_Database_Check',
         'WP_BMC_Hooks_Check',
+        'WP_BMC_Canvas_Config',
     );
     
     foreach ($essential_classes as $class) {

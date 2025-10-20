@@ -18,7 +18,11 @@ class WP_BMC_Auth {
         add_action('wp_ajax_wp_bmc_login', array($this, 'handle_login'));
         add_action('wp_ajax_nopriv_wp_bmc_login', array($this, 'handle_login'));
         add_action('wp_ajax_wp_bmc_logout', array($this, 'handle_logout'));
-        add_action('wp_ajax_wp_bmc_logout', array($this, 'handle_logout'));
+        add_action('wp_ajax_nopriv_wp_bmc_logout', array($this, 'handle_logout'));
+        
+        // Hook pour vérifier l'authentification avant l'affichage du contenu
+        add_action('wp', array($this, 'check_page_access'));
+        add_action('template_redirect', array($this, 'check_page_access_early'));
     }
     
     /**
@@ -31,7 +35,6 @@ class WP_BMC_Auth {
         $password = sanitize_text_field($_POST['password']);
         $first_name = sanitize_text_field($_POST['first_name']);
         $last_name = sanitize_text_field($_POST['last_name']);
-        $company = sanitize_text_field($_POST['company']);
         
         // Validation
         if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
@@ -90,7 +93,6 @@ class WP_BMC_Auth {
             'password' => $password,
             'first_name' => $first_name,
             'last_name' => $last_name,
-            'company' => $company
         ));
         
         if ($bmc_user_id) {
@@ -116,24 +118,45 @@ class WP_BMC_Auth {
         $login = sanitize_text_field($_POST['login']);
         $password = sanitize_text_field($_POST['password']);
         
+        error_log("handle_login - Tentative de connexion avec login: " . $login);
+        
         // Validation
         if (empty($login) || empty($password)) {
+            error_log("handle_login - Champs manquants");
             wp_send_json_error('Email/nom d\'utilisateur et mot de passe requis.');
         }
         
         // Vérifier les identifiants (accepte email ou pseudonyme)
         $user = WP_BMC_Database::verify_login($login, $password);
         
-        if ($user) {
+        error_log("handle_login - Résultat verify_login: " . print_r($user, true));
+        
+        if ($user === 'account_disabled') {
+            error_log("handle_login - Compte désactivé");
+            wp_send_json_error('Votre compte a été désactivé. Veuillez contacter un administrateur pour plus d\'informations.');
+        } elseif ($user) {
+            error_log("handle_login - Connexion réussie pour user_id: " . $user->user_id);
+            
+            // Si l'utilisateur est en pending, marquer qu'il doit changer son mot de passe
+            if ($user->status === 'pending') {
+                error_log("handle_login - Utilisateur en statut pending, marquage changement mot de passe requis");
+                // Marquer que l'utilisateur doit changer son mot de passe
+                update_user_meta($user->user_id, 'wp_bmc_password_change_required', true);
+            }
+
             // Connecter l'utilisateur
             wp_set_current_user($user->user_id);
             wp_set_auth_cookie($user->user_id);
             
+            error_log("handle_login - Utilisateur connecté avec succès");
+            
             wp_send_json_success(array(
                 'message' => 'Connexion réussie !',
-                'redirect_url' => home_url('/dashboard/')
+                'redirect_url' => home_url('/dashboard/'),
+                'password_change_required' => ($user->status === 'pending')
             ));
         } else {
+            error_log("handle_login - Identifiants incorrects");
             wp_send_json_error('Email/nom d\'utilisateur ou mot de passe incorrect.');
         }
     }
@@ -178,7 +201,6 @@ class WP_BMC_Auth {
                     'email' => $wp_user->user_email,
                     'first_name' => $wp_user->first_name ?: 'Admin',
                     'last_name' => $wp_user->last_name ?: 'WordPress',
-                    'company' => 'Administration WordPress',
                     'is_admin' => true
                 );
             }
@@ -201,15 +223,124 @@ class WP_BMC_Auth {
      */
     public static function require_login() {
         if (!self::is_logged_in()) {
-            wp_redirect(home_url('/login/'));
-            exit;
+            error_log('WP_BMC_Auth::require_login() - Utilisateur non connecté, redirection vers login');
+            
+            // Forcer la redirection même si les headers sont déjà envoyés
+            if (headers_sent()) {
+                error_log('WP_BMC_Auth::require_login() - Headers déjà envoyés, utiliser JavaScript redirection');
+                echo '<script type="text/javascript">window.location.href = "' . home_url('/login/') . '";</script>';
+                echo '<noscript><meta http-equiv="refresh" content="0; url=' . home_url('/login/') . '"></noscript>';
+                exit;
+            } else {
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
         }
         
         // Vérifier si l'utilisateur a accès
         $current_user = self::get_current_user();
         if (!$current_user) {
-            wp_redirect(home_url('/login/'));
-            exit;
+            error_log('WP_BMC_Auth::require_login() - Utilisateur BMC non trouvé, redirection vers login');
+            
+            // Forcer la redirection même si les headers sont déjà envoyés
+            if (headers_sent()) {
+                error_log('WP_BMC_Auth::require_login() - Headers déjà envoyés, utiliser JavaScript redirection');
+                echo '<script type="text/javascript">window.location.href = "' . home_url('/login/') . '";</script>';
+                echo '<noscript><meta http-equiv="refresh" content="0; url=' . home_url('/login/') . '"></noscript>';
+                exit;
+            } else {
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
+        }
+        
+        error_log('WP_BMC_Auth::require_login() - Utilisateur connecté et autorisé');
+    }
+    
+    /**
+     * Vérifier l'accès aux pages avant l'affichage
+     */
+    public function check_page_access() {
+        global $post;
+        
+        // Vérifier si nous sommes sur une page qui contient le shortcode dashboard
+        if (is_admin() || !$post) {
+            return;
+        }
+        
+        // Vérifier si la page contient le shortcode wp_bmc_dashboard
+        if (has_shortcode($post->post_content, 'wp_bmc_dashboard')) {
+            error_log('WP_BMC_Auth::check_page_access() - Page dashboard détectée');
+            
+            if (!self::is_logged_in()) {
+                error_log('WP_BMC_Auth::check_page_access() - Utilisateur non connecté, redirection vers login');
+                
+                // Redirection précoce avant le shortcode
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
+            
+            $current_user = self::get_current_user();
+            if (!$current_user) {
+                error_log('WP_BMC_Auth::check_page_access() - Utilisateur BMC non trouvé, redirection vers login');
+                
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
+        }
+    }
+    
+    /**
+     * Vérification précoce de l'accès aux pages dashboard
+     * Utilise template_redirect qui est exécuté avant l'affichage
+     */
+    public function check_page_access_early() {
+        // Vérifier si nous sommes sur la page dashboard par URL
+        if (is_page() && get_queried_object()) {
+            $page = get_queried_object();
+            
+            // Vérifier si c'est la page dashboard (slug ou titre)
+            if (strpos($page->post_name, 'dashboard') !== false || 
+                strpos(strtolower($page->post_title), 'dashboard') !== false) {
+                
+                error_log('WP_BMC_Auth::check_page_access_early() - Page dashboard détectée:' . $page->post_name);
+                
+                if (!self::is_logged_in()) {
+                    error_log('WP_BMC_Auth::check_page_access_early() - Utilisateur non connecté, redirection vers login');
+                    
+                    wp_redirect(home_url('/login/'));
+                    exit;
+                }
+                
+                $current_user = self::get_current_user();
+                if (!$current_user) {
+                    error_log('WP_BMC_Auth::check_page_access_early() - Utilisateur BMC non trouvé, redirection vers login');
+                    
+                    wp_redirect(home_url('/login/'));
+                    exit;
+                }
+            }
+        }
+        
+        // Vérification alternative pour les URLs contenant /dashboard
+        $current_url = home_url(add_query_arg(array(), $GLOBALS['wp']->request));
+        if (strpos($current_url, '/dashboard') !== false) {
+            error_log('WP_BMC_Auth::check_page_access_early() - URL dashboard détectée: ' . $current_url);
+            
+            if (!self::is_logged_in()) {
+                error_log('WP_BMC_Auth::check_page_access_early() - Utilisateur non connecté, redirection vers login');
+                
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
+            
+            $current_user = self::get_current_user();
+            if (!$current_user) {
+                error_log('WP_BMC_Auth::check_page_access_early() - Utilisateur BMC non trouvé, redirection vers login');
+                
+                wp_redirect(home_url('/login/'));
+                exit;
+            }
         }
     }
 }

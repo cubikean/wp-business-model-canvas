@@ -26,20 +26,24 @@
   --dashboard-text-light: #666666;
 }
 
-[data-section="key_partners"], [data-section="key_activities"], [data-section="key_resources"]{
+[data-section="key_partners"],
+[data-section="key_activities"],
+[data-section="key_resources"] {
   --edit-view-color: var(--dashboard-primary);
 }
 
-[data-section="value_proposition"]{
+[data-section="value_proposition"] {
   --edit-view-color: var(--dashboard-green);
 }
 
-[data-section="customer_relationships"], [data-section="channels"], [data-section="customer_segments"]{
+[data-section="customer_relationships"],
+[data-section="channels"],
+[data-section="customer_segments"] {
   --edit-view-color: var(--dashboard-orange);
 }
 
-
-[data-section="cost_structure"], [data-section="revenue_streams"]{
+[data-section="cost_structure"],
+[data-section="revenue_streams"] {
   --edit-view-color: var(--dashboard-blue);
 }
 
@@ -290,23 +294,28 @@
   --wp--style--global--wide-size: unset;
 }
 
-.business-model-canvas #lqd-contents-wrap{
+.business-model-canvas #lqd-contents-wrap {
   width: 100%;
   margin: 0 auto;
   padding: 0;
   background: var(--dashboard-dark-blue);
 }
 
+#wp-bmc-generate-pdf{
+  margin-top: 32px;
+}
+
 .wp-bmc-canvas-container,
 .wp-bmc-dashboard {
-  max-width: 1400px;
-  padding: 150px 0;
+  max-width: 1200px;
+  padding-top: 150px;
+  margin-inline: auto;
 }
 
 /* Styles généraux */
 .wp-bmc-container {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 200px auto;
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -355,6 +364,11 @@
   font-size: 14px;
   margin-top: 5px;
   display: block;
+}
+
+.form-group .password-input-container {
+  display: flex;
+  align-items: center;
 }
 
 /* Boutons */
@@ -443,6 +457,11 @@
   color: white;
   font-weight: 400;
   font-size: 36px;
+}
+
+.dashboard-header h3 {
+  color: white;
+  font-size: 24px;
 }
 
 .user-info {
@@ -583,8 +602,15 @@
   display: flex;
   gap: 10px;
 
-  a{
+  a {
     color: white;
+    text-decoration: underline;
+    transition: all 0.3s ease;
+
+    &:hover {
+      text-decoration: none;
+      color: white;
+    }
   }
 }
 
@@ -595,8 +621,6 @@
   gap: 15px;
   max-width: 1000px;
   margin: 0 auto;
-
-  padding: 40px;
   background: var(--dashboard-dark-blue);
 }
 
@@ -606,6 +630,18 @@
   min-height: 150px;
   display: flex;
   flex-direction: column;
+}
+
+.canvas-section.overview-status {
+  padding: 32px;
+
+  h3 {
+    margin-bottom: 20px;
+    text-transform: initial;
+    text-wrap: balance;
+    width: 80%;
+    margin-inline: auto;
+  }
 }
 
 .canvas-section .canvas-section-header {
@@ -795,11 +831,6 @@
   color: var(--text-color);
 }
 
-.company-info {
-  color: var(--text-muted) !important;
-  font-style: italic;
-}
-
 /* Section sans projet */
 .no-project-section {
   text-align: center;
@@ -807,6 +838,8 @@
   background: var(--light-gray);
   border-radius: 12px;
   margin-bottom: 30px;
+  max-width: 600px;
+  margin-inline: auto;
 }
 
 .welcome-message h2 {
@@ -1043,9 +1076,8 @@
   grid-row: 1;
 }
 
-.canvas-section .overview-status{
+.canvas-section .overview-status {
   padding: 32px;
-
 }
 
 .canvas-section-header {
@@ -1070,7 +1102,7 @@
   color: var(--dashboard-text);
   padding: 24px;
   padding-bottom: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -1120,10 +1152,238 @@
 .canvas-files h4 {
   margin: 0 0 10px 0;
   font-size: 12px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+}
+
+/* ========================================
+   POPUP DE CHANGEMENT DE MOT DE PASSE
+   ======================================== */
+
+#wp-bmc-change-password-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wp-bmc-change-password-popup .popup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+#wp-bmc-change-password-popup .popup-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: popupSlideIn 0.3s ease-out;
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#wp-bmc-change-password-popup .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid var(--dashboard-border);
+  margin-bottom: 24px;
+}
+
+#wp-bmc-change-password-popup .popup-header h3 {
+  margin: 0;
+  color: var(--dashboard-text);
+  font-size: 24px;
   font-weight: 600;
+}
+
+#wp-bmc-change-password-popup .popup-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--dashboard-text-light);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+#wp-bmc-change-password-popup .popup-close:hover {
+  background: var(--dashboard-light-grey);
+  color: var(--dashboard-text);
+}
+
+#wp-bmc-change-password-popup .popup-body {
+  padding: 0 24px 24px 24px;
+}
+
+.change-password-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--dashboard-light-blue);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid var(--dashboard-blue);
+}
+
+.change-password-info .info-icon {
+  color: var(--dashboard-blue);
+  font-size: 24px;
+  margin-top: 2px;
+}
+
+.change-password-info p {
+  margin: 0;
+  color: var(--dashboard-text);
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.change-password-form .form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.change-password-form .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dashboard-text);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.change-password-form .form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--dashboard-border);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: white;
+  box-sizing: border-box;
+}
+
+.change-password-form .form-group input:focus {
+  outline: none;
+  border-color: var(--dashboard-blue);
+  box-shadow: 0 0 0 3px rgba(98, 170, 221, 0.1);
+}
+
+.change-password-form .form-group input.error {
+  border-color: var(--dashboard-primary);
+  box-shadow: 0 0 0 3px rgba(255, 75, 107, 0.1);
+}
+
+.change-password-form .form-group .show-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--dashboard-text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+}
+
+.change-password-form .form-group .show-password:hover {
+  color: var(--dashboard-text);
+}
+
+.change-password-form .form-group .password-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--dashboard-text-light);
+  font-size: 12px;
+}
+
+.change-password-form .form-actions {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.change-password-form .wp-bmc-btn {
+  min-width: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.change-password-form .btn-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.change-password-form .loader-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #wp-bmc-change-password-popup .popup-content {
+    width: 95%;
+    margin: 20px;
+  }
+
+  #wp-bmc-change-password-popup .popup-header,
+  #wp-bmc-change-password-popup .popup-body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .change-password-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .change-password-form .wp-bmc-btn {
+    width: 100%;
+    min-width: auto;
+  }
 }
 
 .canvas-files .files-list {
@@ -1253,7 +1513,7 @@
   background: var(--edit-view-color);
   color: white;
   cursor: not-allowed;
-  opacity: .6;
+  opacity: 0.6;
 }
 
 .rate-brick-btn.rated {
@@ -1444,7 +1704,7 @@
 }
 
 /* Grading modal */
-.grading-modal .popup-content{
+.grading-modal .popup-content {
   width: 500px;
 }
 
@@ -1454,23 +1714,23 @@
   gap: 0px;
 }
 
-.grading-modal .popup-close{
+.grading-modal .popup-close {
   position: absolute;
   right: 20px;
   top: 20px;
 }
 
-.grading-modal .section-title{
+.grading-modal .section-title {
   font-weight: 600;
   color: #aaaaaa;
   font-size: 20px;
 }
 
-.grading-modal :is(#rating, #comment){
+.grading-modal :is(#rating, #comment) {
   width: 100%;
 }
 
-.grading-modal #rating{
+.grading-modal #rating {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -1539,7 +1799,7 @@
 }
 
 .grading-modal .rating-slider-wrapper::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 0;
@@ -1552,7 +1812,7 @@
   z-index: 1;
 }
 
-.grading-modal #comment{
+.grading-modal #comment {
   padding: 16px;
   background-color: #fafafa;
   border: none;
@@ -1561,12 +1821,12 @@
   resize: vertical;
 }
 
-.grading-modal .grading-actions{
+.grading-modal .grading-actions {
   display: flex;
   justify-content: flex-end;
 }
 
-.grading-modal .rating-display{
+.grading-modal .rating-display {
   flex-wrap: nowrap;
 }
 
@@ -2000,7 +2260,7 @@ body.popup-open {
 .need-grading {
   border: 5px solid var(--admin-red-rating);
 
-  &::before{
+  &::before {
     position: absolute;
     content: "";
     top: -24px;
@@ -2017,14 +2277,14 @@ body.popup-open {
   }
 }
 
-.rating-section{
+.rating-section {
   display: flex;
   padding: 32px;
   flex-direction: column;
   gap: 16px;
 }
 
-.rating-display{
+.rating-display {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -2033,14 +2293,13 @@ body.popup-open {
   gap: 16px;
 }
 
-.rating-meta{
+.rating-meta {
   width: 100%;
   display: flex;
   gap: 12px;
   font-size: 18px;
   font-weight: 400;
 }
-
 
 .rating-score {
   position: relative;
@@ -2050,8 +2309,8 @@ body.popup-open {
   display: grid;
   grid-template-columns: 35px 35px;
   grid-template-rows: 35px 35px;
-  width: 70px;
-  height: 70px;
+  width: 90px;
+  height: 90px;
 
   background-color: color-mix(in srgb, var(--edit-view-color) 30%, transparent);
 
@@ -2152,7 +2411,6 @@ body.popup-open {
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, auto);
   gap: 32px;
-  padding: 32px;
   background: var(--dashboard-dark-blue);
 }
 
@@ -2206,21 +2464,23 @@ body.popup-open {
 
 .btn-outline {
   padding: 10px 20px;
-  border: 1px solid var(--edit-view-color);
+  outline: 1px solid var(--edit-view-color, var(--dashboard-primary));
+  border: none;
   background: white;
-  color: var(--edit-view-color);
+  color: var(--edit-view-color, var(--dashboard-primary));
   border-radius: 99px;
   font-size: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
+  line-height: 1.2;
 }
 
 .btn-outline.--icon-bg {
   padding: 6px 20px 6px 10px;
   i {
-    background-color: var(--edit-view-color);
+    background-color: var(--edit-view-color, var(--dashboard-primary));
     color: white;
     border-radius: 99px;
     padding: 4px;
@@ -2233,13 +2493,13 @@ body.popup-open {
 }
 
 .btn-outline:hover {
-  background: var(--edit-view-color);
+  background: var(--edit-view-color, var(--dashboard-primary));
   color: white;
   cursor: pointer;
 }
 
-.btn-solid {
-  background: var(--edit-view-color);
+.bmc-btn-solid {
+  background: var(--edit-view-color, var(--dashboard-primary));
   color: white;
   cursor: pointer;
   border: none;
@@ -2248,6 +2508,7 @@ body.popup-open {
   font-size: 16px;
   font-weight: 400;
   transition: all 0.3s ease;
+  line-height: 1.2;
 }
 
 .sub-section {
@@ -2347,7 +2608,6 @@ body.popup-open {
   gap: 24px;
 }
 
-
 .revision-info {
   display: flex;
   flex-direction: column;
@@ -2377,8 +2637,8 @@ body.popup-open {
   font-weight: 500;
   line-height: 1.4;
   line-break: anywhere;
-  background-color: #F6F6F6;
-  color: #7C7C7C;
+  background-color: #f6f6f6;
+  color: #7c7c7c;
 }
 
 .reason-grading_request {
@@ -2518,13 +2778,13 @@ body.popup-open {
   position: relative;
   width: 200px;
   height: 120px;
-  margin: 0 auto 20px;
+  margin: 0 auto 60px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.overview-status h3{
+.overview-status h3 {
   color: var(--dashboard-text);
 }
 
@@ -2561,11 +2821,11 @@ body.popup-open {
 
 .overview-status .action-plan li {
   padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #ffffff18;
 }
 
-.overview-status .action-plan li:last-child {
-  border-bottom: none;
+.overview-status .action-plan li:first-child {
+  border-top: 1px solid #ffffff18;
 }
 
 /* ========================================
@@ -2573,13 +2833,24 @@ body.popup-open {
    ======================================== */
 
 .action-plan-info {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0.5rem 0 1rem 0;
-  padding: 0.5rem;
-  background: var(--light-blue);
-  border-radius: 6px;
-  border-left: 3px solid var(--dashboard-blue);
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  border-radius: 20px;
+  background-color: var(--dashboard-primary);
+  padding: 28px;
+}
+
+.action-plan-info h4 {
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.action-plan-info ul {
+  width: 100%;
 }
 
 .action-plan-info i {
@@ -2600,20 +2871,8 @@ body.popup-open {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  margin-bottom: 0;
   transition: all 0.2s ease;
-}
-
-.action-plan .todo-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.action-plan .todo-item:hover .todo-checkbox {
-  transform: scale(1.1);
 }
 
 .action-plan .todo-item.completed {
@@ -2631,7 +2890,7 @@ body.popup-open {
   flex: 1;
 }
 
-.action-plan .todo-checkbox {
+.todo-content .todo-checkbox {
   margin-right: 0.75rem;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -2639,13 +2898,13 @@ body.popup-open {
 
 .action-plan .todo-text {
   font-size: 0.9rem;
-  color: var(--text-color);
+  color: white;
   line-height: 1.4;
 }
 
 .action-plan .todo-section-badge {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: white;
   background: var(--light-blue);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
@@ -2656,7 +2915,6 @@ body.popup-open {
 .action-plan .no-todos {
   text-align: center;
   padding: 2rem;
-  color: var(--text-muted);
 }
 
 .action-plan .no-todos i {
@@ -2732,9 +2990,15 @@ body.popup-open {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .todo-count {
@@ -2801,16 +3065,17 @@ body.popup-open {
   margin: 0;
   display: flex;
   flex-direction: column;
+
 }
 
 .todo-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0.5rem;
   background: var(--white);
   transition: all 0.2s ease;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
   &:last-child {
     border-bottom: none;
   }
@@ -2836,8 +3101,40 @@ body.popup-open {
 .todo-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0;
   flex: 1;
+}
+
+.todo-edit-input{
+  flex: 1;
+  border: none;
+  padding: 8px;
+  margin-right: 6px;
+  border-radius: 6px;
+}
+
+.todo-edit-actions{
+  display: flex;
+  gap: 4px;
+  margin: 0;
+
+  button{
+    border: none;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    color: white;
+    border-radius: 6px;
+
+  
+    &.todo-save-edit{
+      background-color: var(--dashboard-blue);
+    }
+
+    &.todo-cancel-edit{
+      background-color: var(--dashboard-primary);
+    }
+  }
 }
 
 .todo-checkbox {
@@ -2900,7 +3197,7 @@ body.popup-open {
 .no-todos {
   text-align: center;
   padding: 2rem;
-  color: var(--text-muted);
+  color: white;
 }
 
 .no-todos i {
@@ -2917,7 +3214,9 @@ body.popup-open {
 
 .no-todos small {
   font-size: 0.875rem;
-  color: var(--text-muted);
+  line-height: 1.2;
+  text-wrap: balance;
+  display: block;
 }
 
 /* Animation pour l'ajout/suppression de tâches */
@@ -2942,84 +3241,88 @@ body.popup-open {
 
 /* Loader principal */
 .wp-bmc-loader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    color: #6c757d;
-    font-size: 14px;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  font-size: 14px;
+  gap: 15px;
 }
 
 .wp-bmc-loader span {
-    margin-top: 10px;
-    font-weight: 500;
+  margin-top: 10px;
+  font-weight: 500;
 }
 
 /* Spinner animation */
 .loader-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #e9ecef;
-    border-top: 3px solid #007cba;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e9ecef;
+  border-top: 3px solid #007cba;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 /* Loader pour les boutons */
 .btn-loader {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
 }
 
 .btn-loader .loader-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  margin-right: 8px;
 }
 
 /* Indicateur de sauvegarde flottant */
 .saving-indicator {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    z-index: 10000;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    animation: slideInRight 0.3s ease-out;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 10000;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: slideInRight 0.3s ease-out;
 }
 
 .saving-indicator .loader-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  margin-right: 10px;
 }
 
 /* Animation pour les loaders */
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Loader pour les sections spécifiques */
@@ -3029,47 +3332,47 @@ body.popup-open {
 #revisions-list .wp-bmc-loader,
 #rating-section .wp-bmc-loader,
 #todo-list .wp-bmc-loader {
-    min-height: 100px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px dashed #dee2e6;
+  min-height: 100px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
 }
 
 /* Loader pour le canvas */
 .canvas-container .wp-bmc-loader {
-    min-height: 300px;
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
+  min-height: 300px;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
 }
 
 /* États de chargement pour les boutons */
 button:disabled .loader-spinner {
-    animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 /* Loader compact pour les petites zones */
 .wp-bmc-loader.compact {
-    padding: 20px;
-    min-height: auto;
+  padding: 20px;
+  min-height: auto;
 }
 
 .wp-bmc-loader.compact .loader-spinner {
-    width: 20px;
-    height: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Loader inline pour les boutons */
 .wp-bmc-loader-inline {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 /* ========================================
@@ -3077,62 +3380,60 @@ button:disabled .loader-spinner {
    ======================================== */
 
 .canvas-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .canvas-actions {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
-
-
 #wp-bmc-generate-pdf:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 #wp-bmc-generate-pdf .fas {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 /* Loader dans le bouton PDF */
 #wp-bmc-generate-pdf .btn-loader {
-    margin-right: 8px;
+  margin-right: 8px;
 }
 
 #wp-bmc-generate-pdf .btn-loader .loader-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
 }
 
 /* Responsive pour les contrôles canvas */
 @media (max-width: 768px) {
-    .canvas-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .view-toggle {
-        display: flex;
-        justify-content: center;
-    }
-    
-    .canvas-actions {
-        justify-content: center;
-    }
-    
-    #wp-bmc-generate-pdf {
-        width: 100%;
-        justify-content: center;
-    }
+  .canvas-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-toggle {
+    display: flex;
+    justify-content: center;
+  }
+
+  .canvas-actions {
+    justify-content: center;
+  }
+
+  #wp-bmc-generate-pdf {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Responsive design pour les todos */
@@ -3140,38 +3441,86 @@ button:disabled .loader-spinner {
   .todo-section {
     padding: 1rem;
   }
-  
+
   .todo-section header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .todo-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .todo-content {
     width: 100%;
   }
-  
+
   .todo-actions {
     opacity: 1;
     align-self: flex-end;
   }
-  
+
   .todo-input-group {
     flex-direction: column;
   }
-  
+
   .todo-input-group input {
     width: 100%;
   }
-  
+
   .todo-input-group button {
     width: 100%;
   }
 }
 
+
+/* FORMS */
+
+.wp-bmc-form{
+  display: flex;
+  flex-direction: column;
+  max-width: 600px;
+
+  .form-group.form-group input {
+    width: -webkit-fill-available;
+    margin: 0;
+  }
+
+  .field-error{
+    font-size: 14px;
+    padding: 8px 2px;
+    color: var(--dashboard-primary);
+  }
+
+  .show-password{
+    position: absolute;
+    right: 20px;
+    top: 8px;
+    padding: 0;
+    background: unset;
+    color: black;
+    &:hover{
+      background: none;
+      color: black;
+    }
+  }
+
+
+  .form-links{
+    font-size: 18px;
+    margin-top: 0;
+    p{
+      margin: 0;
+      margin-bottom: 8px;
+    }
+  }
+  .password-input-container{
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+
+  }
+}

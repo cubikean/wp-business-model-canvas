@@ -221,8 +221,13 @@ function wp_bmc_get_synthetic_order()
  */
 function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, $is_admin = false, $pending_grading_requests = array(), $include_progress_chart = false)
 {
-    // Configuration des sections du canvas
-    $canvas_sections = WP_BMC_Canvas_Config::get_sections_config($view_mode);
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
+    // Configuration des sections du canvas (utiliser les valeurs par défaut du fichier)
+    $canvas_sections = wp_bmc_get_canvas_sections($view_mode, false);
 
     // Calculer le pourcentage d'avancement si nécessaire
     $progress_percentage = 0;
@@ -271,8 +276,8 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
             echo '<text x="100" y="85" text-anchor="middle" class="progress-text">' . $progress_percentage . '%</text>';
             echo '</svg>';
             echo '</div>';
+            echo '<div class="action-plan-info">';
             echo '<h4>Plan d\'action</h4>';
-            echo '<p class="action-plan-info"><i class="fas fa-info-circle"></i> Prochaines 5 tâches à réaliser - Cliquez pour marquer comme terminées</p>';
             echo '<ul class="action-plan">';
 
             // Récupérer toutes les tâches todo de toutes les briques
@@ -301,6 +306,7 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
             }
 
             echo '</ul>';
+            echo '</div>';
             echo '</div>';
         }
 
@@ -373,7 +379,12 @@ function wp_bmc_get_all_project_todos($project_id)
  */
 function wp_bmc_get_section_display_name($section_key)
 {
-    $sections = wp_bmc_get_canvas_sections();
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
+    $sections = wp_bmc_get_canvas_sections('global', false);
 
     if (isset($sections[$section_key])) {
         return $sections[$section_key]['title'];

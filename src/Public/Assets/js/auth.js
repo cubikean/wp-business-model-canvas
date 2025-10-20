@@ -3,6 +3,24 @@
  * Gère les formulaires de connexion, inscription et déconnexion
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function($) {
     
     // ========================================
@@ -73,7 +91,6 @@ jQuery(document).ready(function($) {
             first_name: $('#first_name').val(),
             last_name: $('#last_name').val(),
             email: $('#email').val(),
-            company: $('#company').val(),
             password: password
         };
         
@@ -204,7 +221,7 @@ jQuery(document).ready(function($) {
 
     // Gestion souris
     $('.show-password').on('mousedown', function() {
-        console.log('show-password');
+        log('show-password');
         $(this).parent().find('#password').attr('type', 'text');
     });
     $('.show-password').on('mouseup', function() {
@@ -215,7 +232,7 @@ jQuery(document).ready(function($) {
     $('.show-password').on('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            console.log('show-password keyboard');
+            log('show-password keyboard');
             $(this).parent().find('#password').attr('type', 'text');
         }
     });
@@ -248,7 +265,6 @@ jQuery(document).ready(function($) {
         $(formSelector + ' input').removeClass('error valid');
         $('.password-match-indicator, .password-strength-indicator').remove();
     }
-    
     // Exposer les fonctions globalement si nécessaire
     window.WP_BMC_Auth = {
         clearForm: clearForm

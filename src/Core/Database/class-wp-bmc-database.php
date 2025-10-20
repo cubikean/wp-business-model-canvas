@@ -52,30 +52,38 @@ class WP_BMC_Database {
         $sql_users = "CREATE TABLE $table_users (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             user_id bigint(20) NOT NULL,
+            custom_id varchar(50) DEFAULT NULL,
             email varchar(100) NOT NULL,
             password varchar(255) NOT NULL,
             first_name varchar(50) NOT NULL,
             last_name varchar(50) NOT NULL,
-            company varchar(100),
+            status varchar(20) DEFAULT 'pending',
+            is_active tinyint(1) DEFAULT 1,
+            created_by_admin bigint(20) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY email (email),
-            KEY user_id (user_id)
+            UNIQUE KEY custom_id (custom_id),
+            KEY user_id (user_id),
+            KEY status (status),
+            KEY is_active (is_active),
+            KEY created_by_admin (created_by_admin)
         ) $charset_collate;";
         
         // Table des projets BMC
         $table_projects = $wpdb->prefix . 'bmc_projects';
         $sql_projects = "CREATE TABLE $table_projects (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            user_id bigint(20) NOT NULL,
             title varchar(255) NOT NULL,
             description text,
             status varchar(20) DEFAULT 'draft',
+            created_by_admin bigint(20) NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            KEY user_id (user_id)
+            KEY created_by_admin (created_by_admin),
+            KEY status (status)
         ) $charset_collate;";
         
         // Table des données BMC
@@ -175,6 +183,68 @@ class WP_BMC_Database {
             KEY student_id (student_id)
         ) $charset_collate;";
         
+        // Table de liaison projet-utilisateurs (nouvelle pour v2.0)
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        $sql_project_users = "CREATE TABLE $table_project_users (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            user_id bigint(20) NOT NULL,
+            assigned_by_admin bigint(20) NOT NULL,
+            assigned_at datetime DEFAULT CURRENT_TIMESTAMP,
+            is_active tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            UNIQUE KEY project_user (project_id, user_id),
+            KEY project_id (project_id),
+            KEY user_id (user_id),
+            KEY assigned_by_admin (assigned_by_admin),
+            KEY is_active (is_active)
+        ) $charset_collate;";
+        
+        // Table de liaison projet-superviseurs (admins responsables)
+        $table_project_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        $sql_project_supervisors = "CREATE TABLE $table_project_supervisors (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            project_id mediumint(9) NOT NULL,
+            supervisor_id bigint(20) NOT NULL,
+            assigned_at datetime DEFAULT CURRENT_TIMESTAMP,
+            is_active tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            UNIQUE KEY project_supervisor (project_id, supervisor_id),
+            KEY project_id (project_id),
+            KEY supervisor_id (supervisor_id),
+            KEY is_active (is_active)
+        ) $charset_collate;";
+        
+        // Table des configurations du canvas
+        $table_canvas_config = $wpdb->prefix . 'bmc_canvas_config';
+        $sql_canvas_config = "CREATE TABLE $table_canvas_config (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            section_key varchar(50) NOT NULL,
+            config_type varchar(20) NOT NULL,
+            config_value text NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY section_config (section_key, config_type),
+            KEY section_key (section_key),
+            KEY config_type (config_type)
+        ) $charset_collate;";
+        
+        // Table des sessions utilisateur (présence temps réel)
+        $table_user_sessions = $wpdb->prefix . 'bmc_user_sessions';
+        $sql_user_sessions = "CREATE TABLE $table_user_sessions (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            project_id mediumint(9) NOT NULL,
+            section varchar(50) DEFAULT NULL,
+            is_editing tinyint(1) DEFAULT 0,
+            last_ping datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY user_project (user_id, project_id),
+            KEY project_id (project_id),
+            KEY last_ping (last_ping)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_users);
         dbDelta($sql_projects);
@@ -184,6 +254,10 @@ class WP_BMC_Database {
         dbDelta($sql_admin_notifications);
         dbDelta($sql_todos);
         dbDelta($sql_admin_students);
+        dbDelta($sql_project_users);
+        dbDelta($sql_project_supervisors);
+        dbDelta($sql_canvas_config);
+        dbDelta($sql_user_sessions);
     }
     
         /**
@@ -201,10 +275,9 @@ class WP_BMC_Database {
                 'email' => $data['email'],
                 'password' => wp_hash_password($data['password']),
                 'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'company' => isset($data['company']) ? $data['company'] : ''
+                'last_name' => $data['last_name']
             ),
-            array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s')
         );
         
         return $result ? $wpdb->insert_id : false;
@@ -213,6 +286,7 @@ class WP_BMC_Database {
     /**
      * Vérifier les identifiants de connexion
      * Accepte soit l'email soit le pseudonyme WordPress
+     * Retourne l'utilisateur ou un code d'erreur spécifique
      */
     public static function verify_login($login, $password) {
         global $wpdb;
@@ -227,15 +301,31 @@ class WP_BMC_Database {
             )
         );
         
-        if ($user && wp_check_password($password, $user->password)) {
-            return $user;
+        if ($user) {
+            
+            if (wp_check_password($password, $user->password)) {
+                // Vérifier le statut de l'utilisateur
+                if ($user->status === 'disabled') {
+                    return 'account_disabled'; // Code spécifique pour compte désactivé
+                }
+                return $user;
+            } else {
+            }
         }
         
-        // Si pas trouvé par email, essayer par pseudonyme WordPress
+        // Essayer d'abord par pseudonyme
         $wp_user = get_user_by('login', $login);
+        
+        // Si pas trouvé par pseudonyme, essayer par email WordPress
+        if (!$wp_user) {
+            $wp_user = get_user_by('email', $login);
+        } 
+        
         if ($wp_user) {
+            
             // Vérifier le mot de passe WordPress
             if (wp_check_password($password, $wp_user->user_pass)) {
+                
                 // Chercher dans notre table BMC
                 $bmc_user = $wpdb->get_row(
                     $wpdb->prepare(
@@ -245,6 +335,10 @@ class WP_BMC_Database {
                 );
                 
                 if ($bmc_user) {
+                    // Vérifier le statut de l'utilisateur
+                    if ($bmc_user->status === 'disabled') {
+                        return 'account_disabled'; // Code spécifique pour compte désactivé
+                    }
                     return $bmc_user;
                 }
                 
@@ -255,20 +349,19 @@ class WP_BMC_Database {
                         'email' => $wp_user->user_email,
                         'first_name' => $wp_user->first_name ?: 'Admin',
                         'last_name' => $wp_user->last_name ?: 'WordPress',
-                        'company' => 'Administration WordPress',
                         'is_admin' => true
                     );
                 }
-            }
-        }
+            } 
+        } 
         
         return false;
     }
     
     /**
-     * Créer un nouveau projet
+     * Créer un nouveau projet (v2.0 - créé par admin)
      */
-    public static function create_project($user_id, $title, $description = '') {
+    public static function create_project($admin_id, $title, $description = '') {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_projects';
@@ -276,31 +369,376 @@ class WP_BMC_Database {
         $result = $wpdb->insert(
             $table,
             array(
-                'user_id' => $user_id,
                 'title' => $title,
                 'description' => $description,
-                'status' => 'draft'
+                'status' => 'draft',
+                'created_by_admin' => $admin_id
             ),
-            array('%d', '%s', '%s', '%s')
+            array('%s', '%s', '%s', '%d')
         );
         
         return $result ? $wpdb->insert_id : false;
     }
+
+    /**
+     * Mettre à jour un projet
+     */
+    public static function edit_project($project_id, $title, $description) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_projects';
+        $result = $wpdb->update(
+            $table,
+            array('title' => $title, 'description' => $description),
+            array('id' => $project_id),
+            array('%s', '%s'),
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
     
     /**
-     * Obtenir les projets d'un utilisateur
+     * Créer un nouvel utilisateur (v2.0 - créé par admin)
+     */
+    public static function create_user($admin_id, $data) {
+        global $wpdb;
+        
+        // Créer l'utilisateur WordPress
+        $user_id = wp_create_user($data['email'], $data['password'], $data['email']);
+        
+        if (is_wp_error($user_id)) {
+            return false;
+        }
+        
+        // Mettre à jour les informations utilisateur WordPress
+        wp_update_user(array(
+            'ID' => $user_id,
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'display_name' => $data['first_name'] . ' ' . $data['last_name']
+        ));
+        
+        // Insérer dans la table BMC
+        $table = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'custom_id' => $data['custom_id'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'status' => 'pending',
+                'created_by_admin' => $admin_id
+            ),
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
+        );
+        
+        if ($result) {
+            return $wpdb->insert_id;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Associer un utilisateur à un projet
+     */
+    public static function assign_user_to_project($project_id, $user_id, $admin_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        
+        // Vérifier si l'assignation existe déjà
+        $existing = $wpdb->get_var($wpdb->prepare("
+            SELECT id FROM $table 
+            WHERE project_id = %d AND user_id = %d
+        ", $project_id, $user_id));
+        
+        if ($existing) {
+            // Réactiver si désactivée
+            $result = $wpdb->update(
+                $table,
+                array('is_active' => 1),
+                array('id' => $existing),
+                array('%d'),
+                array('%d')
+            );
+            return $result !== false;
+        }
+        
+        // Créer une nouvelle assignation
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'user_id' => $user_id,
+                'assigned_by_admin' => $admin_id
+            ),
+            array('%d', '%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Retirer un utilisateur d'un projet
+     */
+    public static function remove_user_from_project($project_id, $user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        $result = $wpdb->update(
+            $table,
+            array('is_active' => 0),
+            array(
+                'project_id' => $project_id,
+                'user_id' => $user_id
+            ),
+            array('%d'),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Vérifier si un utilisateur a accès à un projet
+     */
+    public static function user_has_project_access($user_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_users';
+        $result = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table 
+            WHERE project_id = %d AND user_id = %d AND is_active = 1
+        ", $project_id, $user_id));
+        
+        return $result > 0;
+    }
+    
+    /**
+     * Obtenir les projets d'un utilisateur (v2.0 - via table de liaison)
      */
     public static function get_user_projects($user_id) {
         global $wpdb;
         
-        $table = $wpdb->prefix . 'bmc_projects';
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
         
-        return $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM $table WHERE user_id = %d ORDER BY created_at DESC",
-                $user_id
-            )
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT p.*, pu.assigned_at, pu.is_active as assignment_active
+            FROM $table_projects p
+            JOIN $table_project_users pu ON p.id = pu.project_id
+            WHERE pu.user_id = %d AND pu.is_active = 1
+            ORDER BY pu.assigned_at DESC
+        ", $user_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir les utilisateurs d'un projet
+     */
+    public static function get_project_users($project_id) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT u.*, pu.assigned_at, pu.assigned_by_admin, pu.is_active as assignment_active
+            FROM $table_users u
+            JOIN $table_project_users pu ON u.user_id = pu.user_id
+            WHERE pu.project_id = %d AND pu.is_active = 1
+            ORDER BY pu.assigned_at DESC
+        ", $project_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Assigner un superviseur (admin) à un projet
+     */
+    public static function assign_supervisor_to_project($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        // Vérifier si l'assignation existe déjà
+        $existing = $wpdb->get_var($wpdb->prepare("
+            SELECT id FROM $table 
+            WHERE project_id = %d AND supervisor_id = %d
+        ", $project_id, $supervisor_id));
+        
+        if ($existing) {
+            // Réactiver si désactivée
+            $result = $wpdb->update(
+                $table,
+                array('is_active' => 1),
+                array('id' => $existing),
+                array('%d'),
+                array('%d')
+            );
+            return $result !== false;
+        }
+        
+        $result = $wpdb->insert(
+            $table,
+            array(
+                'project_id' => $project_id,
+                'supervisor_id' => $supervisor_id
+            ),
+            array('%d', '%d')
         );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Retirer un superviseur d'un projet
+     */
+    public static function remove_supervisor_from_project($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        $result = $wpdb->update(
+            $table,
+            array('is_active' => 0),
+            array(
+                'project_id' => $project_id,
+                'supervisor_id' => $supervisor_id
+            ),
+            array('%d'),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir les superviseurs d'un projet
+     */
+    public static function get_project_supervisors($project_id) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'users';
+        $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT u.ID as user_id, u.display_name, u.user_email, ps.assigned_at
+            FROM $table_users u
+            JOIN $table_supervisors ps ON u.ID = ps.supervisor_id
+            WHERE ps.project_id = %d AND ps.is_active = 1
+            ORDER BY ps.assigned_at DESC
+        ", $project_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir les projets d'un superviseur
+     */
+    public static function get_supervisor_projects($supervisor_id) {
+        global $wpdb;
+        
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+        
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT p.*, ps.assigned_at
+            FROM $table_projects p
+            JOIN $table_supervisors ps ON p.id = ps.project_id
+            WHERE ps.supervisor_id = %d AND ps.is_active = 1
+            ORDER BY ps.assigned_at DESC
+        ", $supervisor_id));
+        
+        return $results;
+    }
+    
+    /**
+     * Vérifier si un admin est superviseur d'un projet
+     */
+    public static function is_project_supervisor($project_id, $supervisor_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_project_supervisors';
+        $result = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table 
+            WHERE project_id = %d AND supervisor_id = %d AND is_active = 1
+        ", $project_id, $supervisor_id));
+        
+        return $result > 0;
+    }
+    
+    /**
+     * Obtenir tous les admins disponibles pour supervision
+     */
+    public static function get_available_supervisors($exclude_project_id = null) {
+        global $wpdb;
+        
+        $table_users = $wpdb->prefix . 'users';
+        $table_usermeta = $wpdb->prefix . 'usermeta';
+        $capabilities_key = $wpdb->prefix . 'capabilities';
+        
+        $sql = "
+            SELECT DISTINCT u.ID as user_id, u.display_name, u.user_email
+            FROM $table_users u
+            INNER JOIN $table_usermeta um ON u.ID = um.user_id
+            WHERE um.meta_key = '{$capabilities_key}'
+            AND um.meta_value LIKE '%administrator%'
+        ";
+        
+        if ($exclude_project_id) {
+            $table_supervisors = $wpdb->prefix . 'bmc_project_supervisors';
+            $sql .= $wpdb->prepare("
+                AND u.ID NOT IN (
+                    SELECT supervisor_id FROM $table_supervisors 
+                    WHERE project_id = %d AND is_active = 1
+                )
+            ", $exclude_project_id);
+        }
+        
+        $sql .= " ORDER BY u.display_name ASC";
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Obtenir tous les projets (pour l'admin)
+     */
+    public static function get_all_projects() {
+        global $wpdb;
+        
+        $table_projects = $wpdb->prefix . 'bmc_projects';
+        $table_users = $wpdb->prefix . 'bmc_users';
+        
+        $results = $wpdb->get_results("
+            SELECT p.*, u.first_name, u.last_name
+            FROM $table_projects p
+            LEFT JOIN $table_users u ON p.created_by_admin = u.user_id
+            ORDER BY p.created_at DESC
+        ");
+        
+        return $results;
+    }
+    
+    /**
+     * Obtenir tous les utilisateurs (pour l'admin)
+     */
+    public static function get_all_users() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $results = $wpdb->get_results("
+            SELECT * FROM $table 
+            WHERE is_active = 1
+            ORDER BY created_at DESC
+        ");
+        
+        return $results;
     }
     
     /**
@@ -336,13 +774,26 @@ class WP_BMC_Database {
     }
     
     /**
+     * Obtenir un utilisateur BMC par son ID BMC
+     */
+    public static function get_user_by_id($bmc_user_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE id = %d",
+                $bmc_user_id
+            )
+        );
+    }
+    
+    /**
      * Sauvegarder les données du canvas
      */
     public static function save_canvas_data($project_id, $section, $content) {
         global $wpdb;
-        
-        // Log de débogage
-        error_log('WP_BMC_Database::save_canvas_data - project_id: ' . $project_id . ', section: ' . $section . ', content length: ' . strlen($content));
         
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
@@ -387,9 +838,6 @@ class WP_BMC_Database {
     public static function get_canvas_data($project_id) {
         global $wpdb;
         
-        // Log de débogage
-        error_log('WP_BMC_Database::get_canvas_data - project_id: ' . $project_id);
-        
         $table = $wpdb->prefix . 'bmc_canvas_data';
         
         $results = $wpdb->get_results(
@@ -402,10 +850,8 @@ class WP_BMC_Database {
         $data = array();
         foreach ($results as $row) {
             $data[$row->section] = $row->content;
-            error_log('WP_BMC_Database::get_canvas_data - section: ' . $row->section . ', content length: ' . strlen($row->content));
         }
         
-        error_log('WP_BMC_Database::get_canvas_data - total sections found: ' . count($data));
         return $data;
     }
     
@@ -860,12 +1306,33 @@ class WP_BMC_Database {
     
     /**
      * Obtenir les demandes de notation en attente
+     * 
+     * @param int|null $supervisor_id ID du superviseur pour filtrer (optionnel)
+     * @return array Liste des demandes de notation en attente
      */
-    public static function get_pending_grading_requests() {
+    public static function get_pending_grading_requests($supervisor_id = null) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'bmc_grading_requests';
         
+        // Si un superviseur est spécifié, filtrer par ses projets
+        if ($supervisor_id) {
+            return $wpdb->get_results($wpdb->prepare(
+                "SELECT gr.*, p.title as project_title, 
+                        COALESCE(u.display_name, u.user_login) as user_name 
+                 FROM $table gr 
+                 JOIN {$wpdb->prefix}bmc_projects p ON gr.project_id = p.id 
+                 JOIN {$wpdb->users} u ON gr.user_id = u.ID 
+                 JOIN {$wpdb->prefix}bmc_project_supervisors ps ON p.id = ps.project_id 
+                 WHERE gr.status = 'pending' 
+                   AND ps.supervisor_id = %d 
+                   AND ps.is_active = 1
+                 ORDER BY gr.created_at DESC",
+                $supervisor_id
+            ));
+        }
+        
+        // Sinon, retourner toutes les demandes (compatibilité)
         return $wpdb->get_results(
             "SELECT gr.*, p.title as project_title, 
                     COALESCE(u.display_name, u.user_login) as user_name 
@@ -885,7 +1352,6 @@ class WP_BMC_Database {
         
         return $wpdb->get_results(
             "SELECT u.ID, u.display_name, u.user_email, u.user_registered,
-                    um.meta_value as company,
                     COUNT(p.id) as project_count,
                     MAX(p.updated_at) as last_project_date,
                     CASE 
@@ -894,7 +1360,6 @@ class WP_BMC_Database {
                         ELSE 'no-requests'
                     END as grading_status
              FROM {$wpdb->users} u
-             LEFT JOIN {$wpdb->usermeta} um ON u.ID = um.user_id AND um.meta_key = 'company'
              LEFT JOIN {$wpdb->prefix}bmc_projects p ON u.ID = p.user_id
              GROUP BY u.ID
              ORDER BY u.display_name"
@@ -902,20 +1367,8 @@ class WP_BMC_Database {
     }
     
     /**
-     * Obtenir tous les projets
+     * Obtenir tous les projets (méthode supprimée - doublon)
      */
-    public static function get_all_projects() {
-        global $wpdb;
-        
-        $table = $wpdb->prefix . 'bmc_projects';
-        
-        return $wpdb->get_results(
-            "SELECT p.*, u.display_name as user_name, u.user_email
-             FROM $table p
-             JOIN {$wpdb->users} u ON p.user_id = u.ID
-             ORDER BY p.created_at DESC"
-        );
-    }
     
     /**
      * Obtenir toutes les notifications
@@ -1266,7 +1719,6 @@ class WP_BMC_Database {
         
         // Supprimer la table si elle existe
         $wpdb->query("DROP TABLE IF EXISTS $table");
-        error_log("Table $table supprimée");
         
         // Recréer la table
         self::ensure_todos_table_exists();
@@ -1274,22 +1726,37 @@ class WP_BMC_Database {
     
     /**
      * Réinitialiser toutes les données du plugin
-     * Vide toutes les tables mais conserve la structure
+     * Vide toutes les tables et supprime les utilisateurs WordPress créés par le plugin
      */
     public static function reset_all_data() {
         global $wpdb;
         
+        // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+        if (!function_exists('wp_delete_user')) {
+            require_once(ABSPATH . 'wp-admin/includes/user.php');
+        }
+        
+        $total_deleted = 0;
+        $results = array();
+        
+        // ÉTAPE 1 : Récupérer tous les utilisateurs BMC avant suppression
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $bmc_users = $wpdb->get_results("SELECT user_id, email FROM $table_users");
+        $bmc_users_count = count($bmc_users);
+        
+        // ÉTAPE 2 : Supprimer les tables BMC dans l'ordre inverse (pour respecter les contraintes)
         $tables = array(
             $wpdb->prefix . 'bmc_section_revisions',
             $wpdb->prefix . 'bmc_todos', 
             $wpdb->prefix . 'bmc_ratings',
             $wpdb->prefix . 'bmc_canvas_data',
+            $wpdb->prefix . 'bmc_project_users',
+            $wpdb->prefix . 'bmc_project_supervisors',
+            $wpdb->prefix . 'bmc_admin_students',
+            $wpdb->prefix . 'bmc_user_sessions',
             $wpdb->prefix . 'bmc_projects',
             $wpdb->prefix . 'bmc_users'
         );
-        
-        $total_deleted = 0;
-        $results = array();
         
         foreach ($tables as $table) {
             // Vérifier si la table existe
@@ -1305,22 +1772,199 @@ class WP_BMC_Database {
                 if ($result !== false) {
                     $total_deleted += $count;
                     $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : $count enregistrements supprimés";
-                    error_log("wp_bmc_reset_data - Table $table : $count enregistrements supprimés");
                 } else {
                     $results[] = "Erreur lors de la suppression de la table " . str_replace($wpdb->prefix, '', $table);
-                    error_log("wp_bmc_reset_data - Erreur lors de la suppression de la table $table");
                 }
             } else {
                 $results[] = "Table " . str_replace($wpdb->prefix, '', $table) . " : n'existe pas";
             }
         }
         
-        error_log("wp_bmc_reset_data - Total : $total_deleted enregistrements supprimés");
+        // ÉTAPE 3 : Supprimer les utilisateurs WordPress créés par le plugin
+        $wp_users_deleted = 0;
+        foreach ($bmc_users as $bmc_user) {
+            $user_id = $bmc_user->user_id;
+            
+            // Vérifier que l'utilisateur existe encore
+            $wp_user = get_user_by('ID', $user_id);
+            if ($wp_user && !in_array('administrator', $wp_user->roles)) {
+                // Supprimer uniquement les non-admins pour éviter de supprimer des superviseurs importants
+                $deleted = wp_delete_user($user_id);
+                if ($deleted) {
+                    $wp_users_deleted++;
+                    error_log("reset_all_data - Utilisateur WordPress supprimé : ID $user_id (" . $bmc_user->email . ")");
+                }
+            }
+        }
+        
+        if ($wp_users_deleted > 0) {
+            $results[] = "Utilisateurs WordPress : $wp_users_deleted supprimés";
+            $total_deleted += $wp_users_deleted;
+        }
+        
+        // ÉTAPE 4 : Supprimer les superviseurs créés par le plugin (optionnel - commenté par sécurité)
+        // Décommentez cette section si vous voulez aussi supprimer les superviseurs WordPress
+        /*
+        $supervisors = get_users(array('role' => 'administrator'));
+        $supervisors_deleted = 0;
+        foreach ($supervisors as $supervisor) {
+            // Ne pas supprimer l'utilisateur connecté
+            if ($supervisor->ID != get_current_user_id()) {
+                $deleted = wp_delete_user($supervisor->ID);
+                if ($deleted) {
+                    $supervisors_deleted++;
+                }
+            }
+        }
+        if ($supervisors_deleted > 0) {
+            $results[] = "Superviseurs WordPress : $supervisors_deleted supprimés";
+            $total_deleted += $supervisors_deleted;
+        }
+        */
+        
+        error_log("reset_all_data - Total supprimé : $total_deleted enregistrements");
         
         return array(
             'total_deleted' => $total_deleted,
             'details' => $results
         );
+    }
+    
+    /**
+     * Supprimer un utilisateur (avec synchronisation WordPress)
+     * 
+     * @param int $user_id ID WordPress de l'utilisateur
+     * @param bool $delete_wp_user Si true, supprime aussi l'utilisateur WordPress natif (défaut: true)
+     */
+    public static function delete_user($user_id, $delete_wp_user = true) {
+        global $wpdb;
+        
+        // Log pour débogage
+        error_log("wp_bmc_delete_user - Tentative de suppression de l'utilisateur ID: $user_id");
+        
+        // Récupérer les informations utilisateur avant suppression
+        // $user_id est l'ID WordPress, on doit chercher par user_id dans la table BMC
+        $user = self::get_user($user_id);
+        if (!$user) {
+            error_log("wp_bmc_delete_user - Utilisateur non trouvé avec l'ID WordPress: $user_id");
+            return false;
+        }
+        
+        error_log("wp_bmc_delete_user - Utilisateur trouvé: " . $user->first_name . " " . $user->last_name . " (" . $user->email . ") - ID BMC: " . $user->id);
+        
+        $wp_user_id = $user->user_id;
+        $details = array();
+        $total_deleted = 0;
+        
+        // 1. Supprimer les relations projet-utilisateur (désassocier l'utilisateur des projets)
+        $table_project_users = $wpdb->prefix . 'bmc_project_users';
+        $project_users_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table_project_users WHERE user_id = %d
+        ", $user_id));
+        
+        if ($project_users_count > 0) {
+            $result = $wpdb->delete(
+                $table_project_users,
+                array('user_id' => $user_id),
+                array('%d')
+            );
+            
+            if ($result !== false) {
+                $total_deleted += $project_users_count;
+                $details[] = "Relations projet : $project_users_count supprimées";
+            }
+        }
+        
+        // 2. Supprimer les relations admin-étudiant
+        $table_admin_students = $wpdb->prefix . 'bmc_admin_students';
+        $admin_students_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $table_admin_students WHERE student_id = %d
+        ", $user_id));
+        
+        if ($admin_students_count > 0) {
+            $result = $wpdb->delete(
+                $table_admin_students,
+                array('student_id' => $user_id),
+                array('%d')
+            );
+            
+            if ($result !== false) {
+                $total_deleted += $admin_students_count;
+                $details[] = "Relations admin : $admin_students_count supprimées";
+            }
+        }
+        
+        // 3. Supprimer l'utilisateur BMC
+        $table_users = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->delete(
+            $table_users,
+            array('user_id' => $user_id),
+            array('%d')
+        );
+        
+        if ($result === false) {
+            error_log("wp_bmc_delete_user - Erreur lors de la suppression de l'utilisateur BMC ID: $user_id");
+            return false;
+        }
+        
+        $total_deleted += 1;
+        $details[] = "Utilisateur BMC : 1 supprimé";
+        
+        // 4. Supprimer l'utilisateur WordPress natif (si demandé)
+        if ($delete_wp_user) {
+            // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+            if (!function_exists('wp_delete_user')) {
+                require_once(ABSPATH . 'wp-admin/includes/user.php');
+            }
+            
+            // Supprimer l'utilisateur WordPress (sans réassignation de contenu)
+            $wp_deleted = wp_delete_user($user_id);
+            
+            if ($wp_deleted) {
+                $details[] = "Utilisateur WordPress : 1 supprimé";
+                error_log("wp_bmc_delete_user - Utilisateur WordPress supprimé avec succès");
+            } else {
+                $details[] = "Utilisateur WordPress : erreur de suppression";
+                error_log("wp_bmc_delete_user - Erreur lors de la suppression de l'utilisateur WordPress");
+            }
+        }
+        
+        error_log("wp_bmc_delete_user - Suppression réussie. Total supprimé: $total_deleted");
+        
+        // Note : Les données canvas, todos et révisions sont CONSERVÉES
+        // pour préserver l'intégrité des projets
+        
+        return array(
+            'success' => true,
+            'total_deleted' => $total_deleted,
+            'details' => implode(', ', $details),
+            'user_info' => $user->first_name . ' ' . $user->last_name . ' (' . $user->email . ')',
+            'note' => 'Données canvas, tâches et révisions conservées'
+        );
+    }
+    
+    /**
+     * Nettoyer les données BMC quand un utilisateur WordPress est supprimé
+     * (Hook appelé par WordPress lors de la suppression d'un utilisateur)
+     * 
+     * @param int $user_id ID WordPress de l'utilisateur supprimé
+     */
+    public static function cleanup_on_wp_user_delete($user_id) {
+        error_log("wp_bmc_cleanup - Hook delete_user déclenché pour l'utilisateur ID: $user_id");
+        
+        // Vérifier si l'utilisateur existe dans la table BMC
+        $user = self::get_user($user_id);
+        if (!$user) {
+            error_log("wp_bmc_cleanup - Utilisateur non trouvé dans bmc_users, pas de nettoyage nécessaire");
+            return;
+        }
+        
+        error_log("wp_bmc_cleanup - Nettoyage des données BMC pour l'utilisateur: " . $user->first_name . " " . $user->last_name);
+        
+        // Appeler delete_user avec delete_wp_user = false pour éviter une boucle récursive
+        self::delete_user($user_id, false);
+        
+        error_log("wp_bmc_cleanup - Nettoyage terminé");
     }
     
     // ========================================
@@ -1454,4 +2098,209 @@ class WP_BMC_Database {
         
         return $results ?: array();
     }
+    
+    /**
+     * Mettre à jour le statut d'un utilisateur
+     */
+    public static function update_user_status($user_id, $status) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $result = $wpdb->update(
+            $table,
+            array('status' => $status),
+            array('user_id' => $user_id),
+            array('%s'),
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir la configuration d'une section du canvas
+     */
+    public static function get_canvas_section_config($section_key, $config_type) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $result = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT config_value FROM $table WHERE section_key = %s AND config_type = %s",
+                $section_key,
+                $config_type
+            )
+        );
+        
+        return $result ? $result : null;
+    }
+    
+    /**
+     * Sauvegarder la configuration d'une section du canvas
+     */
+    public static function save_canvas_section_config($section_key, $config_type, $config_value) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $result = $wpdb->replace(
+            $table,
+            array(
+                'section_key' => $section_key,
+                'config_type' => $config_type,
+                'config_value' => $config_value
+            ),
+            array('%s', '%s', '%s')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir toutes les configurations des sections du canvas
+     */
+    public static function get_all_canvas_configs() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_canvas_config';
+        
+        $results = $wpdb->get_results("SELECT * FROM $table ORDER BY section_key, config_type");
+        
+        $configs = array();
+        foreach ($results as $result) {
+            $configs[$result->section_key][$result->config_type] = $result->config_value;
+        }
+        
+        return $configs;
+    }
+    
+    // ========================================
+    // GESTION DES SESSIONS UTILISATEUR (PRÉSENCE TEMPS RÉEL)
+    // ========================================
+    
+    /**
+     * Mettre à jour la session d'un utilisateur (présence)
+     */
+    public static function update_user_session($user_id, $project_id, $section = null, $is_editing = 0) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        // Utiliser REPLACE pour créer ou mettre à jour
+        $result = $wpdb->replace(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'project_id' => $project_id,
+                'section' => $section,
+                'is_editing' => $is_editing,
+                'last_ping' => current_time('mysql')
+            ),
+            array('%d', '%d', '%s', '%d', '%s')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Récupérer les utilisateurs actifs sur un projet (excluant l'utilisateur actuel)
+     * Inclut les utilisateurs BMC ET les admins WordPress
+     */
+    public static function get_active_project_users($project_id, $exclude_user_id = null) {
+        global $wpdb;
+        
+        $table_sessions = $wpdb->prefix . 'bmc_user_sessions';
+        $table_bmc_users = $wpdb->prefix . 'bmc_users';
+        $table_wp_users = $wpdb->base_prefix . 'users';
+        
+        $exclude_clause = $exclude_user_id ? $wpdb->prepare("AND s.user_id != %d", $exclude_user_id) : "";
+        
+        // Récupérer les sessions actives en utilisant wp_users (pour inclure les admins)
+        // LEFT JOIN avec bmc_users pour avoir les infos si disponibles, sinon utiliser wp_users
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT 
+                s.user_id,
+                s.section,
+                s.is_editing,
+                s.last_ping,
+                COALESCE(bu.first_name, wpu.display_name) as first_name,
+                COALESCE(bu.last_name, '') as last_name,
+                COALESCE(bu.email, wpu.user_email) as email
+            FROM $table_sessions s
+            LEFT JOIN $table_bmc_users bu ON s.user_id = bu.user_id
+            INNER JOIN $table_wp_users wpu ON s.user_id = wpu.ID
+            WHERE s.project_id = %d 
+            AND s.last_ping > DATE_SUB(NOW(), INTERVAL 60 SECOND)
+            $exclude_clause
+            ORDER BY s.last_ping DESC
+        ", $project_id));
+        
+        // Post-traiter pour séparer le display_name en first_name et last_name si nécessaire
+        foreach ($results as $result) {
+            if (empty($result->last_name) && !empty($result->first_name)) {
+                // Si last_name est vide, essayer de séparer le display_name
+                $name_parts = explode(' ', $result->first_name, 2);
+                $result->first_name = $name_parts[0];
+                $result->last_name = isset($name_parts[1]) ? $name_parts[1] : $name_parts[0];
+            }
+        }
+        
+        return $results;
+    }
+    
+    /**
+     * Nettoyer les sessions inactives (plus de 2 minutes)
+     */
+    public static function cleanup_inactive_sessions() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        $result = $wpdb->query("
+            DELETE FROM $table 
+            WHERE last_ping < DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+        ");
+        
+        if ($result !== false) {
+            error_log("wp_bmc_cleanup_sessions - Sessions nettoyées : $result");
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Supprimer la session d'un utilisateur sur un projet
+     */
+    public static function remove_user_session($user_id, $project_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_user_sessions';
+        
+        $result = $wpdb->delete(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'project_id' => $project_id
+            ),
+            array('%d', '%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Obtenir le nom de la section formaté pour affichage
+     */
+    public static function get_section_display_name($section_key) {
+        // Charger la configuration des sections
+        if (!function_exists('wp_bmc_get_canvas_sections')) {
+            include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+        }
+        
+        $sections = wp_bmc_get_canvas_sections('global', false);
+        
+        return isset($sections[$section_key]['title']) ? $sections[$section_key]['title'] : $section_key;
+    }
+
 }

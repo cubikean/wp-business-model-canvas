@@ -62,12 +62,13 @@ function wp_bmc_remove_student_handler() {
 }
 
 // Handler pour créer un nouveau projet
+// Handler pour créer un projet (v2.0 - admin seulement)
 add_action('wp_ajax_wp_bmc_create_project', 'wp_bmc_create_project_handler');
 function wp_bmc_create_project_handler() {
-    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
     
-    if (!WP_BMC_Auth::is_logged_in()) {
-        wp_send_json_error('Vous devez être connecté pour créer un projet.');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
     }
     
     $title = sanitize_text_field($_POST['title']);
@@ -77,17 +78,1218 @@ function wp_bmc_create_project_handler() {
         wp_send_json_error('Le titre du projet est obligatoire.');
     }
     
-    $user = WP_BMC_Auth::get_current_user();
-    $project_id = WP_BMC_Database::create_project($user->user_id, $title, $description);
+    $admin_id = get_current_user_id();
+    $project_id = WP_BMC_Database::create_project($admin_id, $title, $description);
     
     if ($project_id) {
         wp_send_json_success(array(
             'message' => 'Projet créé avec succès !',
-            'project_id' => $project_id,
-            'redirect_url' => home_url('/dashboard/')
+            'project_id' => $project_id
         ));
     } else {
         wp_send_json_error('Erreur lors de la création du projet.');
+    }
+}
+
+// Handler pour créer un utilisateur (v2.0 - admin seulement)
+add_action('wp_ajax_wp_bmc_create_user', 'wp_bmc_create_user_handler');
+function wp_bmc_create_user_handler() {
+    error_log('=== wp_bmc_create_user_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $custom_id = sanitize_text_field($_POST['custom_id']);
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+    
+    if (empty($custom_id) || empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
+        wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
+    }
+    
+    // Vérifier si l'email existe déjà
+    if (email_exists($email)) {
+        wp_send_json_error('Cette adresse email est déjà utilisée.');
+    }
+    
+    // Vérifier si l'ID personnalisé existe déjà
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_users';
+    $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+    if ($existing_custom_id) {
+        wp_send_json_error('Cet ID personnalisé est déjà utilisé.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $user_data = array(
+        'custom_id' => $custom_id,
+        'email' => $email,
+        'password' => $password,
+        'first_name' => $first_name,
+        'last_name' => $last_name
+    );
+    
+    $result = WP_BMC_Database::create_user($admin_id, $user_data);
+    
+    if ($result) {
+        error_log('email: ' . $email);
+        error_log('custom_id: ' . $custom_id);
+        error_log('password: ' . $password);
+        
+        // Envoyer l'email de bienvenue
+        wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
+        
+        wp_send_json_success(array(
+            'message' => 'Utilisateur créé avec succès !',
+            'user_id' => $result
+        ));
+
+        
+
+    } else {
+        wp_send_json_error('Erreur lors de la création de l\'utilisateur.');
+    }
+}
+
+// Handler pour importer des utilisateurs via CSV
+add_action('wp_ajax_wp_bmc_import_csv_users', 'wp_bmc_import_csv_users_handler');
+function wp_bmc_import_csv_users_handler() {
+    error_log('=== wp_bmc_import_csv_users_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes nécessaires
+    $prenom_index = array_search('Prénom', $headers);
+    $nom_index = array_search('Nom', $headers);
+    $email_index = array_search('E-mail', $headers);
+    $candidature_index = array_search('Candidature', $headers);
+    
+    // Vérifier que toutes les colonnes nécessaires sont présentes
+    if ($prenom_index === false || $nom_index === false || $email_index === false || $candidature_index === false) {
+        fclose($handle);
+        error_log('Colonnes manquantes. Prenom: ' . $prenom_index . ', Nom: ' . $nom_index . ', Email: ' . $email_index . ', Candidature: ' . $candidature_index);
+        wp_send_json_error('Le fichier CSV doit contenir les colonnes : Prénom, Nom, E-mail, Candidature.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $created_users = array();
+    $errors = array();
+    $skipped = 0;
+    $line_number = 1;
+    
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails : ' . ($send_emails ? 'OUI' : 'NON'));
+    
+    // Lire les données ligne par ligne
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        
+        // Ignorer les lignes vides
+        if (empty(array_filter($data))) {
+            $skipped++;
+            continue;
+        }
+        
+        // Extraire les données
+        $first_name = isset($data[$prenom_index]) ? sanitize_text_field(trim($data[$prenom_index])) : '';
+        $last_name = isset($data[$nom_index]) ? sanitize_text_field(trim($data[$nom_index])) : '';
+        $email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $custom_id = isset($data[$candidature_index]) ? sanitize_text_field(trim($data[$candidature_index])) : '';
+        
+        // Vérifier que les champs obligatoires sont remplis
+        if (empty($first_name) || empty($last_name) || empty($email) || empty($custom_id)) {
+            $errors[] = "Ligne $line_number : Champs manquants (Prénom: '$first_name', Nom: '$last_name', Email: '$email', Candidature: '$custom_id')";
+            continue;
+        }
+        
+        // Générer le mot de passe : Candidature + Prénom
+        $password = $custom_id . $first_name;
+        
+        // Vérifier si l'email existe déjà
+        if (email_exists($email)) {
+            $errors[] = "Ligne $line_number : L'email '$email' existe déjà";
+            continue;
+        }
+        
+        // Vérifier si l'ID personnalisé existe déjà
+        global $wpdb;
+        $table = $wpdb->prefix . 'bmc_users';
+        $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+        if ($existing_custom_id) {
+            $errors[] = "Ligne $line_number : L'ID personnalisé '$custom_id' existe déjà";
+            continue;
+        }
+        
+        // Créer l'utilisateur
+        $user_data = array(
+            'custom_id' => $custom_id,
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $first_name,
+            'last_name' => $last_name
+        );
+        
+        $result = WP_BMC_Database::create_user($admin_id, $user_data);
+        
+        if ($result) {
+            $created_users[] = array(
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'email' => $email,
+                'custom_id' => $custom_id,
+                'password' => $password
+            );
+            
+            // Envoyer l'email seulement si l'option est activée
+            if ($send_emails) {
+                wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
+            }
+            
+            error_log("Utilisateur créé avec succès : $email (ID: $custom_id)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
+        } else {
+            $errors[] = "Ligne $line_number : Erreur lors de la création de l'utilisateur '$email'";
+        }
+    }
+    
+    fclose($handle);
+    
+    $created_count = count($created_users);
+    $error_count = count($errors);
+    
+    error_log("Import CSV terminé. Créés: $created_count, Ignorés: $skipped, Erreurs: $error_count");
+    
+    wp_send_json_success(array(
+        'message' => "$created_count utilisateur(s) créé(s) avec succès !",
+        'created' => $created_count,
+        'skipped' => $skipped,
+        'errors' => $errors,
+        'created_users' => $created_users
+    ));
+}
+
+// Handler pour importer des superviseurs via CSV
+add_action('wp_ajax_wp_bmc_import_csv_supervisors', 'wp_bmc_import_csv_supervisors_handler');
+function wp_bmc_import_csv_supervisors_handler() {
+    error_log('=== wp_bmc_import_csv_supervisors_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV superviseurs détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes nécessaires
+    $tuteur_index = array_search('Tuteur', $headers);
+    $email_index = array_search('Coordonnées du tuteur', $headers);
+    
+    // Vérifier que toutes les colonnes nécessaires sont présentes
+    if ($tuteur_index === false || $email_index === false) {
+        fclose($handle);
+        error_log('Colonnes manquantes. Tuteur: ' . $tuteur_index . ', Email: ' . $email_index);
+        wp_send_json_error('Le fichier CSV doit contenir les colonnes : Tuteur, Coordonnées du tuteur.');
+    }
+    
+    $created_supervisors = array();
+    $errors = array();
+    $skipped = 0;
+    $line_number = 1;
+    
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails superviseurs : ' . ($send_emails ? 'OUI' : 'NON'));
+    
+    // Lire les données ligne par ligne
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        
+        // Ignorer les lignes vides
+        if (empty(array_filter($data))) {
+            $skipped++;
+            continue;
+        }
+        
+        // Extraire les données
+        $tuteur = isset($data[$tuteur_index]) ? sanitize_text_field(trim($data[$tuteur_index])) : '';
+        $email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        
+        // Vérifier que les champs obligatoires sont remplis
+        if (empty($tuteur) || empty($email)) {
+            $errors[] = "Ligne $line_number : Champs manquants (Tuteur: '$tuteur', Email: '$email')";
+            continue;
+        }
+        
+        // Séparer le prénom et le nom
+        $name_parts = explode(' ', $tuteur, 2);
+        $first_name = isset($name_parts[0]) ? sanitize_text_field($name_parts[0]) : '';
+        $last_name = isset($name_parts[1]) ? sanitize_text_field($name_parts[1]) : '';
+        
+        if (empty($first_name)) {
+            $errors[] = "Ligne $line_number : Impossible de séparer le prénom du nom dans '$tuteur'";
+            continue;
+        }
+        
+        // Si pas de nom de famille, utiliser le prénom comme nom
+        if (empty($last_name)) {
+            $last_name = $first_name;
+        }
+        
+        // Générer le mot de passe : Prénom + 6 caractères aléatoires (lettres et chiffres)
+        $random_chars = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
+        $password = $first_name . $random_chars;
+        
+        // Vérifier si l'email existe déjà
+        if (email_exists($email)) {
+            $errors[] = "Ligne $line_number : L'email '$email' existe déjà";
+            continue;
+        }
+        
+        // Générer un nom d'utilisateur unique basé sur le prénom et nom
+        $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+        $original_username = $username;
+        $counter = 1;
+        
+        // Vérifier si le nom d'utilisateur existe déjà et en créer un unique
+        while (username_exists($username)) {
+            $username = $original_username . $counter;
+            $counter++;
+        }
+        
+        // Créer l'utilisateur WordPress avec le rôle administrator
+        $user_id = wp_create_user($username, $password, $email);
+        
+        if (is_wp_error($user_id)) {
+            $errors[] = "Ligne $line_number : Erreur lors de la création du superviseur '$email' - " . $user_id->get_error_message();
+            continue;
+        }
+        
+        // Mettre à jour les informations utilisateur et définir le rôle administrator
+        wp_update_user(array(
+            'ID' => $user_id,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => $first_name . ' ' . $last_name,
+            'role' => 'administrator'
+        ));
+        
+        $created_supervisors[] = array(
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'email' => $email,
+            'username' => $username,
+            'password' => $password
+        );
+       
+        // Envoyer l'email seulement si l'option est activée
+        if ($send_emails) {
+            wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
+        }
+        
+        error_log("Superviseur créé avec succès : $email (Username: $username)" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
+    }
+    
+    fclose($handle);
+    
+    $created_count = count($created_supervisors);
+    $error_count = count($errors);
+    
+    error_log("Import CSV superviseurs terminé. Créés: $created_count, Ignorés: $skipped, Erreurs: $error_count");
+        
+        wp_send_json_success(array(
+        'message' => "$created_count superviseur(s) créé(s) avec succès !",
+        'created' => $created_count,
+        'skipped' => $skipped,
+        'errors' => $errors,
+        'created_supervisors' => $created_supervisors
+    ));
+}
+
+// Handler pour import CSV complet (unifié) - Utilisateurs + Superviseurs + Projets
+add_action('wp_ajax_wp_bmc_import_csv_complete', 'wp_bmc_import_csv_complete_handler');
+function wp_bmc_import_csv_complete_handler() {
+    error_log('=== wp_bmc_import_csv_complete_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV complet détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes
+    $prenom_index = array_search('Prénom', $headers);
+    $nom_index = array_search('Nom', $headers);
+    $email_index = array_search('E-mail', $headers);
+    $candidature_index = array_search('Candidature', $headers);
+    $tuteur_index = array_search('Tuteur', $headers);
+    $tuteur_email_index = array_search('Coordonnées du tuteur', $headers);
+    $nom_projet_index = array_search('Nom du projet', $headers);
+    $resume_projet_index = array_search('Résumé du projet', $headers);
+    
+    // Vérifier que toutes les colonnes obligatoires sont présentes
+    $missing_columns = array();
+    if ($prenom_index === false) $missing_columns[] = 'Prénom';
+    if ($nom_index === false) $missing_columns[] = 'Nom';
+    if ($email_index === false) $missing_columns[] = 'E-mail';
+    if ($candidature_index === false) $missing_columns[] = 'Candidature';
+    if ($tuteur_index === false) $missing_columns[] = 'Tuteur';
+    if ($tuteur_email_index === false) $missing_columns[] = 'Coordonnées du tuteur';
+    if ($nom_projet_index === false) $missing_columns[] = 'Nom du projet';
+    
+    if (!empty($missing_columns)) {
+        fclose($handle);
+        wp_send_json_error('Colonnes manquantes dans le CSV : ' . implode(', ', $missing_columns));
+    }
+    
+    $admin_id = get_current_user_id();
+    global $wpdb;
+    
+    // Vérifier si l'envoi d'emails est activé
+    $send_emails = isset($_POST['send_emails']) && $_POST['send_emails'] === '1';
+    error_log('Envoi d\'emails complet : ' . ($send_emails ? 'OUI' : 'NON'));
+    
+    // Compteurs et tableaux de stockage
+    $users_created = 0;
+    $supervisors_created = 0;
+    $projects_created = 0;
+    $assignments_count = 0;
+    $errors = array();
+    $supervisors_cache = array(); // Cache des superviseurs déjà créés
+    $line_number = 1;
+    
+    // Lire toutes les lignes
+    $all_rows = array();
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        if (empty(array_filter($data))) continue;
+        $all_rows[] = array('line' => $line_number, 'data' => $data);
+    }
+    fclose($handle);
+    
+    error_log("Import complet : " . count($all_rows) . " lignes à traiter");
+    
+    // PHASE 1 : Créer tous les utilisateurs
+    error_log("=== PHASE 1 : Création des utilisateurs ===");
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $first_name = isset($data[$prenom_index]) ? sanitize_text_field(trim($data[$prenom_index])) : '';
+        $last_name = isset($data[$nom_index]) ? sanitize_text_field(trim($data[$nom_index])) : '';
+        $email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $custom_id = isset($data[$candidature_index]) ? sanitize_text_field(trim($data[$candidature_index])) : '';
+        
+        if (empty($first_name) || empty($last_name) || empty($email) || empty($custom_id)) {
+            continue; // Silencieux pour les utilisateurs
+        }
+        
+        // Vérifier si existe déjà
+        if (email_exists($email)) {
+            continue; // Silencieux
+        }
+        
+        $table = $wpdb->prefix . 'bmc_users';
+        $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
+        if ($existing_custom_id) {
+            continue; // Silencieux
+        }
+        
+        // Créer l'utilisateur
+        $password = $custom_id . $first_name;
+        $user_data = array(
+            'custom_id' => $custom_id,
+            'email' => $email,
+            'password' => $password,
+            'first_name' => $first_name,
+            'last_name' => $last_name
+        );
+        
+        $result = WP_BMC_Database::create_user($admin_id, $user_data);
+        
+        if ($result) {
+            $users_created++;
+            
+            // Envoyer email seulement si l'option est activée
+            if ($send_emails) {
+                wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
+            }
+            
+            error_log("Ligne $line_number : Utilisateur créé - $email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
+        }
+    }
+    
+    // PHASE 2 : Créer tous les superviseurs (sans doublons)
+    error_log("=== PHASE 2 : Création des superviseurs ===");
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $tuteur = isset($data[$tuteur_index]) ? sanitize_text_field(trim($data[$tuteur_index])) : '';
+        $supervisor_email = isset($data[$tuteur_email_index]) ? sanitize_email(trim($data[$tuteur_email_index])) : '';
+        
+        if (empty($tuteur) || empty($supervisor_email)) {
+            continue;
+        }
+        
+        // Vérifier si déjà créé dans cette session
+        if (isset($supervisors_cache[$supervisor_email])) {
+            continue;
+        }
+        
+        // Vérifier si existe déjà
+        if (email_exists($supervisor_email)) {
+            $supervisors_cache[$supervisor_email] = true;
+            continue;
+        }
+        
+        // Séparer prénom et nom
+        $name_parts = explode(' ', $tuteur, 2);
+        $first_name = isset($name_parts[0]) ? sanitize_text_field($name_parts[0]) : '';
+        $last_name = isset($name_parts[1]) ? sanitize_text_field($name_parts[1]) : $first_name;
+        
+        if (empty($first_name)) continue;
+        
+        // Générer mot de passe et username
+        $random_chars = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
+        $password = $first_name . $random_chars;
+        
+        $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+        $original_username = $username;
+        $counter = 1;
+        while (username_exists($username)) {
+            $username = $original_username . $counter;
+            $counter++;
+        }
+        
+        // Créer le superviseur
+        $user_id = wp_create_user($username, $password, $supervisor_email);
+        
+        if (!is_wp_error($user_id)) {
+            wp_update_user(array(
+                'ID' => $user_id,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'display_name' => $first_name . ' ' . $last_name,
+                'role' => 'administrator'
+            ));
+            
+            $supervisors_created++;
+            $supervisors_cache[$supervisor_email] = true;
+            
+            // Envoyer email seulement si l'option est activée
+            if ($send_emails) {
+                wp_bmc_send_supervisor_welcome_email($supervisor_email, $first_name, $last_name, $username, $password);
+            }
+            
+            error_log("Ligne $line_number : Superviseur créé - $supervisor_email" . ($send_emails ? ' - Email envoyé' : ' - Email non envoyé'));
+        }
+    }
+    
+    // PHASE 3 : Créer tous les projets et assigner
+    error_log("=== PHASE 3 : Création des projets et assignations ===");
+    $projects_cache = array(); // Cache pour éviter de recréer les mêmes projets
+    
+    foreach ($all_rows as $row) {
+        $line_number = $row['line'];
+        $data = $row['data'];
+        
+        $project_title = isset($data[$nom_projet_index]) ? sanitize_text_field(trim($data[$nom_projet_index])) : '';
+        $project_description = ($resume_projet_index !== false && isset($data[$resume_projet_index])) ? sanitize_textarea_field(trim($data[$resume_projet_index])) : '';
+        $user_email = isset($data[$email_index]) ? sanitize_email(trim($data[$email_index])) : '';
+        $supervisor_email = isset($data[$tuteur_email_index]) ? sanitize_email(trim($data[$tuteur_email_index])) : '';
+        
+        if (empty($project_title)) {
+            $errors[] = "Ligne $line_number : Titre du projet manquant";
+            continue;
+        }
+        
+        // Vérifier si le projet existe déjà (dans le cache ou en base)
+        if (isset($projects_cache[$project_title])) {
+            // Projet déjà créé dans cette session d'import
+            $project_id = $projects_cache[$project_title];
+            error_log("Ligne $line_number : Projet existant (cache) - '$project_title' (ID: $project_id)");
+        } else {
+            // Vérifier si le projet existe déjà en base de données
+            $existing_project = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}bmc_projects WHERE title = %s",
+                $project_title
+            ));
+            
+            if ($existing_project) {
+                // Le projet existe déjà, on le réutilise
+                $project_id = $existing_project->id;
+                $projects_cache[$project_title] = $project_id;
+                error_log("Ligne $line_number : Projet existant (BDD) - '$project_title' (ID: $project_id)");
+            } else {
+                // Créer le nouveau projet
+                $project_id = WP_BMC_Database::create_project($admin_id, $project_title, $project_description);
+                
+                if (!$project_id) {
+                    $errors[] = "Ligne $line_number : Erreur lors de la création du projet '$project_title'";
+                    continue;
+                }
+                
+                $projects_created++;
+                $projects_cache[$project_title] = $project_id;
+                error_log("Ligne $line_number : Projet créé - '$project_title' (ID: $project_id)");
+            }
+        }
+        
+        // Assigner l'utilisateur au projet
+        if (!empty($user_email)) {
+            $bmc_user = $wpdb->get_row($wpdb->prepare(
+                "SELECT user_id FROM {$wpdb->prefix}bmc_users WHERE email = %s",
+                $user_email
+            ));
+            
+            if ($bmc_user) {
+                $assigned = WP_BMC_Database::assign_user_to_project($project_id, $bmc_user->user_id, $admin_id);
+                if ($assigned) {
+                    $assignments_count++;
+                    error_log("Ligne $line_number : Utilisateur '$user_email' assigné au projet");
+    } else {
+                    $errors[] = "Ligne $line_number : Erreur assignation utilisateur '$user_email' au projet '$project_title'";
+                }
+            } else {
+                $errors[] = "Ligne $line_number : Utilisateur '$user_email' non trouvé pour le projet '$project_title'";
+            }
+        }
+        
+        // Assigner le superviseur au projet
+        if (!empty($supervisor_email)) {
+            $supervisor = get_user_by('email', $supervisor_email);
+            
+            if ($supervisor && in_array('administrator', $supervisor->roles)) {
+                $assigned = WP_BMC_Database::assign_supervisor_to_project($project_id, $supervisor->ID);
+                if ($assigned) {
+                    $assignments_count++;
+                    error_log("Ligne $line_number : Superviseur '$supervisor_email' assigné au projet");
+                } else {
+                    $errors[] = "Ligne $line_number : Erreur assignation superviseur '$supervisor_email' au projet '$project_title'";
+                }
+            } else {
+                $errors[] = "Ligne $line_number : Superviseur '$supervisor_email' non trouvé pour le projet '$project_title'";
+            }
+        }
+    }
+    
+    error_log("Import complet terminé. Users: $users_created, Supervisors: $supervisors_created, Projects: $projects_created, Assignations: $assignments_count");
+    
+    $success_message = "Import complet terminé ! $users_created utilisateur(s), $supervisors_created superviseur(s), $projects_created projet(s) créés.";
+    
+    wp_send_json_success(array(
+        'message' => $success_message,
+        'users_created' => $users_created,
+        'supervisors_created' => $supervisors_created,
+        'projects_created' => $projects_created,
+        'assignments_count' => $assignments_count,
+        'errors' => $errors
+    ));
+}
+
+// Handler pour importer des projets via CSV
+add_action('wp_ajax_wp_bmc_import_csv_projects', 'wp_bmc_import_csv_projects_handler');
+function wp_bmc_import_csv_projects_handler() {
+    error_log('=== wp_bmc_import_csv_projects_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    // Vérifier qu'un fichier a été uploadé
+    if (empty($_FILES['csv_file'])) {
+        wp_send_json_error('Aucun fichier n\'a été uploadé.');
+    }
+    
+    $file = $_FILES['csv_file'];
+    
+    // Vérifier les erreurs d'upload
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        wp_send_json_error('Erreur lors de l\'upload du fichier.');
+    }
+    
+    // Vérifier l'extension du fichier
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($file_extension !== 'csv') {
+        wp_send_json_error('Le fichier doit être au format CSV.');
+    }
+    
+    // Ouvrir et lire le fichier CSV
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        wp_send_json_error('Impossible de lire le fichier CSV.');
+    }
+    
+    // Lire la première ligne (en-têtes)
+    $headers = fgetcsv($handle, 1000, ',');
+    if ($headers === false) {
+        fclose($handle);
+        wp_send_json_error('Le fichier CSV est vide ou mal formaté.');
+    }
+    
+    // Nettoyer les en-têtes (supprimer BOM UTF-8 si présent)
+    $headers = array_map(function($header) {
+        return trim(str_replace("\xEF\xBB\xBF", '', $header));
+    }, $headers);
+    
+    error_log('En-têtes CSV projets détectés: ' . print_r($headers, true));
+    
+    // Trouver les indices des colonnes nécessaires
+    $nom_projet_index = array_search('Nom du projet', $headers);
+    $resume_projet_index = array_search('Résumé du projet', $headers);
+    $email_index = array_search('E-mail', $headers);
+    $tuteur_email_index = array_search('Coordonnées du tuteur', $headers);
+    
+    // Vérifier que toutes les colonnes nécessaires sont présentes
+    if ($nom_projet_index === false || $resume_projet_index === false) {
+        fclose($handle);
+        error_log('Colonnes manquantes. Nom du projet: ' . $nom_projet_index . ', Résumé: ' . $resume_projet_index);
+        wp_send_json_error('Le fichier CSV doit contenir les colonnes : Nom du projet, Résumé du projet.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $created_projects = array();
+    $errors = array();
+    $skipped = 0;
+    $line_number = 1;
+    
+    // Lire les données ligne par ligne
+    while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+        $line_number++;
+        
+        // Ignorer les lignes vides
+        if (empty(array_filter($data))) {
+            $skipped++;
+            continue;
+        }
+        
+        // Extraire les données
+        $project_title = isset($data[$nom_projet_index]) ? sanitize_text_field(trim($data[$nom_projet_index])) : '';
+        $project_description = isset($data[$resume_projet_index]) ? sanitize_textarea_field(trim($data[$resume_projet_index])) : '';
+        $user_email = ($email_index !== false && isset($data[$email_index])) ? sanitize_email(trim($data[$email_index])) : '';
+        $supervisor_email = ($tuteur_email_index !== false && isset($data[$tuteur_email_index])) ? sanitize_email(trim($data[$tuteur_email_index])) : '';
+        
+        // Vérifier que le titre du projet est rempli
+        if (empty($project_title)) {
+            $errors[] = "Ligne $line_number : Titre du projet manquant";
+            continue;
+        }
+        
+        // Créer le projet
+        $project_id = WP_BMC_Database::create_project($admin_id, $project_title, $project_description);
+        
+        if (!$project_id) {
+            $errors[] = "Ligne $line_number : Erreur lors de la création du projet '$project_title'";
+            continue;
+        }
+        
+        $project_info = array(
+            'title' => $project_title,
+            'description' => $project_description,
+            'user_assigned' => false,
+            'supervisor_assigned' => false,
+            'user_email' => $user_email,
+            'supervisor_email' => $supervisor_email
+        );
+        
+        // Assigner l'utilisateur au projet si l'email est fourni
+        if (!empty($user_email)) {
+            // Chercher l'utilisateur par email dans la table bmc_users
+            global $wpdb;
+            $bmc_user = $wpdb->get_row($wpdb->prepare(
+                "SELECT user_id FROM {$wpdb->prefix}bmc_users WHERE email = %s",
+                $user_email
+            ));
+            
+            if ($bmc_user) {
+                $assigned = WP_BMC_Database::assign_user_to_project($project_id, $bmc_user->user_id, $admin_id);
+                if ($assigned) {
+                    $project_info['user_assigned'] = true;
+                    error_log("Ligne $line_number : Utilisateur '$user_email' assigné au projet '$project_title'");
+                } else {
+                    $errors[] = "Ligne $line_number : Erreur lors de l'assignation de l'utilisateur '$user_email' au projet '$project_title'";
+                }
+            } else {
+                $errors[] = "Ligne $line_number : Utilisateur avec l'email '$user_email' non trouvé";
+            }
+        }
+        
+        // Assigner le superviseur au projet si l'email est fourni
+        if (!empty($supervisor_email)) {
+            // Chercher le superviseur par email dans les utilisateurs WordPress
+            $supervisor = get_user_by('email', $supervisor_email);
+            
+            if ($supervisor && in_array('administrator', $supervisor->roles)) {
+                $assigned = WP_BMC_Database::assign_supervisor_to_project($project_id, $supervisor->ID);
+                if ($assigned) {
+                    $project_info['supervisor_assigned'] = true;
+                    error_log("Ligne $line_number : Superviseur '$supervisor_email' assigné au projet '$project_title'");
+                } else {
+                    $errors[] = "Ligne $line_number : Erreur lors de l'assignation du superviseur '$supervisor_email' au projet '$project_title'";
+                }
+            } else {
+                if (!$supervisor) {
+                    $errors[] = "Ligne $line_number : Superviseur avec l'email '$supervisor_email' non trouvé";
+                } else {
+                    $errors[] = "Ligne $line_number : L'utilisateur '$supervisor_email' n'est pas un superviseur";
+                }
+            }
+        }
+        
+        $created_projects[] = $project_info;
+        error_log("Ligne $line_number : Projet '$project_title' créé avec succès (ID: $project_id)");
+    }
+    
+    fclose($handle);
+    
+    $created_count = count($created_projects);
+    $error_count = count($errors);
+    
+    error_log("Import CSV projets terminé. Créés: $created_count, Ignorés: $skipped, Erreurs: $error_count");
+    
+    wp_send_json_success(array(
+        'message' => "$created_count projet(s) créé(s) avec succès !",
+        'created' => $created_count,
+        'skipped' => $skipped,
+        'errors' => $errors,
+        'created_projects' => $created_projects
+    ));
+}
+
+// Handler pour créer un superviseur (admin)
+add_action('wp_ajax_wp_bmc_create_supervisor', 'wp_bmc_create_supervisor_handler');
+function wp_bmc_create_supervisor_handler() {
+    error_log('=== wp_bmc_create_supervisor_handler appelé ===');
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+    
+    if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
+        wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
+    }
+    
+    // Vérifier si l'email existe déjà
+    if (email_exists($email)) {
+        wp_send_json_error('Cette adresse email est déjà utilisée.');
+    }
+    
+    // Générer un nom d'utilisateur unique basé sur le prénom et nom
+    $username = sanitize_user(strtolower($first_name . '.' . $last_name));
+    $original_username = $username;
+    $counter = 1;
+    
+    // Vérifier si le nom d'utilisateur existe déjà et en créer un unique
+    while (username_exists($username)) {
+        $username = $original_username . $counter;
+        $counter++;
+    }
+    
+    // Créer l'utilisateur WordPress avec le rôle administrator
+    $user_id = wp_create_user($username, $password, $email);
+    
+    if (is_wp_error($user_id)) {
+        wp_send_json_error('Erreur lors de la création du superviseur : ' . $user_id->get_error_message());
+    }
+    
+    // Mettre à jour les informations utilisateur et définir le rôle administrator
+    wp_update_user(array(
+        'ID' => $user_id,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'display_name' => $first_name . ' ' . $last_name,
+        'role' => 'administrator'
+    ));
+    
+    error_log('Superviseur créé avec succès - ID: ' . $user_id);
+    error_log('email: ' . $email);
+    error_log('username: ' . $username);
+    
+    // Envoyer l'email de bienvenue
+    wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
+    
+    wp_send_json_success(array(
+        'message' => 'Superviseur créé avec succès !',
+        'user_id' => $user_id,
+        'username' => $username
+    ));
+}
+
+// Handler pour supprimer un superviseur
+add_action('wp_ajax_wp_bmc_delete_supervisor', 'wp_bmc_delete_supervisor_handler');
+function wp_bmc_delete_supervisor_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (!$supervisor_id) {
+        wp_send_json_error('ID superviseur invalide.');
+    }
+    
+    // Ne pas permettre à un superviseur de se supprimer lui-même
+    if ($supervisor_id == get_current_user_id()) {
+        wp_send_json_error('Vous ne pouvez pas vous supprimer vous-même.');
+    }
+    
+    // Vérifier que l'utilisateur existe et est bien un administrateur
+    $user = get_user_by('ID', $supervisor_id);
+    if (!$user) {
+        wp_send_json_error('Superviseur non trouvé.');
+    }
+    
+    if (!in_array('administrator', $user->roles)) {
+        wp_send_json_error('Cet utilisateur n\'est pas un superviseur.');
+    }
+    
+    // Charger les fonctions utilisateur de WordPress si pas déjà chargées
+    if (!function_exists('wp_delete_user')) {
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+    }
+    
+    // Supprimer l'utilisateur WordPress
+    $result = wp_delete_user($supervisor_id);
+    
+    if ($result) {
+        error_log('Superviseur supprimé avec succès - ID: ' . $supervisor_id);
+        wp_send_json_success(array(
+            'message' => 'Superviseur supprimé avec succès !'
+        ));
+    } else {
+        error_log('Erreur lors de la suppression du superviseur - ID: ' . $supervisor_id);
+        wp_send_json_error('Erreur lors de la suppression du superviseur.');
+    }
+}
+
+// Handler pour réinitialiser le mot de passe d'un superviseur
+add_action('wp_ajax_wp_bmc_reset_supervisor_password', 'wp_bmc_reset_supervisor_password_handler');
+function wp_bmc_reset_supervisor_password_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (!$supervisor_id) {
+        wp_send_json_error('ID superviseur invalide.');
+    }
+    
+    // Vérifier que l'utilisateur existe
+    $user = get_user_by('ID', $supervisor_id);
+    if (!$user) {
+        wp_send_json_error('Superviseur non trouvé.');
+    }
+    
+    // Générer un nouveau mot de passe aléatoire
+    $new_password = wp_generate_password(12, true, true);
+    
+    // Mettre à jour le mot de passe
+    wp_set_password($new_password, $supervisor_id);
+    
+    // Envoyer l'email
+    $email_sent = wp_bmc_send_password_reset_email($user->user_email, $user->display_name, $new_password);
+    
+    if ($email_sent) {
+        wp_send_json_success(array(
+            'message' => 'Mot de passe réinitialisé avec succès ! Un email a été envoyé au superviseur.'
+        ));
+    } else {
+        wp_send_json_success(array(
+            'message' => 'Mot de passe réinitialisé mais l\'email n\'a pas pu être envoyé.'
+        ));
+    }
+}
+
+// Handler pour associer un utilisateur à un projet
+add_action('wp_ajax_wp_bmc_assign_user_to_project', 'wp_bmc_assign_user_to_project_handler');
+function wp_bmc_assign_user_to_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $user_id = intval($_POST['user_id']);
+    
+    if (empty($project_id) || empty($user_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $admin_id = get_current_user_id();
+    $result = WP_BMC_Database::assign_user_to_project($project_id, $user_id, $admin_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Utilisateur associé au projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'association de l\'utilisateur au projet.');
+    }
+}
+
+// Handler pour retirer un utilisateur d'un projet
+add_action('wp_ajax_wp_bmc_remove_user_from_project', 'wp_bmc_remove_user_from_project_handler');
+function wp_bmc_remove_user_from_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $user_id = intval($_POST['user_id']);
+    
+    if (empty($project_id) || empty($user_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::remove_user_from_project($project_id, $user_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Utilisateur retiré du projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors du retrait de l\'utilisateur du projet.');
+    }
+}
+
+// Handler pour assigner un superviseur à un projet
+add_action('wp_ajax_wp_bmc_assign_supervisor_to_project', 'wp_bmc_assign_supervisor_to_project_handler');
+function wp_bmc_assign_supervisor_to_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (empty($project_id) || empty($supervisor_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::assign_supervisor_to_project($project_id, $supervisor_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Superviseur assigné au projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'assignation du superviseur au projet.');
+    }
+}
+
+// Handler pour retirer un superviseur d'un projet
+add_action('wp_ajax_wp_bmc_remove_supervisor_from_project', 'wp_bmc_remove_supervisor_from_project_handler');
+function wp_bmc_remove_supervisor_from_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    $supervisor_id = intval($_POST['supervisor_id']);
+    
+    if (empty($project_id) || empty($supervisor_id)) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+    
+    $result = WP_BMC_Database::remove_supervisor_from_project($project_id, $supervisor_id);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Superviseur retiré du projet avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors du retrait du superviseur du projet.');
+    }
+}
+
+// Handler pour obtenir les superviseurs disponibles pour un projet
+add_action('wp_ajax_wp_bmc_get_available_supervisors', 'wp_bmc_get_available_supervisors_handler');
+function wp_bmc_get_available_supervisors_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    $supervisors = WP_BMC_Database::get_available_supervisors($project_id);
+    
+    wp_send_json_success(array(
+        'supervisors' => $supervisors
+    ));
+}
+
+// Handler pour vérifier l'accès d'un utilisateur à un projet (v2.0)
+add_action('wp_ajax_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');
+add_action('wp_ajax_nopriv_wp_bmc_check_project_access', 'wp_bmc_check_project_access_handler');
+function wp_bmc_check_project_access_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    // Si c'est un admin, il a accès à tous les projets
+    if (current_user_can('manage_options')) {
+        wp_send_json_success(array('has_access' => true));
+    }
+    
+    // Vérifier si l'utilisateur connecté a accès au projet
+    $user = WP_BMC_Auth::get_current_user();
+    if (!$user) {
+        wp_send_json_error('Utilisateur non connecté.');
+    }
+    
+    $has_access = WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if ($has_access) {
+        wp_send_json_success(array('has_access' => true));
+    } else {
+        wp_send_json_error('Accès refusé à ce projet.');
     }
 }
 
@@ -160,10 +1362,10 @@ function wp_bmc_save_canvas_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -252,24 +1454,15 @@ function wp_bmc_get_canvas_handler() {
         wp_send_json_error('ID de projet invalide.');
     }
     
-    // Vérifier que l'utilisateur possède ce projet (sauf pour les admins)
-    if (!current_user_can('manage_options')) {
-        $user = WP_BMC_Auth::get_current_user();
-        $projects = WP_BMC_Database::get_user_projects($user->user_id);
-        $user_has_project = false;
-        
-        foreach ($projects as $project) {
-            if ($project->id == $project_id) {
-                $user_has_project = true;
-                break;
-            }
-        }
-        
-        if (!$user_has_project) {
-            wp_send_json_error('Vous n\'avez pas accès à ce projet.');
-        }
+    // Vérifier que l'utilisateur a accès à ce projet
+    $user = WP_BMC_Auth::get_current_user();
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if (!$has_access) {
+        wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
-    // Les admins peuvent accéder à tous les projets
     
     $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
     
@@ -293,19 +1486,13 @@ function wp_bmc_delete_project_handler() {
         wp_send_json_error('ID de projet invalide.');
     }
     
-    // Vérifier que l'utilisateur possède ce projet
+    // Vérifier que l'utilisateur a accès à ce projet
     $user = WP_BMC_Auth::get_current_user();
-    $projects = WP_BMC_Database::get_user_projects($user->user_id);
-    $user_has_project = false;
     
-    foreach ($projects as $project) {
-        if ($project->id == $project_id) {
-            $user_has_project = true;
-            break;
-        }
-    }
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
     
-    if (!$user_has_project) {
+    if (!$has_access) {
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
     
@@ -314,6 +1501,50 @@ function wp_bmc_delete_project_handler() {
     // Supprimer les données du canvas
     $canvas_table = $wpdb->prefix . 'bmc_canvas_data';
     $wpdb->delete($canvas_table, array('project_id' => $project_id), array('%d'));
+    
+    // Supprimer le projet
+    $projects_table = $wpdb->prefix . 'bmc_projects';
+    $result = $wpdb->delete($projects_table, array('id' => $project_id), array('%d'));
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Projet supprimé avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la suppression du projet.');
+    }
+}
+
+// Handler pour supprimer un projet (admin seulement)
+add_action('wp_ajax_wp_bmc_admin_delete_project', 'wp_bmc_admin_delete_project_handler');
+function wp_bmc_admin_delete_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes.');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (!$project_id) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+    
+    global $wpdb;
+    
+    // Supprimer toutes les données associées au projet
+    $tables_to_clean = array(
+        $wpdb->prefix . 'bmc_canvas_data',
+        $wpdb->prefix . 'bmc_todos',
+        $wpdb->prefix . 'bmc_ratings',
+        $wpdb->prefix . 'bmc_section_revisions',
+        $wpdb->prefix . 'bmc_project_users',
+        $wpdb->prefix . 'bmc_project_supervisors'
+    );
+    
+    foreach ($tables_to_clean as $table) {
+        $wpdb->delete($table, array('project_id' => $project_id), array('%d'));
+    }
     
     // Supprimer le projet
     $projects_table = $wpdb->prefix . 'bmc_projects';
@@ -428,10 +1659,10 @@ function wp_bmc_get_section_files_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -514,10 +1745,10 @@ function wp_bmc_upload_file_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -672,10 +1903,10 @@ function wp_bmc_delete_file_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -925,7 +2156,11 @@ function wp_bmc_get_section_revisions_handler() {
     }
     
     $user = WP_BMC_Auth::get_current_user();
-    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+    
+    if (!$has_access) {
         wp_send_json_error('Accès non autorisé à ce projet.');
     }
     
@@ -966,7 +2201,11 @@ function wp_bmc_get_section_revision_handler() {
     }
     
     $user = WP_BMC_Auth::get_current_user();
-    if ($user->user_id != $project->user_id && !current_user_can('manage_options')) {
+    
+    // Vérifier l'accès : admin OU utilisateur assigné au projet
+    $has_access = current_user_can('manage_options') || WP_BMC_Database::user_has_project_access($user->user_id, $revision->project_id);
+    
+    if (!$has_access) {
         wp_send_json_error('Accès non autorisé à cette révision.');
     }
     
@@ -1001,9 +2240,9 @@ function wp_bmc_load_canvas_view_handler() {
             wp_send_json_error('Projet non trouvé.');
         }
         
-        // Vérifier si c'est un mode admin ou si l'utilisateur est le propriétaire
+        // Vérifier si c'est un mode admin ou si l'utilisateur a accès au projet
         $is_admin = current_user_can('manage_options');
-        if (!$is_admin && $current_user->user_id != $project->user_id) {
+        if (!$is_admin && !WP_BMC_Database::user_has_project_access($current_user->user_id, $project_id)) {
             wp_send_json_error('Accès non autorisé à ce projet.');
         }
     } else {
@@ -1158,14 +2397,13 @@ function wp_bmc_export_users_handler() {
     $file = fopen($filepath, 'w');
     
     // En-têtes CSV
-    fputcsv($file, array('Nom', 'Email', 'Entreprise', 'Projets', 'Dernière activité', 'Demandes de notation'));
+    fputcsv($file, array('Nom', 'Email', 'Projets', 'Dernière activité', 'Demandes de notation'));
     
     // Données
     foreach ($users as $user) {
         fputcsv($file, array(
             $user->display_name,
             $user->user_email,
-            $user->company,
             $user->project_count,
             $user->last_project_date,
             $user->grading_status
@@ -1204,7 +2442,7 @@ function wp_bmc_export_all_data_handler() {
     $is_admin = current_user_can('manage_options');
     
     // Vérifier les permissions
-    if (!$is_admin && $project->user_id != $user->user_id) {
+    if (!$is_admin && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
     
@@ -1342,7 +2580,6 @@ function wp_bmc_export_all_data_handler() {
             'last_name' => $user->last_name,
             'full_name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
-            'company' => $user->company
         ),
         'canvas' => array(
             'sections' => $sections_data,
@@ -1437,7 +2674,7 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     $is_admin = current_user_can('manage_options');
     
     // Vérifier les permissions
-    if (!$is_admin && $project->user_id != $user->user_id) {
+    if (!$is_admin && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
         error_log('PDF: Permissions insuffisantes');
         wp_send_json_error('Vous n\'avez pas accès à ce projet.');
     }
@@ -1492,7 +2729,6 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
             'last_name' => $user->last_name,
             'full_name' => $user->first_name . ' ' . $user->last_name,
             'email' => $user->email,
-            'company' => $user->company
         ),
         'canvas' => array(
             'sections' => array()
@@ -1601,149 +2837,102 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     error_log('PDF: Template chargé, taille: ' . strlen($template_content) . ' caractères');
     
     // Compiler le template avec le moteur Handlebars-like
-    error_log('PDF: Compilation du template avec moteur complet...');
+    error_log('PDF: Compilation du template');
     $compiled_html = compile_handlebars_template($template_content, $pdf_data);
     error_log('PDF: Template compilé, taille: ' . strlen($compiled_html) . ' caractères');
     
-    // Sauvegarder le HTML compilé pour debug
-    $debug_html_path = WP_CONTENT_DIR . '/uploads/debug-canvas.html';
-    file_put_contents($debug_html_path, $compiled_html);
-    error_log('PDF: HTML debug sauvegardé: ' . $debug_html_path);
+    // Sauvegarder le HTML temporairement pour Gotenberg
+    $temp_html_path = WP_CONTENT_DIR . '/uploads/temp-canvas-' . $project_id . '.html';
+    file_put_contents($temp_html_path, $compiled_html);
+    error_log('PDF: HTML temp sauvegardé: ' . $temp_html_path);
     
-    // Faire la requête à Gotenberg v8 - tester plusieurs adresses pour Docker
-    $gotenberg_hosts = array(
-        'gotenberg-gotenberg-1:3000', // Nom du container Gotenberg
-        'host.docker.internal:3000',  // Docker Desktop Windows/Mac
-        '172.17.0.1:3000',            // Docker Linux gateway
-        'localhost:3000',             // Si pas dans un container
-        '127.0.0.1:3000'              // Fallback localhost
-    );
-    
-    $gotenberg_url = null;
-    $working_host = null;
-    
-    foreach ($gotenberg_hosts as $host) {
-        error_log('PDF: Test connexion à: ' . $host);
-        $test_response = wp_remote_get('http://' . $host . '/health', array('timeout' => 5));
-        
-        if (!is_wp_error($test_response) && wp_remote_retrieve_response_code($test_response) === 200) {
-            $working_host = $host;
-            $gotenberg_url = 'http://' . $host . '/forms/chromium/convert/html';
-            error_log('PDF: Gotenberg trouvé sur: ' . $host);
-            break;
-        } else {
-            error_log('PDF: Échec connexion à: ' . $host . ' - ' . (is_wp_error($test_response) ? $test_response->get_error_message() : 'Code: ' . wp_remote_retrieve_response_code($test_response)));
-        }
-    }
-    
-    if (!$gotenberg_url) {
-        error_log('PDF: Aucun serveur Gotenberg accessible');
-        wp_send_json_error('Gotenberg inaccessible sur toutes les adresses testées. Vérifiez que Gotenberg est démarré.');
-    }
-    
+    // Envoi à Gotenberg avec curl (comme wp_bmc_test_gotenberg)
+    $gotenberg_url = 'https://gotenberg.beekom.fr/forms/chromium/convert/html';
     error_log('PDF: URL Gotenberg: ' . $gotenberg_url);
     
-    // Utiliser wp_remote_post avec les fichiers pour Gotenberg v8
-    $boundary = 'wpbmc' . uniqid();
+    $ch = curl_init($gotenberg_url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => 1,
+        CURLOPT_POSTFIELDS => [
+            'files' => curl_file_create($temp_html_path, 'text/html', 'index.html'),
+            'paperWidth' => '11.7',
+            'paperHeight' => '8.3',
+            'marginTop' => '0',
+            'marginBottom' => '0',
+            'marginLeft' => '0',
+            'marginRight' => '0',
+            'landscape' => 'true',
+            'printBackground' => 'true',
+            'scale' => '1.0',
+            'waitDelay' => '1s'
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_HTTPHEADER => [
+            'X-Api-Key: Wh7YgK72Q6aWwDwyoiq2'
+        ]
+    ]);
     
-    // Construire la requête multipart manuellement
-    $post_data = '';
+    error_log('PDF: Envoi requête à Gotenberg');
+    $pdf_content = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    curl_close($ch);
     
-    // Ajouter le fichier HTML avec la syntaxe correcte pour Gotenberg v8
-    $post_data .= "--{$boundary}\r\n";
-    $post_data .= "Content-Disposition: form-data; name=\"files\"; filename=\"index.html\"\r\n";
-    $post_data .= "Content-Type: text/html; charset=utf-8\r\n\r\n";
-    $post_data .= $compiled_html . "\r\n";
-    
-    // Paramètres pour Gotenberg v8
-    $params = array(
-        'paperWidth' => '11.7',
-        'paperHeight' => '8.3',
-        'marginTop' => '0',
-        'marginBottom' => '0',
-        'marginLeft' => '0',
-        'marginRight' => '0',
-        'landscape' => 'true',
-        'printBackground' => 'true',
-        'scale' => '1.0',
-        'waitDelay' => '1s'
-    );
-    
-    foreach ($params as $name => $value) {
-        $post_data .= "--{$boundary}\r\n";
-        $post_data .= "Content-Disposition: form-data; name=\"{$name}\"\r\n\r\n";
-        $post_data .= $value . "\r\n";
+    // Supprimer le fichier temporaire
+    if (file_exists($temp_html_path)) {
+        unlink($temp_html_path);
     }
     
-    $post_data .= "--{$boundary}--\r\n";
+    error_log('PDF: Code HTTP: ' . $http_code);
     
-    error_log('PDF: Taille des données POST: ' . strlen($post_data) . ' bytes');
-    error_log('PDF: Début des données POST: ' . substr($post_data, 0, 300));
-    
-    // Faire la requête
-    error_log('PDF: Envoi de la requête à Gotenberg...');
-    $response = wp_remote_post($gotenberg_url, array(
-        'body' => $post_data,
-        'headers' => array(
-            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
-            'Content-Length' => strlen($post_data)
-        ),
-        'timeout' => 60
-    ));
-    
-    if (is_wp_error($response)) {
-        error_log('PDF: Erreur wp_remote_post: ' . $response->get_error_message());
-        wp_send_json_error('Erreur lors de la connexion à Gotenberg: ' . $response->get_error_message());
+    if ($curl_error) {
+        error_log('PDF: Erreur cURL: ' . $curl_error);
+        wp_send_json_error('Erreur de connexion à Gotenberg: ' . $curl_error);
     }
     
-    $response_code = wp_remote_retrieve_response_code($response);
-    $response_headers = wp_remote_retrieve_headers($response);
-    $response_body = wp_remote_retrieve_body($response);
-    
-    error_log('PDF: Code de réponse Gotenberg: ' . $response_code);
-    error_log('PDF: Headers de réponse: ' . print_r($response_headers, true));
-    error_log('PDF: Taille du body: ' . strlen($response_body) . ' bytes');
-    
-    if ($response_code !== 200) {
-        error_log('PDF: Erreur Gotenberg, body: ' . substr($response_body, 0, 1000));
-        wp_send_json_error('Erreur Gotenberg (Code: ' . $response_code . '): ' . substr($response_body, 0, 500));
+    if ($http_code !== 200) {
+        error_log('PDF: Erreur Gotenberg (Code ' . $http_code . '): ' . substr($pdf_content, 0, 500));
+        wp_send_json_error('Erreur Gotenberg (Code ' . $http_code . '): ' . substr($pdf_content, 0, 500));
     }
-    
-    $pdf_content = $response_body;
     
     // Vérifier que c'est bien un PDF
-    $pdf_header = substr($pdf_content, 0, 4);
-    if ($pdf_header !== '%PDF') {
-        error_log('PDF: Le contenu reçu n\'est pas un PDF. Header: ' . bin2hex(substr($pdf_content, 0, 20)));
-        error_log('PDF: Début du contenu: ' . substr($pdf_content, 0, 200));
+    if (substr($pdf_content, 0, 4) !== '%PDF') {
+        error_log('PDF: Le contenu reçu n\'est pas un PDF');
         wp_send_json_error('Le contenu reçu n\'est pas un PDF valide');
     }
     
     // Sauvegarder le PDF dans le dossier uploads
     $upload_dir = wp_upload_dir();
-    $pdf_filename = 'canvas-' . $pdf_data['project']['id'] . '-' . date('Y-m-d-H-i-s') . '.pdf';
+    
+    // Créer un nom de fichier basé sur le titre du projet
+    $project_title_clean = sanitize_file_name($project->title);
+    $project_title_clean = preg_replace('/[^a-zA-Z0-9_-]/', '_', $project_title_clean);
+    $project_title_clean = preg_replace('/_+/', '_', $project_title_clean);
+    $date_iso = date('Ymd');
+    
+    $pdf_filename = $project_title_clean . '_' . $date_iso . '.pdf';
     $pdf_path = $upload_dir['path'] . '/' . $pdf_filename;
     $pdf_url = $upload_dir['url'] . '/' . $pdf_filename;
-    
-    error_log('PDF: Sauvegarde vers: ' . $pdf_path);
     
     if (file_put_contents($pdf_path, $pdf_content) === false) {
         error_log('PDF: Erreur lors de la sauvegarde');
         wp_send_json_error('Erreur lors de la sauvegarde du PDF.');
     }
     
-    error_log('PDF: Sauvegarde réussie, taille fichier: ' . filesize($pdf_path) . ' bytes');
-    error_log('PDF: Data: ' . print_r($pdf_data, true));
-    error_log('=== FIN GÉNÉRATION PDF GOTENBERG ===');
+    error_log('PDF: PDF généré avec succès: ' . $pdf_filename . ' (' . strlen($pdf_content) . ' bytes)');
+    error_log('=== FIN GÉNÉRATION PDF ===');
     
-    wp_send_json_success(array(
+    wp_send_json_success([
         'pdf_url' => $pdf_url,
         'pdf_path' => $pdf_path,
         'filename' => $pdf_filename,
-        'message' => 'PDF généré avec succès!',
-        'debug_html_url' => content_url('/uploads/debug-canvas.html')
-    ));
+        'message' => 'PDF généré avec succès!'
+    ]);
 }
+
 
 /**
  * Moteur de template Handlebars corrigé pour canvas-dashboard-template.html
@@ -1830,7 +3019,6 @@ function compile_handlebars_template($template, $data) {
         '{{project.title}}' => $data['project']['title'],
         '{{project.description}}' => $data['project']['description'],
         '{{user.full_name}}' => $data['user']['full_name'],
-        '{{user.company}}' => $data['user']['company'],
         '{{statistics.content.completion_percentage}}' => $data['statistics']['content']['completion_percentage'],
         '{{statistics.content.sections_with_content}}' => $data['statistics']['content']['sections_with_content'],
         '{{statistics.content.total_characters}}' => $data['statistics']['content']['total_characters'],
@@ -1925,6 +3113,12 @@ function wp_bmc_add_todo_handler() {
         wp_send_json_error('Aucun projet trouvé.');
     }
     
+    // Vérifier que l'utilisateur a accès à ce projet
+    $user = WP_BMC_Auth::get_current_user();
+    if (!current_user_can('manage_options') && !WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
+        wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
+    }
+    
     // S'assurer que la table des todos existe
     WP_BMC_Database::ensure_todos_table_exists();
     
@@ -1972,10 +3166,10 @@ function wp_bmc_get_section_todos_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
     }
@@ -2029,10 +3223,10 @@ function wp_bmc_toggle_todo_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
         }
     }
@@ -2085,10 +3279,10 @@ function wp_bmc_delete_todo_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour supprimer cette tâche.');
         }
     }
@@ -2142,10 +3336,10 @@ function wp_bmc_update_todo_text_handler() {
         wp_send_json_error('Projet non trouvé.');
     }
     
-    // Si l'utilisateur n'est pas admin, vérifier qu'il est propriétaire du projet
+    // Si l'utilisateur n'est pas admin, vérifier qu'il a accès au projet
     if (!current_user_can('manage_options')) {
         $user = WP_BMC_Auth::get_current_user();
-        if ($project->user_id != $user->user_id) {
+        if (!WP_BMC_Database::user_has_project_access($user->user_id, $project_id)) {
             wp_send_json_error('Vous n\'avez pas les droits pour modifier cette tâche.');
         }
     }
@@ -2380,4 +3574,597 @@ function wp_bmc_get_current_project_id() {
     }
     
     return null;
+}
+
+// ========================================
+// GESTION DES UTILISATEURS DISPONIBLES (v2.0)
+// ========================================
+
+add_action('wp_ajax_wp_bmc_get_available_users', 'wp_bmc_get_available_users_handler');
+function wp_bmc_get_available_users_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $project_id = intval($_POST['project_id']);
+
+    if (!$project_id) {
+        wp_send_json_error('ID de projet invalide.');
+    }
+
+    // Obtenir tous les utilisateurs actifs
+    $all_users = WP_BMC_Database::get_all_users();
+    
+    // Obtenir TOUS les utilisateurs déjà liés à un projet (peu importe le projet)
+    global $wpdb;
+    $table_project_users = $wpdb->prefix . 'bmc_project_users';
+    $all_assigned_user_ids = $wpdb->get_col("
+        SELECT DISTINCT user_id 
+        FROM $table_project_users 
+        WHERE is_active = 1
+    ");
+    
+    // Filtrer les utilisateurs non liés à aucun projet
+    $available_users = array_filter($all_users, function($user) use ($all_assigned_user_ids) {
+        return !in_array($user->user_id, $all_assigned_user_ids);
+    });
+
+    wp_send_json_success(array(
+        'users' => array_values($available_users)
+    ));
+}
+
+// ========================================
+// GESTION DES ADMINISTRATEURS DISPONIBLES (v2.0)
+// ========================================
+
+
+
+// ========================================
+// GESTION DES STATUTS UTILISATEUR (v2.0)
+// ========================================
+
+add_action('wp_ajax_wp_bmc_update_user_status', 'wp_bmc_update_user_status_handler');
+function wp_bmc_update_user_status_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $user_id = intval($_POST['user_id']);
+    $status = sanitize_text_field($_POST['status']);
+
+    if (!$user_id || !in_array($status, array('active', 'pending', 'disabled'))) {
+        wp_send_json_error('Paramètres invalides.');
+    }
+
+    $result = WP_BMC_Database::update_user_status($user_id, $status);
+
+    if ($result) {
+        $status_labels = array(
+            'active' => 'Actif',
+            'pending' => 'En attente',
+            'disabled' => 'Désactivé'
+        );
+        
+        wp_send_json_success(array(
+            'message' => 'Statut mis à jour : ' . $status_labels[$status]
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour du statut.');
+    }
+}
+
+// Handler pour supprimer un utilisateur
+add_action('wp_ajax_wp_bmc_delete_user', 'wp_bmc_delete_user_handler');
+function wp_bmc_delete_user_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Accès non autorisé.');
+    }
+
+    $user_id = intval($_POST['user_id']);
+
+    if (!$user_id) {
+        wp_send_json_error('ID utilisateur invalide.');
+    }
+
+    error_log("wp_bmc_delete_user_handler - Suppression demandée pour l'utilisateur ID: $user_id");
+
+    $result = WP_BMC_Database::delete_user($user_id);
+
+    if ($result && $result['success']) {
+        error_log("wp_bmc_delete_user_handler - Suppression réussie pour l'utilisateur ID: $user_id");
+        wp_send_json_success(array(
+            'message' => 'Utilisateur supprimé avec succès !',
+            'details' => $result['details'],
+            'total_deleted' => $result['total_deleted'],
+            'user_info' => $result['user_info']
+        ));
+    } else {
+        error_log("wp_bmc_delete_user_handler - Échec de la suppression pour l'utilisateur ID: $user_id");
+        wp_send_json_error('Erreur lors de la suppression de l\'utilisateur.');
+    }
+}
+
+// ========================================
+// GESTION DU CHANGEMENT DE MOT DE PASSE
+// ========================================
+
+// Handler pour vérifier si un changement de mot de passe est requis
+add_action('wp_ajax_wp_bmc_check_password_change_required', 'wp_bmc_check_password_change_required_handler');
+function wp_bmc_check_password_change_required_handler() {
+    error_log('=== DEBUG CHANGEMENT MOT DE PASSE PHP ===');
+    error_log('wp_bmc_check_password_change_required_handler - Début de la vérification');
+    
+    // Accepter les deux types de nonces (admin et public)
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+        error_log('wp_bmc_check_password_change_required_handler - Nonce admin valide');
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+        error_log('wp_bmc_check_password_change_required_handler - Nonce public valide');
+    }
+    
+    if (!$nonce_valid) {
+        error_log('wp_bmc_check_password_change_required_handler - Nonce invalide');
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        error_log('wp_bmc_check_password_change_required_handler - Utilisateur non connecté');
+        wp_send_json_error('Connexion requise');
+    }
+    
+    $current_user = WP_BMC_Auth::get_current_user();
+    
+    if (!$current_user) {
+        error_log('wp_bmc_check_password_change_required_handler - Utilisateur non trouvé');
+        wp_send_json_error('Utilisateur non trouvé');
+    }
+    
+    error_log('wp_bmc_check_password_change_required_handler - Utilisateur trouvé: ' . $current_user->email);
+    error_log('wp_bmc_check_password_change_required_handler - Statut utilisateur: ' . (isset($current_user->status) ? $current_user->status : 'non défini'));
+    
+    // Vérifier si l'utilisateur a le statut 'pending' (première connexion)
+    // ou s'il a un flag de changement de mot de passe requis
+    $required = false;
+    
+    if (isset($current_user->status) && $current_user->status === 'pending') {
+        $required = true;
+        error_log('wp_bmc_check_password_change_required_handler - Changement requis: statut pending');
+    }
+    
+    // Vérifier aussi dans les meta utilisateur WordPress
+    $password_change_required = get_user_meta($current_user->user_id, 'wp_bmc_password_change_required', true);
+    if ($password_change_required) {
+        $required = true;
+        error_log('wp_bmc_check_password_change_required_handler - Changement requis: meta wp_bmc_password_change_required');
+    }
+    
+    error_log('wp_bmc_check_password_change_required_handler - Résultat final: ' . ($required ? 'requis' : 'non requis'));
+    
+    wp_send_json_success(array(
+        'required' => $required
+    ));
+}
+
+// Handler pour obtenir le template du popup de changement de mot de passe
+add_action('wp_ajax_wp_bmc_get_change_password_popup', 'wp_bmc_get_change_password_popup_handler');
+function wp_bmc_get_change_password_popup_handler() {
+    check_ajax_referer('wp_bmc_nonce', 'nonce');
+
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Connexion requise');
+    }
+
+    // Charger le template du popup
+    ob_start();
+    include WP_BMC_PLUGIN_DIR . 'src/Shared/Templates/public/change-password-popup.php';
+    $html = ob_get_clean();
+
+    wp_send_json_success(array(
+        'html' => $html
+    ));
+}
+
+// Handler pour changer le mot de passe
+add_action('wp_ajax_wp_bmc_change_password', 'wp_bmc_change_password_handler');
+function wp_bmc_change_password_handler() {
+    // Accepter les deux types de nonces (admin et public)
+    $nonce_valid = false;
+    
+    // Essayer d'abord le nonce admin
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_admin_nonce')) {
+        $nonce_valid = true;
+    }
+    // Sinon essayer le nonce public
+    elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'wp_bmc_nonce')) {
+        $nonce_valid = true;
+    }
+    
+    if (!$nonce_valid) {
+        wp_send_json_error('Nonce de sécurité invalide.');
+    }
+    
+    if (!WP_BMC_Auth::is_logged_in()) {
+        wp_send_json_error('Connexion requise');
+    }
+    
+    $current_user = WP_BMC_Auth::get_current_user();
+    
+    if (!$current_user) {
+        wp_send_json_error('Utilisateur non trouvé');
+    }
+    
+    $current_password = sanitize_text_field($_POST['current_password']);
+    $new_password = sanitize_text_field($_POST['new_password']);
+    $confirm_password = sanitize_text_field($_POST['confirm_password']);
+    
+    // Validation
+    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+        wp_send_json_error('Tous les champs sont obligatoires');
+    }
+    
+    if (strlen($new_password) < 6) {
+        wp_send_json_error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+    }
+    
+    if ($new_password !== $confirm_password) {
+        wp_send_json_error('Les mots de passe ne correspondent pas');
+    }
+    
+    // Vérifier le mot de passe actuel
+    $user = WP_BMC_Database::verify_login($current_user->email, $current_password);
+    
+    if (!$user) {
+        wp_send_json_error('Mot de passe actuel incorrect');
+    }
+    
+    // Changer le mot de passe dans WordPress
+    wp_set_password($new_password, $current_user->user_id);
+    
+    // Mettre à jour le mot de passe dans la table BMC
+    global $wpdb;
+    $table = $wpdb->prefix . 'bmc_users';
+    $result = $wpdb->update(
+        $table,
+        array('password' => $new_password),
+        array('user_id' => $current_user->user_id),
+        array('%s'),
+        array('%d')
+    );
+    
+    if ($result !== false) {
+        // Supprimer le flag de changement de mot de passe requis
+        delete_user_meta($current_user->user_id, 'wp_bmc_password_change_required');
+        
+        // Mettre à jour le statut de l'utilisateur s'il était en 'pending'
+        if (isset($current_user->status) && $current_user->status === 'pending') {
+            WP_BMC_Database::update_user_status($current_user->user_id, 'active');
+        }
+        
+        wp_send_json_success(array(
+            'message' => 'Mot de passe changé avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la mise à jour du mot de passe');
+    }
+}
+
+// ========================================
+// GESTION ADMINISTRATEUR - UTILISATEURS
+// ========================================
+
+// Handler pour récupérer l'ID utilisateur WordPress depuis l'ID BMC
+add_action('wp_ajax_wp_bmc_get_wp_user_id', 'wp_bmc_get_wp_user_id_handler');
+function wp_bmc_get_wp_user_id_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $bmc_user_id = intval($_POST['bmc_user_id']);
+    
+    if (!$bmc_user_id) {
+        wp_send_json_error('ID utilisateur BMC invalide');
+    }
+    
+    // Récupérer l'utilisateur BMC
+    $bmc_user = WP_BMC_Database::get_user_by_id($bmc_user_id);
+    
+    if (!$bmc_user) {
+        wp_send_json_error('Utilisateur BMC non trouvé');
+    }
+    
+    $wp_user_id = $bmc_user->user_id;
+    
+    // Vérifier que l'utilisateur WordPress existe
+    $wp_user = get_user_by('id', $wp_user_id);
+    
+    if (!$wp_user) {
+        wp_send_json_error('Utilisateur WordPress non trouvé');
+    }
+    
+    // Générer le nonce pour la réinitialisation de mot de passe
+    $reset_nonce = wp_create_nonce('reset-password_' . $wp_user_id);
+    
+    wp_send_json_success(array(
+        'wp_user_id' => $wp_user_id,
+        'nonce' => $reset_nonce,
+        'user_email' => $wp_user->user_email,
+        'display_name' => $wp_user->display_name
+    ));
+}
+
+// Handler pour récupérer les données d'un projet pour édition
+add_action('wp_ajax_wp_bmc_get_project_data', 'wp_bmc_get_project_data_handler');
+function wp_bmc_get_project_data_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $project_id = intval($_POST['project_id']);
+    
+    if (empty($project_id)) {
+        wp_send_json_error('ID de projet invalide');
+    }
+    
+    $project = WP_BMC_Database::get_project($project_id);
+    
+    if (!$project) {
+        wp_send_json_error('Projet non trouvé');
+    }
+    
+    wp_send_json_success(array(
+        'project' => $project
+    ));
+}
+
+// Handler pour éditer un projet
+add_action('wp_ajax_wp_bmc_edit_project', 'wp_bmc_edit_project_handler');
+function wp_bmc_edit_project_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    $project_id = intval($_POST['project_id']); 
+    $title = sanitize_text_field($_POST['title']);
+    $description = sanitize_textarea_field($_POST['description']);
+
+    if (empty($project_id) || empty($title) || empty($description)) {
+        wp_send_json_error('Paramètres invalides');
+    }
+    
+    $result = WP_BMC_Database::edit_project($project_id, $title, $description);
+    
+    if ($result) {
+        wp_send_json_success(array(
+            'message' => 'Projet édité avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de l\'édition du projet.');
+    }
+}
+
+// ========================================
+// GESTION DES CONFIGURATIONS DU CANVAS
+// ========================================
+
+// Handler pour récupérer les configurations des sections du canvas
+add_action('wp_ajax_wp_bmc_get_canvas_configs', 'wp_bmc_get_canvas_configs_handler');
+function wp_bmc_get_canvas_configs_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    // S'assurer que la table des configurations existe
+    WP_BMC_Database::create_tables();
+    
+    // Vider le cache des configurations pour forcer le rechargement
+    WP_BMC_Canvas_Config::clear_cache();
+    
+    $configs = WP_BMC_Database::get_all_canvas_configs();
+    
+    // Inclure la fonction des sections si elle n'est pas disponible
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    
+    $sections = wp_bmc_get_canvas_sections('global', false); // Utiliser les valeurs par défaut du fichier
+    
+    // Préparer les données pour l'interface admin
+    $formatted_configs = array();
+    foreach ($sections as $section_key => $section_config) {
+        $formatted_configs[$section_key] = array(
+            'title' => isset($configs[$section_key]['title']) ? stripslashes($configs[$section_key]['title']) : $section_config['title'],
+            'placeholder' => isset($configs[$section_key]['placeholder']) ? stripslashes($configs[$section_key]['placeholder']) : $section_config['placeholder'],
+            'default_title' => $section_config['title'],
+            'default_placeholder' => $section_config['placeholder']
+        );
+    }
+    
+    wp_send_json_success(array(
+        'configs' => $formatted_configs
+    ));
+}
+
+// Handler pour sauvegarder les configurations des sections du canvas
+add_action('wp_ajax_wp_bmc_save_canvas_configs', 'wp_bmc_save_canvas_configs_handler');
+function wp_bmc_save_canvas_configs_handler() {
+    check_ajax_referer('wp_bmc_admin_nonce', 'nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permissions insuffisantes');
+    }
+    
+    // S'assurer que la table des configurations existe
+    WP_BMC_Database::create_tables();
+    
+    $configs = $_POST['configs'];
+    
+    if (!is_array($configs)) {
+        wp_send_json_error('Format de données invalide');
+    }
+    
+    $success_count = 0;
+    $error_count = 0;
+    
+    foreach ($configs as $section_key => $section_configs) {
+        // Sauvegarder le titre
+        if (isset($section_configs['title'])) {
+            $result = WP_BMC_Database::save_canvas_section_config(
+                $section_key,
+                'title',
+                sanitize_text_field($section_configs['title'])
+            );
+            if ($result) {
+                $success_count++;
+            } else {
+                $error_count++;
+            }
+        }
+        
+        // Sauvegarder le placeholder
+        if (isset($section_configs['placeholder'])) {
+            $result = WP_BMC_Database::save_canvas_section_config(
+                $section_key,
+                'placeholder',
+                sanitize_text_field($section_configs['placeholder'])
+            );
+            if ($result) {
+                $success_count++;
+            } else {
+                $error_count++;
+            }
+        }
+    }
+    
+    if ($error_count === 0) {
+        wp_send_json_success(array(
+            'message' => 'Configurations sauvegardées avec succès !'
+        ));
+    } else {
+        wp_send_json_error('Erreur lors de la sauvegarde de certaines configurations.');
+    }
+}
+
+// ========================================
+// GESTION DE LA PRÉSENCE EN TEMPS RÉEL (HEARTBEAT API)
+// ========================================
+
+/**
+ * Hook Heartbeat pour gérer la présence des utilisateurs
+ */
+add_filter('heartbeat_received', 'wp_bmc_heartbeat_received', 10, 2);
+function wp_bmc_heartbeat_received($response, $data) {
+    // Vérifier si l'utilisateur est connecté au plugin
+    if (!WP_BMC_Auth::is_logged_in()) {
+        error_log('WP_BMC_Heartbeat : Utilisateur non connecté au plugin');
+        return $response;
+    }
+    
+    // Vérifier si des données de présence BMC sont envoyées
+    if (!isset($data['wp_bmc_presence'])) {
+        return $response;
+    }
+    
+    $user = WP_BMC_Auth::get_current_user();
+    if (!$user) {
+        error_log('WP_BMC_Heartbeat : Utilisateur non trouvé');
+        return $response;
+    }
+    
+    $activity = $data['wp_bmc_presence'];
+    
+    $project_id = intval($activity['project_id']);
+    $section = isset($activity['section']) ? sanitize_text_field($activity['section']) : null;
+    $is_editing = isset($activity['is_editing']) ? intval($activity['is_editing']) : 0;
+    
+    error_log('WP_BMC_Heartbeat : Ping reçu - User: ' . $user->user_id . ' (' . $user->first_name . ' ' . $user->last_name . '), Project: ' . $project_id . ', Section: ' . ($section ?? 'NULL') . ', Editing: ' . $is_editing);
+    
+    if (!$project_id) {
+        error_log('WP_BMC_Heartbeat : Project ID manquant');
+        return $response;
+    }
+    
+    // Vérifier que l'utilisateur a accès au projet
+    $is_admin = current_user_can('manage_options');
+    
+    // Les admins ont accès à tous les projets, pas besoin de vérifier
+    if (!$is_admin) {
+        $has_project_access = WP_BMC_Database::user_has_project_access($user->user_id, $project_id);
+        
+        if (!$has_project_access) {
+            error_log('WP_BMC_Heartbeat : Accès refusé au projet ' . $project_id . ' pour l\'utilisateur ' . $user->user_id . ' (non assigné)');
+            return $response;
+        }
+        
+        error_log('WP_BMC_Heartbeat : Accès autorisé - Utilisateur assigné au projet');
+    } else {
+        error_log('WP_BMC_Heartbeat : Accès autorisé - Admin (bypass)');
+    }
+    
+    // Mettre à jour la session de l'utilisateur
+    WP_BMC_Database::update_user_session(
+        $user->user_id,
+        $project_id,
+        $section,
+        $is_editing
+    );
+    
+    // Récupérer les autres utilisateurs actifs sur ce projet
+    $active_users = WP_BMC_Database::get_active_project_users($project_id, $user->user_id);
+    
+    // Formater les données pour le frontend
+    $formatted_users = array();
+    foreach ($active_users as $u) {
+        $section_title = $u->section ? WP_BMC_Database::get_section_display_name($u->section) : null;
+        
+        $formatted_users[] = array(
+            'user_id' => intval($u->user_id),
+            'full_name' => $u->first_name . ' ' . $u->last_name,
+            'first_name' => $u->first_name,
+            'last_name' => $u->last_name,
+            'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+            'section' => $u->section,
+            'section_title' => $section_title,
+            'is_editing' => intval($u->is_editing) === 1,
+            'last_ping' => $u->last_ping,
+            'seconds_ago' => time() - strtotime($u->last_ping)
+        );
+    }
+    
+    $response['wp_bmc_active_users'] = $formatted_users;
+    
+    return $response;
+}
+
+/**
+ * Configurer l'intervalle Heartbeat pour les pages du canvas
+ */
+add_filter('heartbeat_settings', 'wp_bmc_heartbeat_settings');
+function wp_bmc_heartbeat_settings($settings) {
+    // Vérifier si on est sur une page du canvas ou du dashboard
+    if (is_page('business-model-canvas') || is_page('dashboard')) {
+        $settings['interval'] = 15; // 15 secondes pour la réactivité
+    }
+    
+    return $settings;
 }

@@ -2,14 +2,32 @@
  * JavaScript pour le dashboard administrateur WP Business Model Canvas
  */
 
+// Système de logs conditionnels pour production
+var WP_BMC_DEBUG = false; // Mettre à true pour activer les logs
+function log() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && log) {
+        log.apply(console, arguments);
+    }
+}
+function logWarn() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logWarn) {
+        logWarn.apply(console, arguments);
+    }
+}
+function logError() {
+    if (WP_BMC_DEBUG && typeof console !== 'undefined' && logError) {
+        logError.apply(console, arguments);
+    }
+}
+
 jQuery(document).ready(function ($) {
  
   // ========================================
   // RECHERCHE D'UTILISATEURS
   // ========================================
-  $("#users-search").on("input", function () {
+  $("#projects-search").on("input", function () {
     var searchTerm = $(this).val().toLowerCase();
-    filterUsers(searchTerm);
+    filterProjects(searchTerm);
   });
 
   // ========================================
@@ -147,23 +165,6 @@ jQuery(document).ready(function ($) {
       });
   });
 
-  // Noter une section depuis une notification
-  $(document).on("click", ".grade-btn", function () {
-    var projectId = $(this).data("project-id");
-    var userId = $(this).data("user-id");
-    var section = $(this).data("section");
-
-    // Rediriger vers le canvas de l'utilisateur avec vue admin et auto-ouvrir la popup de notation
-    var url =
-      window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId +
-      "&project_id=" +
-      projectId +
-      "&auto_grade_section=" +
-      encodeURIComponent(section);
-    window.open(url, "_blank");
-  });
 
   // Noter une section depuis les demandes en attente
   $(document).on("click", ".grade-section-btn", function () {
@@ -174,9 +175,7 @@ jQuery(document).ready(function ($) {
     // Rediriger vers le canvas de l'utilisateur avec vue admin
     var url =
       window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId +
-      "&project_id=" +
+      "/business-model-canvas/?admin_view=true&view=global&project_id=" +
       projectId +
       "&open_section=" +
       encodeURIComponent(section);
@@ -195,133 +194,26 @@ jQuery(document).ready(function ($) {
       let projectId = $(".wp-bmc-dashboard").data("project-id");
       let section = $("#wp-bmc-edit-view").data("section");
       let defSection = $("#wp-bmc-edit-view")
-      console.log('Section:', section);
+      log('Section:', section);
       let sectionTitle = $("#wp-bmc-edit-view #edit-section-title").text();
         
       openGradingModal(projectId, section, sectionTitle);
    
   });
 
-  // ========================================
-  // ACTIONS SUR LES UTILISATEURS
-  // ========================================
-
-  // Voir le canvas de l'utilisateur
-  $(document).on("click", ".view-user-canvas-btn", function () {
-    var userId = $(this).data("user-id");
-    var url =
-      window.location.origin +
-      "/business-model-canvas/?admin_view=true&view=global&user_id=" +
-      userId;
-    window.open(url, "_blank");
-  });
-
-  // Éditer l'utilisateur
-  $(document).on("click", ".edit-user-btn", function () {
-    var userId = $(this).data("user-id");
-    editUserInPopup(userId);
-  });
-
-  // ========================================
-  // GESTION DES GROUPES D'ÉTUDIANTS
-  // ========================================
-
-  // Ajouter un étudiant à mes étudiants
-  $(document).on("click", ".add-student-btn", function () {
-    var $btn = $(this);
-    var userId = $btn.data("user-id");
-    var userName = $btn.data("user-name");
-
-    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_add_student",
-        student_id: userId,
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          WP_BMC_Toast.success(response.data.message);
-          // Mettre à jour l'interface
-          updateStudentGroupStatus(userId, true);
-        } else {
-          WP_BMC_Toast.error(response.data);
-        }
-      }
-    )
-      .fail(function () {
-        WP_BMC_Toast.error("Erreur lors de l'ajout de l'étudiant.");
-      })
-      .always(function () {
-        $btn.prop("disabled", false).html('<i class="fas fa-user-plus"></i>');
-      });
-  });
-
-  // Retirer un étudiant de mes étudiants
-  $(document).on("click", ".remove-student-btn", function () {
-    var $btn = $(this);
-    var userId = $btn.data("user-id");
-    var userName = $btn.data("user-name");
-
-    // Demander confirmation
-    if (
-      !confirm(
-        "Êtes-vous sûr de vouloir retirer " + userName + " de vos étudiants ?"
-      )
-    ) {
-      return;
-    }
-
-    $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-    $.post(
-      wp_bmc_admin_ajax.ajax_url,
-      {
-        action: "wp_bmc_remove_student",
-        student_id: userId,
-        nonce: wp_bmc_admin_ajax.nonce,
-      },
-      function (response) {
-        if (response.success) {
-          WP_BMC_Toast.success(response.data.message);
-          // Mettre à jour l'interface
-          updateStudentGroupStatus(userId, false);
-        } else {
-          WP_BMC_Toast.error(response.data);
-        }
-      }
-    )
-      .fail(function () {
-        WP_BMC_Toast.error("Erreur lors de la suppression de l'étudiant.");
-      })
-      .always(function () {
-        $btn.prop("disabled", false).html('<i class="fas fa-user-minus"></i>');
-      });
-  });
-
-  // ========================================
-  // EXPORT DES DONNÉES
-  // ========================================
 
   // ========================================
   // FONCTIONS UTILITAIRES
   // ========================================
 
   // Filtrer les utilisateurs par terme de recherche
-  function filterUsers(searchTerm) {
+  function filterProjects(searchTerm) {
+    log('Filtrer les projets par terme de recherche:', searchTerm);
     $(".user-row").each(function () {
       var $row = $(this);
-      var name = $row.find(".user-name").text().toLowerCase();
-      var email = $row.find(".user-email").text().toLowerCase();
-      var company = $row.find(".user-company").text().toLowerCase();
+      var title = $row.find(".project-title").text().toLowerCase();
 
-      if (
-        name.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        company.includes(searchTerm)
-      ) {
+      if (title.includes(searchTerm)) {
         $row.show();
       } else {
         $row.hide();
@@ -413,67 +305,6 @@ jQuery(document).ready(function ($) {
 
     updateUsersCount();
   }
-
-  // Mettre à jour le statut de groupe d'un utilisateur
-  function updateStudentGroupStatus(userId, isMyStudent) {
-    var $row = $('.user-row[data-user-id="' + userId + '"]');
-    var $groupCell = $row.find(".user-group");
-    var $actionCell = $row.find(".user-actions");
-    var userName =
-      $actionCell.find(".add-student-btn").data("user-name") ||
-      $actionCell.find(".remove-student-btn").data("user-name");
-
-    if (isMyStudent) {
-      // Mettre à jour le statut de groupe
-      $groupCell.html(
-        '<span class="group-status managed-student">' +
-          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>' +
-          "<span>Mon étudiant</span>" +
-          "</span>"
-      );
-
-      // Mettre à jour le bouton d'action
-      $actionCell
-        .find(".add-student-btn")
-        .replaceWith(
-          '<button class="button action-button button-small button-secondary remove-student-btn" ' +
-            'data-user-id="' +
-            userId +
-            '" ' +
-            'data-user-name="' +
-            userName +
-            '" ' +
-            'title="Retirer de mes étudiants">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-            "</button>"
-        );
-    } else {
-      // Mettre à jour le statut de groupe
-      $groupCell.html(
-        '<span class="group-status not-managed">' +
-          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9"/></svg>' +
-          "<span>Non assigné</span>" +
-          "</span>"
-      );
-
-      // Mettre à jour le bouton d'action
-      $actionCell
-        .find(".remove-student-btn")
-        .replaceWith(
-          '<button class="button action-button button-small button-primary add-student-btn" ' +
-            'data-user-id="' +
-            userId +
-            '" ' +
-            'data-user-name="' +
-            userName +
-            '" ' +
-            'title="Ajouter à mes étudiants">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m-9-2V8c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1zm9 4c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4"/></svg>' +
-            "</button>"
-        );
-    }
-  }
-
   // Trier le tableau des utilisateurs
   function sortUsersTable(column, order) {
     var $tbody = $("#users-table tbody");
@@ -490,10 +321,6 @@ jQuery(document).ready(function ($) {
         case "email":
           aVal = $(a).find(".user-email").text().trim();
           bVal = $(b).find(".user-email").text().trim();
-          break;
-        case "company":
-          aVal = $(a).find(".user-company").text().trim();
-          bVal = $(b).find(".user-company").text().trim();
           break;
         case "project_count":
           aVal = parseInt($(a).find(".project-count").text()) || 0;
@@ -726,10 +553,10 @@ jQuery(document).ready(function ($) {
   // Fonction pour ouvrir la modal de notation
   function openGradingModal(projectId, section, sectionTitle) {
     
-    console.log('=== openGradingModal appelée ===');
-    console.log('Project ID reçu:', projectId);
-    console.log('Section reçue:', section);
-    console.log('Section Title reçu:', sectionTitle);
+    log('=== openGradingModal appelée ===');
+    log('Project ID reçu:', projectId);
+    log('Section reçue:', section);
+    log('Section Title reçu:', sectionTitle);
     
     // Supprimer les modals de notation existants pour éviter les conflits
     $('.grading-modal').remove();
@@ -765,7 +592,7 @@ jQuery(document).ready(function ($) {
         '<textarea id="comment" name="comment" rows="7" placeholder="Commentaires sur cette section..."></textarea>' +
         "</div>" +
         '<div class="grading-actions">' +
-        '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary btn-solid">Enregistrer</button>' +
+        '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid">Enregistrer</button>' +
         "</div>" +
         "</form>" +
         "</div>" +
@@ -819,7 +646,7 @@ jQuery(document).ready(function ($) {
 
       $.post(wp_bmc_admin_ajax.ajax_url, formData, function (response) {
         if (response.success) {
-          console.log(response);
+          log(response);
           WP_BMC_Toast.success("Note sauvegardée avec succès !");
           modal.fadeOut(300, function () {
             modal.remove();
@@ -843,7 +670,7 @@ jQuery(document).ready(function ($) {
           }
           
         } else {
-          console.log(response);
+          log(response);
           WP_BMC_Toast.error("Erreur lors de la sauvegarde : " + response.data);
         }
       }).always(function () {
@@ -887,11 +714,11 @@ jQuery(document).ready(function ($) {
 
   // Afficher la note d'une section
   function displaySectionRating(rating) {
-    console.log("rating:", rating);
+    log("rating:", rating);
     $("#rating-score-number").text(rating.rating);
 
     if (rating.comment) {
-      console.log("rating.comment:", rating.comment);
+      log("rating.comment:", rating.comment);
       $("#rating-comment").html("<p>" + rating.comment + "</p>");
     } else {
       $("#rating-comment").html('<p class="no-comment">Aucun commentaire</p>');
@@ -926,7 +753,7 @@ jQuery(document).ready(function ($) {
     var openSection = urlParams.get("open_section");
     
     if (openSection) {
-      console.log('Auto-ouverture de la section:', openSection);
+      log('Auto-ouverture de la section:', openSection);
       
       // Attendre que le DOM soit prêt
       setTimeout(function() {
@@ -934,7 +761,7 @@ jQuery(document).ready(function ($) {
         var $editBtn = $('.edit-brick-btn[data-section="' + openSection + '"]');
         
         if ($editBtn.length > 0) {
-          console.log('Bouton d\'édition trouvé pour la section:', openSection);
+          log('Bouton d\'édition trouvé pour la section:', openSection);
           // Simuler un clic sur le bouton d'édition
           $editBtn.trigger('click');
           
@@ -943,7 +770,7 @@ jQuery(document).ready(function ($) {
           newUrl.searchParams.delete('open_section');
           window.history.replaceState({}, document.title, newUrl.toString());
         } else {
-          console.log('Bouton d\'édition non trouvé pour la section:', openSection);
+          log('Bouton d\'édition non trouvé pour la section:', openSection);
         }
       }, 1000); // Attendre 1 seconde pour que le DOM soit chargé
     }

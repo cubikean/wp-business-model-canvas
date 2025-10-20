@@ -41,10 +41,12 @@ require_once WP_BMC_CORE_DIR . 'Database/class-wp-bmc-database.php';
 require_once WP_BMC_CORE_DIR . 'Auth/class-wp-bmc-auth.php';
 require_once WP_BMC_CORE_DIR . 'Shortcodes/class-wp-bmc-shortcodes.php';
 require_once WP_BMC_CORE_DIR . 'Ajax/class-wp-bmc-ajax.php';
+require_once WP_BMC_CORE_DIR . 'class-wp-bmc-paths.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-loader.php';
 require_once WP_BMC_CORE_DIR . 'class-wp-bmc-template-loader.php';
 require_once WP_BMC_SHARED_DIR . 'Config/class-wp-bmc-canvas-config.php';
 require_once WP_BMC_SHARED_DIR . 'Functions/canvas-functions.php';
+require_once WP_BMC_SHARED_DIR . 'Utils/email-templates.php';
 
 // Initialiser le plugin
 function wp_bmc_init() {
@@ -54,6 +56,9 @@ function wp_bmc_init() {
     // Initialiser le chargeur principal
     $plugin = new WP_BMC_Loader();
     $plugin->run();
+    
+    // Hook pour synchroniser la suppression d'utilisateurs WordPress avec la table BMC
+    add_action('delete_user', array('WP_BMC_Database', 'cleanup_on_wp_user_delete'), 10, 1);
 }
 add_action('plugins_loaded', 'wp_bmc_init');
 
@@ -120,7 +125,38 @@ function wp_bmc_check_update() {
 register_deactivation_hook(__FILE__, 'wp_bmc_deactivate');
 function wp_bmc_deactivate() {
     flush_rewrite_rules();
+    
+    // Désactiver le cron de nettoyage des sessions
+    $timestamp = wp_next_scheduled('wp_bmc_cleanup_sessions');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wp_bmc_cleanup_sessions');
+    }
 }
+
+// ========================================
+// CRON JOB - NETTOYAGE DES SESSIONS
+// ========================================
+
+// Planifier le nettoyage des sessions toutes les 2 minutes
+add_action('wp', 'wp_bmc_schedule_session_cleanup');
+function wp_bmc_schedule_session_cleanup() {
+    if (!wp_next_scheduled('wp_bmc_cleanup_sessions')) {
+        wp_schedule_event(time(), 'every_two_minutes', 'wp_bmc_cleanup_sessions');
+    }
+}
+
+// Définir un intervalle personnalisé pour le cron
+add_filter('cron_schedules', 'wp_bmc_add_cron_intervals');
+function wp_bmc_add_cron_intervals($schedules) {
+    $schedules['every_two_minutes'] = array(
+        'interval' => 120, // 2 minutes
+        'display' => __('Toutes les 2 minutes')
+    );
+    return $schedules;
+}
+
+// Action de nettoyage des sessions
+add_action('wp_bmc_cleanup_sessions', array('WP_BMC_Database', 'cleanup_inactive_sessions'));
 
 // Fonction utilitaire pour inclure le template d'édition
 function wp_bmc_include_edit_section($context = 'public', $section = '') {
@@ -170,4 +206,54 @@ function wp_bmc_create_pages() {
             ));
         }
     }
+}
+
+// Ajouter la classe 'bmc-main' au body sur les pages BMC
+add_filter('body_class', 'wp_bmc_add_body_class');
+function wp_bmc_add_body_class($classes) {
+    global $post;
+    
+    // Vérifier si nous sommes sur une page avec contenu
+    if (!is_a($post, 'WP_Post')) {
+        return $classes;
+    }
+    
+    // Liste des shortcodes BMC à détecter
+    $bmc_shortcodes = array(
+        'wp_bmc_login',
+        'wp_bmc_register',
+        'wp_bmc_dashboard',
+        'wp_bmc_canvas',
+        'wp_bmc_change_password'
+    );
+    
+    // Vérifier si la page contient l'un des shortcodes BMC
+    foreach ($bmc_shortcodes as $shortcode) {
+        if (has_shortcode($post->post_content, $shortcode)) {
+            $classes[] = 'bmc-main '.$shortcode;
+            break;
+        }
+    }
+    
+    return $classes;
+}
+
+
+add_filter('body_class', 'wp_bmc_add_body_class_logged');
+function wp_bmc_add_body_class_logged($classes){
+    if(WP_BMC_Auth::is_logged_in()){
+        $classes[] = 'bmc-logged-in';
+    }
+    return $classes;
+}
+
+// Flusher les règles de réécriture lors de l'activation du plugin
+register_activation_hook(__FILE__, 'wp_bmc_flush_rewrite_rules');
+function wp_bmc_flush_rewrite_rules() {
+    // Enregistrer les règles de réécriture
+    add_rewrite_rule('^logout/?$', 'index.php?wp_bmc_route=logout', 'top');
+    add_rewrite_tag('%wp_bmc_route%', '([^&]+)');
+    
+    // Flusher les règles
+    flush_rewrite_rules();
 }
