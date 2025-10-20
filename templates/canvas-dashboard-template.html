@@ -84,13 +84,49 @@
             display: flex;
         }
 
+        .container {  display: grid;
+        grid-template-columns: 1fr 0.5fr 1.5fr 0.75fr 0.75fr 1.5fr 0.5fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr;
+        gap: 0px 0px;
+        grid-auto-flow: row;
+        grid-template-areas:
+            "a a z r r t u u"
+            "a a e r r y u u"
+            "w w w w x x x x";
+        }
+
+        .a { grid-area: a; }
+
+        .z { grid-area: z; }
+
+        .e { grid-area: e; }
+
+        .r { grid-area: r; }
+
+        .t { grid-area: t; }
+
+        .y { grid-area: y; }
+
+        .u { grid-area: u; }
+
+        .w { grid-area: w; }
+
+        .x { grid-area: x; }
+
+
         .canvas-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 0.5fr 1.5fr 0.75fr 0.75fr 1.5fr 0.5fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
             gap: 3px;
             width: 100%;
             height: 100%;
+            grid-auto-flow: row;
+            grid-template-areas:
+                "a a z r r t u u"
+                "a a e r r y u u"
+                "w w w w x x x x";
+        
         }
 
         .canvas-section {
@@ -105,56 +141,59 @@
 
         /* Disposition exacte du Business Model Canvas */
         .key_partners { 
-            grid-column: 1; 
-            grid-row: 1/3; 
+            grid-area: a;
         }
         .key_activities { 
-            grid-column: 2; 
-            grid-row: 1; 
+            grid-area: z;
         }
         .value_proposition { 
-            grid-column: 3; 
-            grid-row: 1/3; 
+            grid-area: r;
         }
         .customer_relationships { 
-            grid-column: 4; 
-            grid-row: 1; 
+            grid-area: t;
         }
         .customer_segments { 
-            grid-column: 5; 
-            grid-row: 1/3; 
+            grid-area: y;
         }
         .key_resources { 
-            grid-column: 2; 
-            grid-row: 2; 
+            grid-area: e;
         }
         .channels { 
-            grid-column: 4; 
-            grid-row: 2; 
+            grid-area: u;
         }
         .cost_structure { 
-            grid-column: 1/4; 
-            grid-row: 3; 
+            grid-area: w;
         }
         .revenue_streams { 
-            grid-column: 4/6; 
-            grid-row: 3; 
+            grid-area: x;
         }
 
         .section-title {
-            font-size: 8px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 2px;
             text-transform: uppercase;
             border-bottom: 1px solid #000;
-            padding-bottom: 1px;
+            padding: 6px;
             flex-shrink: 0;
         }
 
+        /* Codes couleurs correspondant au dashboard */
+        .key_partners .section-title { background-color: #ff4b6b }
+        .key_activities .section-title { background-color: #ff4b6b; }
+        .value_proposition .section-title { background-color: #86c171; }
+        .customer_relationships .section-title { background-color: #f18949; }
+        .customer_segments .section-title { background-color: #f18949; }
+        .key_resources .section-title { background-color: #ff4b6b; }
+        .channels .section-title { background-color: #f18949; }
+        .cost_structure .section-title { background-color: #62aadd; }
+        .revenue_streams .section-title { background-color: #62aadd; }
+
         .section-content {
-            font-size: 6px;
+            font-size: 7px;
             line-height: 1.2;
             overflow: hidden;
+            padding: 6px;
             flex: 1;
         }
 
