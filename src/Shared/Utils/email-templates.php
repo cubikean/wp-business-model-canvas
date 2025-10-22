@@ -76,7 +76,7 @@ function wp_bmc_send_email($to, $subject, $template_name, $variables = array()) 
 function wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id) {
     return wp_bmc_send_email(
         $email,
-        'Bienvenue sur WP Business Model Canvas - Vos identifiants de connexion',
+        'Bienvenue sur le passeport de l\'entrepreneuriat - Vos identifiants de connexion',
         'user-welcome',
         compact('first_name', 'last_name', 'email', 'password', 'custom_id')
     );
@@ -95,7 +95,7 @@ function wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $passwo
 function wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password) {
     return wp_bmc_send_email(
         $email,
-        'Bienvenue - Accès Superviseur WP Business Model Canvas',
+        'Bienvenue - Accès Superviseur - Passeport de l\'entrepreneuriat',
         'supervisor-welcome',
         compact('first_name', 'last_name', 'email', 'username', 'password')
     );
@@ -112,7 +112,7 @@ function wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $
 function wp_bmc_send_password_reset_email($email, $display_name, $new_password) {
     return wp_bmc_send_email(
         $email,
-        'Réinitialisation de votre mot de passe - WP Business Model Canvas',
+        'Réinitialisation de votre mot de passe - Passeport de l\'entrepreneuriat',
         'password-reset',
         compact('display_name', 'new_password')
     );

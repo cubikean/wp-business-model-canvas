@@ -226,8 +226,8 @@ function wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $proje
         include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
     }
     
-    // Configuration des sections du canvas (utiliser les valeurs par défaut du fichier)
-    $canvas_sections = wp_bmc_get_canvas_sections($view_mode, false);
+    // Configuration des sections du canvas (utiliser les configurations personnalisées)
+    $canvas_sections = wp_bmc_get_canvas_sections($view_mode, true);
 
     // Calculer le pourcentage d'avancement si nécessaire
     $progress_percentage = 0;
@@ -384,7 +384,7 @@ function wp_bmc_get_section_display_name($section_key)
         include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
     }
     
-    $sections = wp_bmc_get_canvas_sections('global', false);
+    $sections = wp_bmc_get_canvas_sections('global', true);
 
     if (isset($sections[$section_key])) {
         return $sections[$section_key]['title'];

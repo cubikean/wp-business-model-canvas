@@ -31,7 +31,7 @@ wp_localize_script('wp-bmc-admin-canvas-config', 'wp_bmc_admin_ajax', array(
     
     <div class="wp-bmc-admin-container">
         <div class="canvas-config-header">
-            <p>Personnalisez les titres et placeholders des sections du Business Model Canvas.</p>
+            <p>Personnalisez les titres et placeholders des sections du passeport de l'entrepreneuriat.</p>
         </div>
         
         <form id="canvas-config-form">

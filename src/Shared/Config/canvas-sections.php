@@ -102,10 +102,10 @@ function wp_bmc_get_canvas_sections($view_mode = 'global', $use_custom_configs =
         foreach ($default_sections as $section_key => &$section_config) {
             if (isset($custom_configs[$section_key])) {
                 if (isset($custom_configs[$section_key]['title'])) {
-                    $section_config['title'] = $custom_configs[$section_key]['title'];
+                    $section_config['title'] = stripslashes($custom_configs[$section_key]['title']);
                 }
                 if (isset($custom_configs[$section_key]['placeholder'])) {
-                    $section_config['placeholder'] = $custom_configs[$section_key]['placeholder'];
+                    $section_config['placeholder'] = stripslashes($custom_configs[$section_key]['placeholder']);
                 }
             }
         }

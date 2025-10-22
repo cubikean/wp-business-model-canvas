@@ -22,13 +22,13 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>WP Business Model Canvas</h1>
+            <h1>Passeport de l'entrepreneuriat</h1>
             <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
         </div>
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
+            <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInov.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>
@@ -40,7 +40,7 @@ if (!defined('ABSPATH')) exit;
             <ul>
                 <li>Créer et gérer des projets</li>
                 <li>Créer et gérer des utilisateurs</li>
-                <li>Superviser les Business Model Canvas</li>
+                <li>Superviser les passeports de l'entrepreneuriat</li>
                 <li>Noter et commenter les sections</li>
                 <li>Accéder au tableau de bord administrateur</li>
             </ul>
@@ -51,7 +51,7 @@ if (!defined('ABSPATH')) exit;
             
             <p>Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.</p>
             
-            <p>Cordialement,<br>L'équipe WP Business Model Canvas</p>
+            <p>Cordialement,<br>L'équipe OpenCampusInov</p>
         </div>
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

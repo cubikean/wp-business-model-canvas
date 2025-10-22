@@ -37,7 +37,7 @@ if (!defined('ABSPATH')) exit;
             
             <p>Si vous n'avez pas demandé cette réinitialisation, veuillez contacter un administrateur immédiatement.</p>
             
-            <p>Cordialement,<br>L'équipe WP Business Model Canvas</p>
+            <p>Cordialement,<br>L'équipe OpenCampusInov</p>
         </div>
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

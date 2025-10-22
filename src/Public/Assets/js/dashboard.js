@@ -1033,6 +1033,8 @@ jQuery(document).ready(function($) {
                     
                     // Fermer la vue d'édition après un délai
                     setTimeout(function() {
+                        $btn.text(originalText);
+                        $btn.removeClass('wp-bmc-btn-success').addClass('wp-bmc-btn-warning');
                         closeEditView();
                     }, 2000);
                 } else {

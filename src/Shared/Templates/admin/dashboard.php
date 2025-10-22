@@ -299,7 +299,7 @@ $pending_grading_requests = WP_BMC_Database::get_pending_grading_requests($curre
                                 </div>
                                 <?php if (!empty($project->project_description)): ?>
                                     <div class="project-description">
-                                        <?php echo esc_html(wp_trim_words($project->project_description, 10)); ?>
+                                        <?php echo wp_kses_post(stripslashes(wp_trim_words($project->project_description, 10))); ?>
                                     </div>
                                 <?php endif; ?>
                             </div>

@@ -536,6 +536,14 @@ class WP_BMC_Database {
             ORDER BY pu.assigned_at DESC
         ", $user_id));
         
+        // Nettoyer les antislash dans les titres et descriptions
+        if ($results) {
+            foreach ($results as $project) {
+                $project->title = stripslashes($project->title);
+                $project->description = stripslashes($project->description);
+            }
+        }
+        
         return $results;
     }
     
@@ -655,6 +663,14 @@ class WP_BMC_Database {
             ORDER BY ps.assigned_at DESC
         ", $supervisor_id));
         
+        // Nettoyer les antislash dans les titres et descriptions
+        if ($results) {
+            foreach ($results as $project) {
+                $project->title = stripslashes($project->title);
+                $project->description = stripslashes($project->description);
+            }
+        }
+        
         return $results;
     }
     
@@ -722,6 +738,14 @@ class WP_BMC_Database {
             ORDER BY p.created_at DESC
         ");
         
+        // Nettoyer les antislash dans les titres et descriptions
+        if ($results) {
+            foreach ($results as $project) {
+                $project->title = stripslashes($project->title);
+                $project->description = stripslashes($project->description);
+            }
+        }
+        
         return $results;
     }
     
@@ -749,12 +773,20 @@ class WP_BMC_Database {
         
         $table = $wpdb->prefix . 'bmc_projects';
         
-        return $wpdb->get_row(
+        $project = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM $table WHERE id = %d",
                 $project_id
             )
         );
+        
+        // Nettoyer les antislash dans le titre et la description
+        if ($project) {
+            $project->title = stripslashes($project->title);
+            $project->description = stripslashes($project->description);
+        }
+        
+        return $project;
     }
     
     /**
@@ -1074,6 +1106,7 @@ class WP_BMC_Database {
         // Ajouter la date formatée selon les paramètres WordPress
         if ($rating) {
             $rating->formatted_date = self::format_date_for_display($rating->created_at);
+            $rating->comment = stripslashes($rating->comment);
         }
         
         return $rating;
@@ -1156,10 +1189,11 @@ class WP_BMC_Database {
             )
         );
         
-        // Ajouter les dates formatées
+        // Ajouter les dates formatées et nettoyer les commentaires
         if ($results) {
             foreach ($results as $rating) {
                 $rating->formatted_date = self::format_date_for_display($rating->created_at);
+                $rating->comment = stripslashes($rating->comment);
             }
         }
         
@@ -1448,10 +1482,16 @@ class WP_BMC_Database {
             )
         );
         
-        // Ajouter les dates formatées selon les paramètres WordPress
+        // Ajouter les dates formatées et nettoyer les commentaires
         if ($revisions) {
             foreach ($revisions as $revision) {
                 $revision->formatted_date = self::format_date_for_display($revision->created_at);
+                if (isset($revision->rating_comment)) {
+                    $revision->rating_comment = stripslashes($revision->rating_comment);
+                }
+                if (isset($revision->content)) {
+                    $revision->content = stripslashes($revision->content);
+                }
             }
         }
         
@@ -1466,12 +1506,24 @@ class WP_BMC_Database {
         
         $table = $wpdb->prefix . 'bmc_section_revisions';
         
-        return $wpdb->get_row(
+        $revision = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM $table WHERE id = %d",
                 $revision_id
             )
         );
+        
+        // Nettoyer les antislash dans les champs texte
+        if ($revision) {
+            if (isset($revision->rating_comment)) {
+                $revision->rating_comment = stripslashes($revision->rating_comment);
+            }
+            if (isset($revision->content)) {
+                $revision->content = stripslashes($revision->content);
+            }
+        }
+        
+        return $revision;
     }
     
     /**
@@ -2298,7 +2350,7 @@ class WP_BMC_Database {
             include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
         }
         
-        $sections = wp_bmc_get_canvas_sections('global', false);
+        $sections = wp_bmc_get_canvas_sections('global', true);
         
         return isset($sections[$section_key]['title']) ? $sections[$section_key]['title'] : $section_key;
     }

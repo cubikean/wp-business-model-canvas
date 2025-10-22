@@ -21,12 +21,12 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>WP Business Model Canvas</h1>
+            <h1>Passeport de l'entrepreneuriat</h1>
         </div>
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte a été créé avec succès sur la plateforme WP Business Model Canvas.</p>
+            <p>Votre compte a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInov.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>
@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) exit;
             
             <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
             
-            <p>Vous pouvez maintenant accéder à votre espace personnel et commencer à créer vos Business Model Canvas.</p>
+            <p>Vous pouvez maintenant accéder à votre espace personnel et commencer à travailler sur votre passeport de l'entrepreneuriat.</p>
             
             <p>Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.</p>
             

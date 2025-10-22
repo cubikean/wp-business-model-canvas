@@ -2556,10 +2556,10 @@ function wp_bmc_export_all_data_handler() {
     // Structure JSON complète pour Gotenberg
     $pdf_data = array(
         'document' => array(
-            'title' => 'Business Model Canvas - ' . $project->title,
+            'title' => 'Passeport de l\'entrepreneuriat - ' . $project->title,
             'author' => $user->first_name . ' ' . $user->last_name,
-            'subject' => 'Business Model Canvas',
-            'creator' => 'WP Business Model Canvas Plugin',
+            'subject' => 'Passeport de l\'entrepreneuriat',
+            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInov',
             'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql'), 'date'),
             'generated_timestamp' => current_time('timestamp'),
             'language' => 'fr'
@@ -2708,10 +2708,10 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
     // Créer une structure de données simplifiée pour le template
     $pdf_data = array(
         'document' => array(
-            'title' => 'Business Model Canvas - ' . $project->title,
+            'title' => 'Passeport de l\'entrepreneuriat - ' . $project->title,
             'author' => $user->first_name . ' ' . $user->last_name,
-            'subject' => 'Business Model Canvas',
-            'creator' => 'WP Business Model Canvas Plugin',
+            'subject' => 'Passeport de l\'entrepreneuriat',
+            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInov',
             'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql'), 'date'),
             'language' => 'fr'
         ),

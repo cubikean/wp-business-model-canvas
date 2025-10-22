@@ -55,7 +55,7 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
             <div class="no-projects-info">
                 <div class="info-card">
                     <h3>Comment obtenir un projet ?</h3>
-                    <p>Les projets sont créés et assignés par les administrateurs. Contactez votre responsable pour qu'il vous assigne un projet Business Model Canvas.</p>
+                    <p>Les projets sont créés et assignés par les administrateurs. Contactez votre responsable pour qu'il vous assigne un projet.</p>
                 </div>
             </div>
         </div>
