@@ -119,9 +119,9 @@ function wp_bmc_create_user_handler() {
     // Vérifier si l'ID personnalisé existe déjà
     global $wpdb;
     $table = $wpdb->prefix . 'bmc_users';
-    $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
-    if ($existing_custom_id) {
-        wp_send_json_error('Cet ID personnalisé est déjà utilisé.');
+    $existing_user = $wpdb->get_row($wpdb->prepare("SELECT email, first_name, last_name FROM $table WHERE custom_id = %s", $custom_id));
+    if ($existing_user) {
+        wp_send_json_error('Cet ID personnalisé est déjà utilisé par ' . $existing_user->first_name . ' ' . $existing_user->last_name . ' (' . $existing_user->email . ').');
     }
     
     $admin_id = get_current_user_id();
@@ -260,9 +260,9 @@ function wp_bmc_import_csv_users_handler() {
         // Vérifier si l'ID personnalisé existe déjà
         global $wpdb;
         $table = $wpdb->prefix . 'bmc_users';
-        $existing_custom_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE custom_id = %s", $custom_id));
-        if ($existing_custom_id) {
-            $errors[] = "Ligne $line_number : L'ID personnalisé '$custom_id' existe déjà";
+        $existing_user = $wpdb->get_row($wpdb->prepare("SELECT email, first_name, last_name FROM $table WHERE custom_id = %s", $custom_id));
+        if ($existing_user) {
+            $errors[] = "Ligne $line_number : L'ID personnalisé '$custom_id' existe déjà (utilisé par {$existing_user->first_name} {$existing_user->last_name} - {$existing_user->email}). Utilisateur ignoré : $email";
             continue;
         }
         
