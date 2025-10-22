@@ -2652,6 +2652,16 @@ body.popup-open {
   }
 }
 
+.btn-outline.disabled{
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  &:hover{
+    cursor: not-allowed;
+  pointer-events: none;
+  }
+}
+
 .btn-outline {
   padding: 10px 20px;
   outline: 1px solid var(--edit-view-color, var(--dashboard-primary));

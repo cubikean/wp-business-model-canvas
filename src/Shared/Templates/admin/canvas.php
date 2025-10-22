@@ -140,6 +140,11 @@ if ($admin_view && $is_admin) {
     // Inclure le template d'édition réutilisable pour l'admin
     wp_bmc_include_edit_section('admin');
     ?>
+    
+    <!-- Passer les demandes de notation en attente au JavaScript -->
+    <script>
+        var wp_bmc_pending_grading_requests = <?php echo json_encode($pending_grading_requests); ?>;
+    </script>
 
     <!-- Indicateur admin -->
     <div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">

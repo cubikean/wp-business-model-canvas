@@ -384,6 +384,20 @@ jQuery(document).ready(function($) {
 
             loadSectionRating(sectionName);
             
+            // Vérifier si la section a une demande de notation en attente (mode admin uniquement)
+            if (typeof wp_bmc_pending_grading_requests !== 'undefined') {
+                var hasPendingRequest = wp_bmc_pending_grading_requests.indexOf(sectionName) !== -1;
+                var $rateBtn = $('#inner-rate-brick-btn');
+                
+                if (hasPendingRequest) {
+                    $rateBtn.prop('disabled', false).removeClass('disabled');
+                    $rateBtn.attr('title', 'Cliquer pour noter cette section');
+                } else {
+                    $rateBtn.prop('disabled', true).addClass('disabled');
+                    $rateBtn.attr('title', 'Aucune demande de notation en attente pour cette section');
+                }
+            }
+            
             // Réinitialiser la liste des révisions pour cette brique
             $('#revisions-list').html(`
                 <div class="no-revisions">
