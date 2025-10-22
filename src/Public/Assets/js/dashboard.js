@@ -175,7 +175,7 @@ jQuery(document).ready(function($) {
     
     // Fonction pour sauvegarder toutes les opérations en attente
     function savePendingOperations() {
-        if (!isDirty) return;
+        if (!isDirty) return Promise.resolve();
         
         var hasOperations = pendingOperations.add.length > 0 || 
                           pendingOperations.update.length > 0 || 
@@ -185,7 +185,7 @@ jQuery(document).ready(function($) {
         if (!hasOperations) {
             isDirty = false;
             updateSaveIndicator();
-            return;
+            return Promise.resolve();
         }
         
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
@@ -197,7 +197,7 @@ jQuery(document).ready(function($) {
             operations: pendingOperations
         };
         
-        $.post(wp_bmc_ajax.ajax_url, formData, function(response) {
+        return $.post(wp_bmc_ajax.ajax_url, formData).done(function(response) {
             if (response.success) {
                 // Vider les opérations en attente
                 pendingOperations = { add: [], update: [], delete: [], toggle: [] };
@@ -213,8 +213,11 @@ jQuery(document).ready(function($) {
                     });
                 }
                 
+                // Vider le cache pour forcer le rechargement depuis le serveur
+                todoCache = {};
+                
             } 
-        })
+        }).promise();
     }
     
     // Fonction pour forcer la sauvegarde immédiate
@@ -222,7 +225,7 @@ jQuery(document).ready(function($) {
         if (saveTimeout) {
             clearTimeout(saveTimeout);
         }
-        savePendingOperations();
+        return savePendingOperations();
     }
     
     // ========================================
@@ -238,18 +241,21 @@ jQuery(document).ready(function($) {
         var view = $(this).data('view');
         var $button = $(this);
         
-        // Mettre à jour l'URL sans recharger la page
-        var currentUrl = new URL(window.location);
-        currentUrl.searchParams.set('view', view);
-        window.history.pushState({}, '', currentUrl.toString());
-        
-        // Mettre à jour les boutons actifs
-        $('.view-toggle button').removeClass('wp-bmc-btn-primary').addClass('wp-bmc-btn-secondary');
-        $button.removeClass('wp-bmc-btn-secondary').addClass('wp-bmc-btn-primary');
-        $('.dashboard-header-title').text($button.text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
-        
-        // Recharger le contenu du canvas via AJAX
-        loadCanvasView(view);
+        // Forcer la sauvegarde avant de changer de vue
+        forceSave().then(function() {
+            // Mettre à jour l'URL sans recharger la page
+            var currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('view', view);
+            window.history.pushState({}, '', currentUrl.toString());
+            
+            // Mettre à jour les boutons actifs
+            $('.view-toggle button').removeClass('wp-bmc-btn-primary').addClass('wp-bmc-btn-secondary');
+            $button.removeClass('wp-bmc-btn-secondary').addClass('wp-bmc-btn-primary');
+            $('.dashboard-header-title').text($button.text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
+            
+            // Recharger le contenu du canvas via AJAX
+            loadCanvasView(view);
+        });
     });
     
     // Fonction pour charger une vue du canvas via AJAX
@@ -332,90 +338,89 @@ jQuery(document).ready(function($) {
     // Ouvrir la vue d'édition
     function openEditView(sectionName, sectionTitle, sectionPlaceholder, content) {
         // Sauvegarder les todos de la section actuelle avant de changer
-        forceSave();
+        forceSave().then(function() {
+            const mainElement = document.querySelector('.wp-bmc-dashboard');
 
+            mainElement?.scrollIntoView({ behavior: "smooth" })
 
-        const mainElement = document.querySelector('.wp-bmc-dashboard');
+            // Définir la section actuellement éditée (priorité à la variable globale)
+            currentEditingSection = sectionName;
+        
+            // Masquer le contenu principal
+            $('.wp-bmc-dashboard .canvas-controls').hide();
+            $('.wp-bmc-dashboard .canvas-container').hide();
+            $('.wp-bmc-dashboard .wp-bmc-edit-view').show();
+            $('.dashboard-header-title').text('Bloc projet : ' + $('.dashboard-header').data('project-name'));
+            
+            // Mettre à jour le contenu de la vue d'édition
+            $('#edit-section-title').text(sectionTitle);
+            $('#edit-section-placeholder').text(sectionPlaceholder);
+            $('#wp-bmc-edit-view').attr('data-section', sectionName);
+            
+            // Mettre à jour le titre des révisions pour cette brique spécifique
+            // $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
+            
+            // Debug: vérifier que l'attribut est bien défini
+            log('Vue d\'édition ouverte pour la section:', sectionName);
+            log('Variable globale définie:', currentEditingSection);
+            log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
+            
+            // Initialiser l'éditeur WYSIWYG
+            let decodedContent = cleanContent(content);
 
-        mainElement?.scrollIntoView({ behavior: "smooth" })
+            initWysiwygEditor(decodedContent);
+            
+            // Charger les fichiers de la section
+            loadSectionFiles(sectionName);
+            
+            // Charger les documents de référence
+            loadReferenceDocuments(sectionName);
+            
+            // Charger les todos de la section
+            loadSectionTodos(sectionName);
 
-        // Définir la section actuellement éditée (priorité à la variable globale)
-        currentEditingSection = sectionName;
-        
-        // Masquer le contenu principal
-        $('.wp-bmc-dashboard .canvas-controls').hide();
-        $('.wp-bmc-dashboard .canvas-container').hide();
-        $('.wp-bmc-dashboard .wp-bmc-edit-view').show();
-        $('.dashboard-header-title').text('Bloc projet : ' + $('.dashboard-header').data('project-name'));
-        
-        // Mettre à jour le contenu de la vue d'édition
-        $('#edit-section-title').text(sectionTitle);
-        $('#edit-section-placeholder').text(sectionPlaceholder);
-        $('#wp-bmc-edit-view').attr('data-section', sectionName);
-        
-        // Mettre à jour le titre des révisions pour cette brique spécifique
-        // $('#revisions-section-title').text(`Révisions de "${sectionTitle}"`);
-        
-        // Debug: vérifier que l'attribut est bien défini
-        log('Vue d\'édition ouverte pour la section:', sectionName);
-        log('Variable globale définie:', currentEditingSection);
-        log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
-        
-        // Initialiser l'éditeur WYSIWYG
-        let decodedContent = cleanContent(content);
+            // Charger les révisions de la section
+            loadSectionRevisions(sectionName);
 
-        initWysiwygEditor(decodedContent);
-        
-        // Charger les fichiers de la section
-        loadSectionFiles(sectionName);
-        
-        // Charger les documents de référence
-        loadReferenceDocuments(sectionName);
-        
-        // Charger les todos de la section
-        loadSectionTodos(sectionName);
-
-        // Charger les révisions de la section
-        loadSectionRevisions(sectionName);
-
-        loadSectionRating(sectionName);
-        
-        // Réinitialiser la liste des révisions pour cette brique
-        $('#revisions-list').html(`
-            <div class="no-revisions">
-                <i class="fas fa-history"></i>
-                <p>Aucune révision disponible pour cette brique</p>
-                <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
-            </div>
-        `);
-        
-        // Afficher la vue d'édition
-        $('#wp-bmc-edit-view').fadeIn(300);
+            loadSectionRating(sectionName);
+            
+            // Réinitialiser la liste des révisions pour cette brique
+            $('#revisions-list').html(`
+                <div class="no-revisions">
+                    <i class="fas fa-history"></i>
+                    <p>Aucune révision disponible pour cette brique</p>
+                    <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
+                </div>
+            `);
+            
+            // Afficher la vue d'édition
+            $('#wp-bmc-edit-view').fadeIn(300);
+        });
     }
     
     // Fermer la vue d'édition
     function closeEditView() {
         // Sauvegarder les todos avant de fermer
-        forceSave();
-        
-        // Réinitialiser la section actuellement éditée
-        currentEditingSection = '';
-        
-        $('#wp-bmc-edit-view').fadeOut(300);
-        
-        // Réafficher le contenu principal
-        $('.wp-bmc-dashboard .canvas-controls').show();
-        $('.wp-bmc-dashboard .canvas-container').show();
+        forceSave().then(function() {
+            // Réinitialiser la section actuellement éditée
+            currentEditingSection = '';
+            
+            $('#wp-bmc-edit-view').fadeOut(300);
+            
+            // Réafficher le contenu principal
+            $('.wp-bmc-dashboard .canvas-controls').show();
+            $('.wp-bmc-dashboard .canvas-container').show();
 
-        $('.wp-bmc-dashboard .wp-bmc-edit-view').hide();
+            $('.wp-bmc-dashboard .wp-bmc-edit-view').hide();
 
-        $('.dashboard-header-title').text($('.view-toggle button.wp-bmc-btn-primary').text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
-        
-        // Détruire l'éditeur WYSIWYG
-        if (window.wysiwygEditor) {
-            window.wysiwygEditor.destroy();
-            window.wysiwygEditor = null;
-        }
+            $('.dashboard-header-title').text($('.view-toggle button.wp-bmc-btn-primary').text() + ' du projet : ' + $('.dashboard-header').data('project-name'));
+            
+            // Détruire l'éditeur WYSIWYG
+            if (window.wysiwygEditor) {
+                window.wysiwygEditor.destroy();
+                window.wysiwygEditor = null;
+            }
+        });
     }
     
     // Gestionnaires d'événements pour la vue d'édition
@@ -1033,6 +1038,7 @@ jQuery(document).ready(function($) {
                     
                     // Fermer la vue d'édition après un délai
                     setTimeout(function() {
+                        console.log('originalText', originalText);
                         $btn.text(originalText);
                         $btn.removeClass('wp-bmc-btn-success').addClass('wp-bmc-btn-warning');
                         closeEditView();
@@ -1863,6 +1869,11 @@ jQuery(document).ready(function($) {
         addTodoToInterface(newTodo);
         updateTodoStats();
         
+        // Mettre à jour le cache local
+        if (sectionName && todoCache[sectionName]) {
+            todoCache[sectionName].todos.push(newTodo);
+        }
+        
         // Ajouter à la liste des opérations en attente
         pendingOperations.add.push({
             section: sectionName,
@@ -1956,6 +1967,16 @@ jQuery(document).ready(function($) {
         // Mettre à jour les statistiques immédiatement
         updateTodoStats();
         
+        // Mettre à jour le cache local
+        if (currentEditingSection && todoCache[currentEditingSection]) {
+            var todoInCache = todoCache[currentEditingSection].todos.find(function(todo) {
+                return parseInt(todo.id) === parseInt(todoId);
+            });
+            if (todoInCache) {
+                todoInCache.is_completed = isChecked ? '1' : '0';
+            }
+        }
+        
         // Ajouter à la liste des opérations en attente
         pendingOperations.toggle.push({
             todo_id: todoId,
@@ -2033,6 +2054,16 @@ jQuery(document).ready(function($) {
             $editActions.remove();
             $todoItem.find('.todo-actions').show();
             
+            // Mettre à jour le cache local
+            if (currentEditingSection && todoCache[currentEditingSection]) {
+                var todoInCache = todoCache[currentEditingSection].todos.find(function(todo) {
+                    return parseInt(todo.id) === parseInt(todoId);
+                });
+                if (todoInCache) {
+                    todoInCache.task_text = newText;
+                }
+            }
+            
             // Ajouter à la liste des opérations en attente
             pendingOperations.update.push({
                 todo_id: todoId,
@@ -2096,13 +2127,26 @@ jQuery(document).ready(function($) {
             updateTodoStats();
         });
         
+        // Mettre à jour le cache local pour supprimer le todo
+        if (currentEditingSection && todoCache[currentEditingSection]) {
+            todoCache[currentEditingSection].todos = todoCache[currentEditingSection].todos.filter(function(todo) {
+                return parseInt(todo.id) !== parseInt(todoId);
+            });
+        }
+        
         // Ajouter à la liste des opérations en attente
         pendingOperations.delete.push({
             todo_id: todoId
         });
         
-        // Marquer comme modifié
-        markAsDirty();
+        // Marquer comme modifié et forcer une sauvegarde rapide
+        isDirty = true;
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+        }
+        saveTimeout = setTimeout(function() {
+            savePendingOperations();
+        }, 500);
     }
     
     // Fonction utilitaire pour échapper le HTML

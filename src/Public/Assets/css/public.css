@@ -2012,6 +2012,15 @@
   min-height: 300px;
 }
 
+.wysiwyg-content{
+  font-family: var(--font-primary) !important;
+
+  p, *{
+    font-family: var(--font-primary) !important;
+    font-size: inherit !important;
+  }
+}
+
 .simple-editor {
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -2049,8 +2058,14 @@
   padding: 15px;
   min-height: 250px;
   outline: none;
-  font-family: inherit;
+  font-family: var(--font-primary) !important;
+
   line-height: 1.6;
+
+  p, *{
+    font-family: var(--font-primary) !important;
+    font-size: inherit !important;
+  }
 }
 
 .editor-content:focus {
