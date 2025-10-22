@@ -25,7 +25,25 @@ if (!defined('ABSPATH')) {
  */
 function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_data, $project_id, $project_ratings, $is_admin = false, $pending_grading_requests = array())
 {
-    $content = isset($canvas_data[$section_key]) ? wp_kses_post($canvas_data[$section_key]) : '';
+    // Utiliser le même filtrage strict que pour la sauvegarde
+    $allowed_html = array(
+        'p' => array(),
+        'br' => array(),
+        'strong' => array(),
+        'b' => array(),
+        'em' => array(),
+        'i' => array(),
+        'ul' => array(),
+        'ol' => array(),
+        'li' => array(),
+        'h1' => array(),
+        'h2' => array(),
+        'h3' => array(),
+        'h4' => array(),
+        'h5' => array(),
+        'h6' => array()
+    );
+    $content = isset($canvas_data[$section_key]) ? wp_kses($canvas_data[$section_key], $allowed_html) : '';
     $section_class = $section_key;
 
     // Classes CSS spécifiques pour certaines sections
@@ -60,28 +78,23 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
             data-section="<?php echo $section_key; ?>"
             data-color="<?php echo $section_config['color']; ?>">
             <?php
+            // Utiliser le même filtrage strict que pour la sauvegarde
             $allowed_tags = array(
-                'span' => array(
-                    'style' => true,
-                    'class' => true,
-                ),
-                'p' => array(
-                    'style' => true,
-                    'class' => true,
-                ),
-                'ul' => array('class' => true, 'style' => true),
-                'ol' => array('class' => true, 'style' => true),
-                'li' => array('class' => true, 'style' => true),
-                'strong' => array(),
-                'em' => array(),
-                'u' => array(),
+                'p' => array(),
                 'br' => array(),
-                'div' => array(
-                    'class' => true,
-                    'style' => true,
-                ),
-                'i' => array('class' => true, 'style' => true),
-                'b' => array('class' => true, 'style' => true),
+                'strong' => array(),
+                'b' => array(),
+                'em' => array(),
+                'i' => array(),
+                'ul' => array(),
+                'ol' => array(),
+                'li' => array(),
+                'h1' => array(),
+                'h2' => array(),
+                'h3' => array(),
+                'h4' => array(),
+                'h5' => array(),
+                'h6' => array()
             );
 
             echo wp_kses(html_entity_decode($content), $allowed_tags);

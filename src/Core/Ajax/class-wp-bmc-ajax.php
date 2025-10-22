@@ -1374,43 +1374,38 @@ function wp_bmc_save_canvas_handler() {
     // Sauvegarder uniquement les sections qui sont envoyées (ne pas écraser les autres)
     $success_count = 0;
     
-    // Utiliser wp_kses avec des règles permissives pour TinyMCE
+    // Utiliser wp_kses avec des règles strictes pour la sécurité
     $allowed_html = array(
-        'p' => array('style' => array(), 'class' => array()),
+        'p' => array(),
         'br' => array(),
         'strong' => array(),
         'b' => array(),
         'em' => array(),
         'i' => array(),
-        'u' => array(),
-        'h1' => array('style' => array(), 'class' => array()),
-        'h2' => array('style' => array(), 'class' => array()),
-        'h3' => array('style' => array(), 'class' => array()),
-        'h4' => array('style' => array(), 'class' => array()),
-        'h5' => array('style' => array(), 'class' => array()),
-        'h6' => array('style' => array(), 'class' => array()),
-        'ul' => array('style' => array(), 'class' => array()),
-        'ol' => array('style' => array(), 'class' => array()),
-        'li' => array('style' => array(), 'class' => array()),
-        'a' => array('href' => array(), 'title' => array(), 'target' => array(), 'style' => array(), 'class' => array()),
-        'img' => array('src' => array(), 'alt' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'class' => array()),
-        'div' => array('style' => array(), 'class' => array()),
-        'span' => array('style' => array(), 'class' => array()),
-        'blockquote' => array('style' => array(), 'class' => array()),
-        'code' => array('style' => array(), 'class' => array()),
-        'pre' => array('style' => array(), 'class' => array()),
-        'table' => array('style' => array(), 'class' => array(), 'border' => array()),
-        'tr' => array('style' => array(), 'class' => array()),
-        'td' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
-        'th' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
-        'tbody' => array('style' => array(), 'class' => array()),
-        'thead' => array('style' => array(), 'class' => array()),
-        'tfoot' => array('style' => array(), 'class' => array())
+        'ul' => array(),
+        'ol' => array(),
+        'li' => array(),
+        'h1' => array(),
+        'h2' => array(),
+        'h3' => array(),
+        'h4' => array(),
+        'h5' => array(),
+        'h6' => array()
     );
+    
+    // Log de débogage pour vérifier le filtrage
+    error_log('wp_bmc_save_canvas_handler - Filtrage HTML strict activé');
     
     // Boucler uniquement sur les sections envoyées
     foreach ($canvas_data as $section => $raw_content) {
         $content = wp_kses($raw_content, $allowed_html);
+        
+        // Log de débogage pour vérifier le filtrage
+        if ($raw_content !== $content) {
+            error_log("wp_bmc_save_canvas_handler - Contenu filtré pour section '$section':");
+            error_log("  Avant: " . substr($raw_content, 0, 200) . (strlen($raw_content) > 200 ? '...' : ''));
+            error_log("  Après: " . substr($content, 0, 200) . (strlen($content) > 200 ? '...' : ''));
+        }
         
         if (WP_BMC_Database::save_canvas_data($project_id, $section, $content)) {
             $success_count++;

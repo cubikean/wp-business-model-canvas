@@ -514,6 +514,12 @@ jQuery(document).ready(function($) {
                 ],
                 toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
                 content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
+                // Forcer le collage en texte brut (Ctrl+V = Ctrl+Shift+V)
+                paste_as_text: true,
+                // Configurations supplémentaires pour le nettoyage
+                paste_retain_style_properties: '',
+                paste_remove_styles_if_webkit: true,
+                paste_strip_class_attributes: 'all',
                 setup: function(editor) {
                     window.wysiwygEditor = editor;
                     editor.setContent(content || '');
@@ -540,6 +546,29 @@ jQuery(document).ready(function($) {
             $('.toolbar-btn').on('click', function() {
                 var command = $(this).data('command');
                 document.execCommand(command, false, null);
+            });
+            
+            // Gérer le collage pour supprimer la mise en forme (Ctrl+V = Ctrl+Shift+V)
+            $('.editor-content').on('paste', function(e) {
+                e.preventDefault();
+                
+                // Récupérer le texte brut depuis le presse-papiers
+                var text = '';
+                if (e.originalEvent.clipboardData || e.originalEvent.clipboardData) {
+                    text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                } else if (window.clipboardData) {
+                    text = window.clipboardData.getData('Text');
+                }
+                
+                // Insérer le texte brut
+                if (document.queryCommandSupported('insertText')) {
+                    document.execCommand('insertText', false, text);
+                } else {
+                    // Fallback pour les navigateurs plus anciens
+                    document.execCommand('paste', false, text);
+                }
+                
+                console.log('Collage détecté (éditeur simple) - mise en forme supprimée automatiquement');
             });
         }
     }
@@ -621,7 +650,32 @@ jQuery(document).ready(function($) {
             $.post(ajaxUrl, formData, function(response) {
                 if (response.success) {
                     updateLastSavedTime();
-                    callback(true); // Indiquer que la sauvegarde a réussi
+                    
+                    // Recharger le contenu filtré depuis le serveur
+                    var reloadFormData = {
+                        action: 'wp_bmc_get_canvas',
+                        nonce: nonce,
+                        project_id: projectId
+                    };
+                    
+                    $.post(ajaxUrl, reloadFormData, function(reloadResponse) {
+                        if (reloadResponse.success && reloadResponse.data.canvas_data) {
+                            var filteredContent = reloadResponse.data.canvas_data[sectionName] || '';
+                            
+                            // Mettre à jour le WYSIWYG avec le contenu filtré
+                            if (window.wysiwygEditor) {
+                                window.wysiwygEditor.setContent(filteredContent);
+                            }
+                            
+                            // Mettre à jour aussi le contenu dans le canvas visible
+                            $('[data-section="' + sectionName + '"] .canvas-content').html(filteredContent);
+                        }
+                        
+                        callback(true); // Indiquer que la sauvegarde a réussi
+                    }).fail(function() {
+                        // Même si le rechargement échoue, la sauvegarde a réussi
+                        callback(true);
+                    });
                 } else {
                     callback(false); // Indiquer que la sauvegarde a échoué
                 }
@@ -1200,6 +1254,34 @@ jQuery(document).ready(function($) {
             if (response.success) {
                 $('#auto-save-status').text('Sauvegarde automatique activée');
                 updateLastSavedTime();
+                
+                // Si on est dans la vue d'édition, recharger le contenu filtré
+                var $editView = $('#wp-bmc-edit-view');
+                if ($editView.is(':visible')) {
+                    var sectionName = $editView.attr('data-section');
+                    
+                    // Recharger le contenu filtré depuis le serveur
+                    var reloadFormData = {
+                        action: 'wp_bmc_get_canvas',
+                        nonce: nonce,
+                        project_id: projectId
+                    };
+                    
+                    $.post(ajaxUrl, reloadFormData, function(reloadResponse) {
+                        if (reloadResponse.success && reloadResponse.data.canvas_data && sectionName) {
+                            var filteredContent = reloadResponse.data.canvas_data[sectionName] || '';
+                            
+                            // Mettre à jour le WYSIWYG avec le contenu filtré
+                            if (window.wysiwygEditor) {
+                                window.wysiwygEditor.setContent(filteredContent);
+                            }
+                            
+                            // Mettre à jour aussi le contenu dans le canvas visible
+                            $('[data-section="' + sectionName + '"] .canvas-content').html(filteredContent);
+                        }
+                    });
+                }
+                
                 // Afficher le toast de succès seulement après validation
                 WP_BMC_Toast.success('Contenu sauvegardé avec succès !');
             } else {
