@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) exit;
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInov.</p>
+            <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInnov.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>
@@ -51,7 +51,7 @@ if (!defined('ABSPATH')) exit;
             
             <p>Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.</p>
             
-            <p>Cordialement,<br>L'équipe OpenCampusInov</p>
+            <p>Cordialement,<br>L'équipe OpenCampusInnov</p>
         </div>
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

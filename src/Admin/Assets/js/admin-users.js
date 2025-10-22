@@ -299,6 +299,7 @@ jQuery(document).ready(function($) {
             password: $("#user_password").val(),
             first_name: $("#user_first_name").val(),
             last_name: $("#user_last_name").val(),
+            send_email: $("#send-email-user").is(':checked') ? '1' : '0'
         };
 
         log('Envoi AJAX:', formData); // Debug
@@ -349,6 +350,7 @@ jQuery(document).ready(function($) {
             password: $("#supervisor_password").val(),
             first_name: $("#supervisor_first_name").val(),
             last_name: $("#supervisor_last_name").val(),
+            send_email: $("#send-email-supervisor").is(':checked') ? '1' : '0'
         };
 
         log('Envoi AJAX superviseur:', formData);

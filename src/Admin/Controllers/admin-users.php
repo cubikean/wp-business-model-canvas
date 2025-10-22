@@ -139,6 +139,14 @@ $supervisors = get_users(array(
                 <small class="description">Le mot de passe sera envoyé à l'utilisateur par email</small>
             </div>
 
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="send-email-user" name="send_email" value="1" checked>
+                    <strong>Envoyer l'email d'identifiants à l'utilisateur</strong>
+                </label>
+                <p class="description">Si décoché, l'utilisateur devra être informé manuellement de ses identifiants.</p>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="button button-primary">
                     <i class="fas fa-user-plus"></i> Créer l'utilisateur
@@ -228,6 +236,14 @@ $supervisors = get_users(array(
                     <input type="password" id="supervisor_password" name="password" class="regular-text" required>
                     <small class="description">Minimum 8 caractères recommandés</small>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="send-email-supervisor" name="send_email" value="1" checked>
+                    <strong>Envoyer l'email d'identifiants au superviseur</strong>
+                </label>
+                <p class="description">Si décoché, le superviseur devra être informé manuellement de ses identifiants.</p>
             </div>
 
             <div class="form-actions">

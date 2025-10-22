@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) exit;
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInov.</p>
+            <p>Votre compte a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInnov.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>

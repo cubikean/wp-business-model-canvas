@@ -7,6 +7,44 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// ========================================
+// CONFIGURATION DES RÉVISIONS
+// ========================================
+
+/**
+ * Mode de création des révisions :
+ * 
+ * MODE 1 (false) : Révision créée uniquement lors de la notation par un admin
+ *   - Une révision est créée quand l'admin note une section
+ *   - revision_reason = 'admin_rating'
+ *   - Le contenu de la section au moment de la notation est sauvegardé
+ *   - TOUJOURS ACTIF (indépendant de la configuration ci-dessous)
+ * 
+ * MODE 2 (true) : Révision créée lors de la modification du contenu par un admin
+ *   - Une révision est créée quand l'admin modifie et sauvegarde le contenu du WYSIWYG
+ *   - revision_reason = 'admin_edit'
+ *   - La note existante (si elle existe) est conservée dans la révision
+ *   - Le commentaire est préfixé par "[Modification de contenu]" ou créé automatiquement
+ *   - Le nouveau contenu modifié est sauvegardé
+ *   - Utile pour suivre l'historique des modifications de l'admin
+ * 
+ * IMPORTANT :
+ * - Les deux modes peuvent coexister (MODE 1 toujours actif + MODE 2 optionnel)
+ * - MODE 1 : Révision avec le contenu au moment de la notation
+ * - MODE 2 : Révision à chaque modification de contenu par l'admin
+ * 
+ * Exemple de workflow avec MODE 2 activé :
+ * 1. Admin note la section (10/10) avec commentaire "Très bien" 
+ *    → Révision créée (admin_rating) : note 10/10, commentaire "Très bien"
+ * 2. Admin modifie le contenu 
+ *    → Révision créée (admin_edit) : note 10/10, commentaire "[Modification de contenu] Très bien"
+ * 3. Admin re-note la section (8/10) avec commentaire "Quelques corrections" 
+ *    → Révision créée (admin_rating) : note 8/10, commentaire "Quelques corrections"
+ * 4. Admin re-modifie le contenu 
+ *    → Révision créée (admin_edit) : note 8/10, commentaire "[Modification de contenu] Quelques corrections"
+ */
+define('WP_BMC_REVISION_ON_ADMIN_EDIT', true); // Mettre à true pour activer le MODE 2
+
 // Handler pour ajouter un étudiant à un admin
 add_action('wp_ajax_wp_bmc_add_student', 'wp_bmc_add_student_handler');
 function wp_bmc_add_student_handler() {
@@ -107,6 +145,9 @@ function wp_bmc_create_user_handler() {
     $first_name = sanitize_text_field($_POST['first_name']);
     $last_name = sanitize_text_field($_POST['last_name']);
     
+    // Vérifier si l'envoi d'email est activé (même comportement que l'import CSV)
+    $send_email = isset($_POST['send_email']) && $_POST['send_email'] === '1';
+    
     if (empty($custom_id) || empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
         wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
     }
@@ -140,16 +181,18 @@ function wp_bmc_create_user_handler() {
         error_log('custom_id: ' . $custom_id);
         error_log('password: ' . $password);
         
-        // Envoyer l'email de bienvenue
-        wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
+        // Envoyer l'email seulement si l'option est activée
+        if ($send_email) {
+            wp_bmc_send_user_welcome_email($email, $first_name, $last_name, $password, $custom_id);
+        }
+        
+        error_log("Utilisateur créé avec succès : $email (ID: $custom_id)" . ($send_email ? ' - Email envoyé' : ' - Email non envoyé'));
         
         wp_send_json_success(array(
-            'message' => 'Utilisateur créé avec succès !',
-            'user_id' => $result
+            'message' => 'Utilisateur créé avec succès !' . ($send_email ? ' Email envoyé.' : ' Email non envoyé.'),
+            'user_id' => $result,
+            'email_sent' => $send_email
         ));
-
-        
-
     } else {
         wp_send_json_error('Erreur lors de la création de l\'utilisateur.');
     }
@@ -990,6 +1033,9 @@ function wp_bmc_create_supervisor_handler() {
     $first_name = sanitize_text_field($_POST['first_name']);
     $last_name = sanitize_text_field($_POST['last_name']);
     
+    // Vérifier si l'envoi d'email est activé (même comportement que l'import CSV)
+    $send_email = isset($_POST['send_email']) && $_POST['send_email'] === '1';
+    
     if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
         wp_send_json_error('Tous les champs obligatoires doivent être remplis.');
     }
@@ -1030,13 +1076,18 @@ function wp_bmc_create_supervisor_handler() {
     error_log('email: ' . $email);
     error_log('username: ' . $username);
     
-    // Envoyer l'email de bienvenue
-    wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
+    // Envoyer l'email seulement si l'option est activée
+    if ($send_email) {
+        wp_bmc_send_supervisor_welcome_email($email, $first_name, $last_name, $username, $password);
+    }
+    
+    error_log("Superviseur créé avec succès : $email (Username: $username)" . ($send_email ? ' - Email envoyé' : ' - Email non envoyé'));
     
     wp_send_json_success(array(
-        'message' => 'Superviseur créé avec succès !',
+        'message' => 'Superviseur créé avec succès !' . ($send_email ? ' Email envoyé.' : ' Email non envoyé.'),
         'user_id' => $user_id,
-        'username' => $username
+        'username' => $username,
+        'email_sent' => $send_email
     ));
 }
 
@@ -1396,6 +1447,10 @@ function wp_bmc_save_canvas_handler() {
     // Log de débogage pour vérifier le filtrage
     error_log('wp_bmc_save_canvas_handler - Filtrage HTML strict activé');
     
+    // Vérifier si c'est un admin qui sauvegarde
+    $is_admin = current_user_can('manage_options');
+    $admin_id = $is_admin ? get_current_user_id() : null;
+    
     // Boucler uniquement sur les sections envoyées
     foreach ($canvas_data as $section => $raw_content) {
         $content = wp_kses($raw_content, $allowed_html);
@@ -1409,6 +1464,43 @@ function wp_bmc_save_canvas_handler() {
         
         if (WP_BMC_Database::save_canvas_data($project_id, $section, $content)) {
             $success_count++;
+            
+            // MODE 2 : Créer une révision si un admin modifie le contenu
+            if (WP_BMC_REVISION_ON_ADMIN_EDIT && $is_admin) {
+                // Récupérer la dernière note de cette section (si elle existe)
+                $latest_rating = WP_BMC_Database::get_latest_section_rating($project_id, $section);
+                
+                $rating = null;
+                $rating_comment = null;
+                
+                if ($latest_rating) {
+                    $rating = $latest_rating->rating;
+                    $original_comment = $latest_rating->comment;
+                    
+                    // Ajouter une indication que c'est une modification de contenu
+                    if (!empty($original_comment)) {
+                        $rating_comment = "Modification du contenu par l'administrateur";
+                    } else {
+                        $rating_comment = "Modification du contenu par l'administrateur";
+                    }
+                } else {
+                    // Pas de note existante, mais on indique quand même la modification
+                    $rating_comment = "Modification du contenu par l'administrateur";
+                }
+                
+                // Créer une révision avec la note existante (si elle existe)
+                WP_BMC_Database::create_section_revision(
+                    $project_id, 
+                    $section, 
+                    $content, 
+                    'admin_edit',
+                    $rating,
+                    $rating_comment,
+                    $admin_id
+                );
+                
+                error_log("wp_bmc_save_canvas_handler - Révision créée (admin_edit) pour section '$section'" . ($rating ? " avec note $rating" : " sans note"));
+            }
         }
     }
     
@@ -1989,7 +2081,8 @@ function wp_bmc_save_section_rating_handler() {
         $canvas_data = WP_BMC_Database::get_canvas_data($project_id);
         $current_content = isset($canvas_data[$section]) ? $canvas_data[$section] : '';
         
-        // Créer une révision avec la note et le commentaire
+        // MODE 1 : Créer une révision lors de la notation par un admin
+        // Cette révision est toujours créée, peu importe le mode configuré
         WP_BMC_Database::create_section_revision(
             $project_id, 
             $section, 
@@ -1999,6 +2092,8 @@ function wp_bmc_save_section_rating_handler() {
             $comment,
             $admin_id
         );
+        
+        error_log("wp_bmc_save_section_rating_handler - Révision créée (admin_rating) pour section '$section' avec note $rating");
         
         wp_send_json_success(array(
             'message' => 'Note sauvegardée avec succès !',
@@ -2542,7 +2637,7 @@ function wp_bmc_export_all_data_handler() {
             'title' => 'Passeport de l\'entrepreneuriat - ' . $project->title,
             'author' => $user->first_name . ' ' . $user->last_name,
             'subject' => 'Passeport de l\'entrepreneuriat',
-            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInov',
+            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInnov',
             'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql'), 'date'),
             'generated_timestamp' => current_time('timestamp'),
             'language' => 'fr'
@@ -2694,7 +2789,7 @@ function wp_bmc_generate_pdf_gotenberg_handler() {
             'title' => 'Passeport de l\'entrepreneuriat - ' . $project->title,
             'author' => $user->first_name . ' ' . $user->last_name,
             'subject' => 'Passeport de l\'entrepreneuriat',
-            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInov',
+            'creator' => 'Passeport de l\'entrepreneuriat - OpenCampusInnov',
             'generated_at' => WP_BMC_Database::format_date_for_display(current_time('mysql'), 'date'),
             'language' => 'fr'
         ),
