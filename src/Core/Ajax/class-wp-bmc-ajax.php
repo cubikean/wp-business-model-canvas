@@ -1371,57 +1371,45 @@ function wp_bmc_save_canvas_handler() {
     }
     // Les admins peuvent toujours sauvegarder sur tous les projets
     
-    // Sauvegarder chaque section du canvas
-    $sections = array(
-        'key_partners',
-        'key_activities',
-        'key_resources',
-        'value_proposition',
-        'customer_relationships',
-        'channels',
-        'customer_segments',
-        'cost_structure',
-        'revenue_streams'
+    // Sauvegarder uniquement les sections qui sont envoyées (ne pas écraser les autres)
+    $success_count = 0;
+    
+    // Utiliser wp_kses avec des règles permissives pour TinyMCE
+    $allowed_html = array(
+        'p' => array('style' => array(), 'class' => array()),
+        'br' => array(),
+        'strong' => array(),
+        'b' => array(),
+        'em' => array(),
+        'i' => array(),
+        'u' => array(),
+        'h1' => array('style' => array(), 'class' => array()),
+        'h2' => array('style' => array(), 'class' => array()),
+        'h3' => array('style' => array(), 'class' => array()),
+        'h4' => array('style' => array(), 'class' => array()),
+        'h5' => array('style' => array(), 'class' => array()),
+        'h6' => array('style' => array(), 'class' => array()),
+        'ul' => array('style' => array(), 'class' => array()),
+        'ol' => array('style' => array(), 'class' => array()),
+        'li' => array('style' => array(), 'class' => array()),
+        'a' => array('href' => array(), 'title' => array(), 'target' => array(), 'style' => array(), 'class' => array()),
+        'img' => array('src' => array(), 'alt' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'class' => array()),
+        'div' => array('style' => array(), 'class' => array()),
+        'span' => array('style' => array(), 'class' => array()),
+        'blockquote' => array('style' => array(), 'class' => array()),
+        'code' => array('style' => array(), 'class' => array()),
+        'pre' => array('style' => array(), 'class' => array()),
+        'table' => array('style' => array(), 'class' => array(), 'border' => array()),
+        'tr' => array('style' => array(), 'class' => array()),
+        'td' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
+        'th' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
+        'tbody' => array('style' => array(), 'class' => array()),
+        'thead' => array('style' => array(), 'class' => array()),
+        'tfoot' => array('style' => array(), 'class' => array())
     );
     
-    $success_count = 0;
-    foreach ($sections as $section) {
-        $raw_content = isset($canvas_data[$section]) ? $canvas_data[$section] : '';
-        
-        // Utiliser wp_kses avec des règles permissives pour TinyMCE
-        $allowed_html = array(
-            'p' => array('style' => array(), 'class' => array()),
-            'br' => array(),
-            'strong' => array(),
-            'b' => array(),
-            'em' => array(),
-            'i' => array(),
-            'u' => array(),
-            'h1' => array('style' => array(), 'class' => array()),
-            'h2' => array('style' => array(), 'class' => array()),
-            'h3' => array('style' => array(), 'class' => array()),
-            'h4' => array('style' => array(), 'class' => array()),
-            'h5' => array('style' => array(), 'class' => array()),
-            'h6' => array('style' => array(), 'class' => array()),
-            'ul' => array('style' => array(), 'class' => array()),
-            'ol' => array('style' => array(), 'class' => array()),
-            'li' => array('style' => array(), 'class' => array()),
-            'a' => array('href' => array(), 'title' => array(), 'target' => array(), 'style' => array(), 'class' => array()),
-            'img' => array('src' => array(), 'alt' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'class' => array()),
-            'div' => array('style' => array(), 'class' => array()),
-            'span' => array('style' => array(), 'class' => array()),
-            'blockquote' => array('style' => array(), 'class' => array()),
-            'code' => array('style' => array(), 'class' => array()),
-            'pre' => array('style' => array(), 'class' => array()),
-            'table' => array('style' => array(), 'class' => array(), 'border' => array()),
-            'tr' => array('style' => array(), 'class' => array()),
-            'td' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
-            'th' => array('style' => array(), 'class' => array(), 'colspan' => array(), 'rowspan' => array()),
-            'tbody' => array('style' => array(), 'class' => array()),
-            'thead' => array('style' => array(), 'class' => array()),
-            'tfoot' => array('style' => array(), 'class' => array())
-        );
-        
+    // Boucler uniquement sur les sections envoyées
+    foreach ($canvas_data as $section => $raw_content) {
         $content = wp_kses($raw_content, $allowed_html);
         
         if (WP_BMC_Database::save_canvas_data($project_id, $section, $content)) {
