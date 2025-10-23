@@ -81,13 +81,11 @@ $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_i
         <div class="canvas-container">
             <?php echo wp_bmc_render_canvas_view($view_mode, $project_id, $canvas_data, $project_ratings, false, array(), true); ?>
         </div>
+        
+        <?php wp_bmc_include_edit_section('public'); ?>
+        
+        <button id="wp-bmc-generate-pdf" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" data-project-id="<?php echo $project_id; ?>">
+            <i class="fas fa-file-pdf"></i> Exporter le canvas
+        </button>
     <?php endif; ?>
 </div>
-
-
-<?php wp_bmc_include_edit_section('public'); ?>
-
-
-<button id="wp-bmc-generate-pdf" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" data-project-id="<?php echo $project_id; ?>">
-    <i class="fas fa-file-pdf"></i> Exporter le canvas
-</button>
