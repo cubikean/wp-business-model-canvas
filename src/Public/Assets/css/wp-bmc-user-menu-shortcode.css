@@ -270,6 +270,12 @@
     .wp-bmc-position-left .wp-bmc-user-dropdown {
         left: -20px;
     }
+    .wp-bmc-size-medium .wp-bmc-user-initials{
+        display: none;
+    }
+    .wp-bmc-user-menu-shortcode .wp-bmc-user-avatar{
+        padding: 5px;
+    }
 }
 
 @media (max-width: 480px) {

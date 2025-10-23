@@ -204,24 +204,35 @@ function wp_bmc_create_pages() {
     }
 }
 
-// Charger les scripts publics
+// Charger les assets de base (toujours nécessaires pour le menu utilisateur)
+function wp_bmc_enqueue_base_assets() {
+    // Enregistrer Font Awesome
+    wp_register_style('font-awesome', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css', array(), '6.0.0');
+    wp_enqueue_style('font-awesome');
+    
+    // Enregistrer et charger le système de Toast
+    wp_register_style('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css', array(), WP_BMC_VERSION);
+    wp_register_script('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js', array('jquery'), WP_BMC_VERSION, true);
+    wp_enqueue_style('wp-bmc-toast');
+    wp_enqueue_script('wp-bmc-toast');
+    
+    // Enregistrer et charger les assets du menu utilisateur
+    wp_register_style('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-user-menu-shortcode.css', array('font-awesome'), WP_BMC_VERSION);
+    wp_register_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
+    wp_enqueue_style('wp-bmc-user-menu-shortcode');
+    wp_enqueue_script('wp-bmc-user-menu-shortcode');
+}
+add_action('wp_enqueue_scripts', 'wp_bmc_enqueue_base_assets', 5);
+
+// Charger les scripts publics (seulement si connecté)
 function wp_bmc_public_scripts() {
-    // Charger jQuery et Font Awesome (toujours nécessaires pour le menu utilisateur)
-    wp_enqueue_script('jquery');
-    wp_enqueue_style('font-awesome', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css', array(), '6.0.0');
-    
-    // Charger le système de Toast (nécessaire pour le menu utilisateur)
-    wp_enqueue_style('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css', array(), WP_BMC_VERSION);
-    wp_enqueue_script('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js', array('jquery'), WP_BMC_VERSION, true);
-    
-    // Charger les styles et scripts du menu utilisateur shortcode (toujours chargés)
-    wp_enqueue_style('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-user-menu-shortcode.css', array('font-awesome'), WP_BMC_VERSION);
-    wp_enqueue_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
-    
     // Charger les autres assets seulement si l'utilisateur est connecté
     if (!WP_BMC_Auth::is_logged_in()) {
         return;
     }
+    
+    // Charger jQuery
+    wp_enqueue_script('jquery');
     
     // Charger les styles publics
     wp_enqueue_style('wp-bmc-public', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/public.css', array('font-awesome'), WP_BMC_VERSION);
@@ -237,7 +248,7 @@ function wp_bmc_public_scripts() {
         'nonce' => wp_create_nonce('wp_bmc_nonce')
     ));
 }
-add_action('wp_enqueue_scripts', 'wp_bmc_public_scripts');
+add_action('wp_enqueue_scripts', 'wp_bmc_public_scripts', 10);
 
 // Ajouter la classe 'bmc-main' au body sur les pages BMC
 add_filter('body_class', 'wp_bmc_add_body_class');

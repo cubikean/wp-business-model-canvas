@@ -583,7 +583,6 @@ jQuery(document).ready(function($) {
                     document.execCommand('paste', false, text);
                 }
                 
-                console.log('Collage détecté (éditeur simple) - mise en forme supprimée automatiquement');
             });
         }
     }
@@ -1107,7 +1106,6 @@ jQuery(document).ready(function($) {
                     
                     // Fermer la vue d'édition après un délai
                     setTimeout(function() {
-                        console.log('originalText', originalText);
                         $btn.text(originalText);
                         $btn.removeClass('wp-bmc-btn-success').addClass('wp-bmc-btn-warning');
                         closeEditView();
@@ -2405,8 +2403,6 @@ jQuery(document).ready(function($) {
     // Fonction pour vérifier si un changement de mot de passe est requis
     function checkPasswordChangeRequired() {
         if (!window.location.pathname.includes('/dashboard') && !window.location.pathname.includes('/business-model-canvas')) {
-            console.log('checkPasswordChangeRequired - Pas sur une page de dashboard, vérification ignorée');
-            console.log('URL actuelle:', window.location.pathname);
             return;
         }
         
