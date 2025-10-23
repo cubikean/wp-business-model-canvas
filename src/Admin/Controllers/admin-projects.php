@@ -121,7 +121,6 @@ $all_supervisors = get_users(array(
                             <input type="checkbox" id="send-emails-complete" checked>
                             <strong>Envoyer les emails d'identifiants (utilisateurs + superviseurs)</strong>
                         </label>
-                        <p class="description"><strong>Import volumineux (&gt;50 lignes) ?</strong> Décochez pour éviter les timeouts. Vous pourrez communiquer les identifiants manuellement.</p>
                     </div>
 
                     <div class="form-actions">
