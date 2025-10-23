@@ -505,7 +505,9 @@ jQuery(document).ready(function($) {
                     html = '<p class="no-users">Aucun utilisateur disponible à assigner.</p>';
                 } else {
                     users.forEach(function(user) {
-                        html += '<div class="list-item available user" data-user-id="' + user.user_id + '">';
+                        var fullName = (user.first_name + ' ' + user.last_name).toLowerCase();
+                        var customId = user.custom_id ? user.custom_id.toLowerCase() : '';
+                        html += '<div class="list-item available user" data-user-id="' + user.user_id + '" data-user-name="' + fullName + '" data-user-custom-id="' + customId + '">';
                         html += '<span class="name">';
                         html += user.first_name + ' ' + user.last_name;
                         if (user.custom_id) {
@@ -618,7 +620,9 @@ jQuery(document).ready(function($) {
                     html = '<p class="no-admins">Aucun superviseur disponible à assigner.</p>';
                 } else {
                     supervisors.forEach(function(admin) {
-                        html += '<div class="list-item available admin" data-admin-id="' + admin.user_id + '">';
+                        var displayName = admin.display_name.toLowerCase();
+                        var email = admin.user_email.toLowerCase();
+                        html += '<div class="list-item available admin" data-admin-id="' + admin.user_id + '" data-admin-name="' + displayName + '" data-admin-email="' + email + '">';
                         html += '<span class="name">';
                         html += admin.display_name;
                         html += ' <small>(' + admin.user_email + ')</small>';
@@ -824,4 +828,86 @@ jQuery(document).ready(function($) {
             $btn.prop('disabled', false).html(originalText);
         });
     }
+    
+    // ========================================
+    // RECHERCHE DANS LES MODALES
+    // ========================================
+    
+    // Recherche d'utilisateurs dans la modal
+    $('#users-modal-search').on('input', function() {
+        var searchTerm = $(this).val().toLowerCase();
+        filterModalUsers(searchTerm);
+    });
+    
+    function filterModalUsers(searchTerm) {
+        var visibleCount = 0;
+        
+        $('#available-users-list .list-item').each(function() {
+            var $item = $(this);
+            var userName = $item.data('user-name') || '';
+            var customId = $item.data('user-custom-id') || '';
+            
+            var matchesSearch = userName.includes(searchTerm) || 
+                              customId.includes(searchTerm);
+            
+            if (matchesSearch) {
+                $item.show();
+                visibleCount++;
+            } else {
+                $item.hide();
+            }
+        });
+        
+        // Gérer le message "aucun résultat"
+        if (visibleCount === 0 && searchTerm !== '') {
+            if ($('#available-users-list .no-search-results').length === 0) {
+                $('#available-users-list').append('<p class="no-search-results">Aucun utilisateur trouvé pour "' + searchTerm + '"</p>');
+            }
+        } else {
+            $('#available-users-list .no-search-results').remove();
+        }
+    }
+    
+    // Recherche d'administrateurs/superviseurs dans la modal
+    $('#admins-modal-search').on('input', function() {
+        var searchTerm = $(this).val().toLowerCase();
+        filterModalAdmins(searchTerm);
+    });
+    
+    function filterModalAdmins(searchTerm) {
+        var visibleCount = 0;
+        
+        $('#available-admins-list .list-item').each(function() {
+            var $item = $(this);
+            var adminName = $item.data('admin-name') || '';
+            var email = $item.data('admin-email') || '';
+            
+            var matchesSearch = adminName.includes(searchTerm) || 
+                              email.includes(searchTerm);
+            
+            if (matchesSearch) {
+                $item.show();
+                visibleCount++;
+            } else {
+                $item.hide();
+            }
+        });
+        
+        // Gérer le message "aucun résultat"
+        if (visibleCount === 0 && searchTerm !== '') {
+            if ($('#available-admins-list .no-search-results').length === 0) {
+                $('#available-admins-list').append('<p class="no-search-results">Aucun superviseur trouvé pour "' + searchTerm + '"</p>');
+            }
+        } else {
+            $('#available-admins-list .no-search-results').remove();
+        }
+    }
+    
+    // Réinitialiser les recherches quand les modales se ferment
+    $('.modal-close').on('click', function() {
+        $('#users-modal-search').val('');
+        $('#admins-modal-search').val('');
+        $('#available-users-list .no-search-results').remove();
+        $('#available-admins-list .no-search-results').remove();
+    });
 });

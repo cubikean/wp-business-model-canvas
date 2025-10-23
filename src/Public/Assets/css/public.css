@@ -298,7 +298,7 @@
    MENU UTILISATEUR AVEC AVATAR
    ======================================== */
 
-.wp-bmc-user-menu {
+/* .wp-bmc-user-menu {
   position: relative;
   display: inline-block;
 }
@@ -467,7 +467,7 @@
   .wp-bmc-user-dropdown-email {
     font-size: 12px;
   }
-}
+} */
 
 .business-model-canvas #lqd-contents-wrap {
   width: 100%;
@@ -482,7 +482,6 @@
 
 .wp-bmc-canvas-container,
 .wp-bmc-dashboard {
-  max-width: 1200px;
   padding-top: 150px;
   margin-inline: auto;
 }

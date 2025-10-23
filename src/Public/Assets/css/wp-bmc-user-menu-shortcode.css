@@ -7,18 +7,13 @@
 
 .wp-bmc-user-menu-shortcode .wp-bmc-user-avatar {
     border-radius: 50%;
-    background-color: #ff4b6b;
+    background-color: #62aadd;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(255, 75, 107, 0.3);
-}
-
-.wp-bmc-user-menu-shortcode .wp-bmc-user-avatar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(255, 75, 107, 0.4);
+    box-shadow: none;
 }
 
 .wp-bmc-user-menu-shortcode .wp-bmc-user-initials {
@@ -55,7 +50,7 @@
 
 .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-avatar {
     border-radius: 50%;
-    background-color: #ff4b6b;
+    background-color: #62aadd;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -359,12 +359,12 @@ $all_supervisors = get_users(array(
     </div>
 
 
-    <div class="danger-zone">
+    <!-- <div class="danger-zone">
         <button id="wp-bmc-reset-database-btn" class="button button-link-delete button-large">
             <i class="fas fa-exclamation-triangle"></i> Vider la base de données du plugin
         </button>
         <p class="description danger-text">⚠️ <strong>ATTENTION</strong> : Cette action supprimera TOUTES les données (utilisateurs, projets, canvas, notes, etc.). Action irréversible !</p>
-    </div>
+    </div> -->
 </div>
 
 <!-- Modal de gestion des utilisateurs -->
@@ -378,6 +378,9 @@ $all_supervisors = get_users(array(
         <div class="modal-body">
             <div class="available-users">
                 <h4>Utilisateurs disponibles</h4>
+                <div class="modal-search">
+                    <input type="text" id="users-modal-search" placeholder="Rechercher un utilisateur par nom..." class="regular-text">
+                </div>
                 <div class="users-list" id="available-users-list">
                     <!-- Sera rempli via JavaScript -->
                 </div>
@@ -431,6 +434,9 @@ $all_supervisors = get_users(array(
         <div class="modal-body">
             <div class="available-admins">
                 <h4>Superviseurs disponibles</h4>
+                <div class="modal-search">
+                    <input type="text" id="admins-modal-search" placeholder="Rechercher un superviseur par nom..." class="regular-text">
+                </div>
                 <div class="admins-list" id="available-admins-list">
                     <!-- Sera rempli via JavaScript -->
                 </div>
