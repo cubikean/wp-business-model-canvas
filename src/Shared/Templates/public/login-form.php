@@ -38,10 +38,7 @@ if (!defined('ABSPATH')) {
             </button>
         </div>
 
-        <div class="form-links">
-            <p>Pas encore de compte ? <a href="<?php echo home_url('/register/'); ?>" class="wp-bmc-switch-form">S'inscrire</a></p>
-        </div>
-
+ 
         <div class="form-links">
             <p>Mot de passe oublié ? Contactez Votre référent</p>
         </div>

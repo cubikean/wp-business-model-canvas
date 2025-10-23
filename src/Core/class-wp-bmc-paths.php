@@ -109,7 +109,6 @@ class WP_BMC_Paths {
             'canvas' => home_url('/business-model-canvas/'),
             'dashboard' => home_url('/dashboard/'),
             'login' => home_url('/login/'),
-            'register' => home_url('/register/'),
             'logout' => home_url('/logout/'),
         );
     }

@@ -486,31 +486,32 @@ jQuery(document).ready(function($) {
         
         // Consulter les documents
         $('#view-documents-btn').on('click', function() {
-            openDocumentsViewer();
+            const sectionName = $('#wp-bmc-edit-view').attr('data-section');
+            window.open('/ressources-pedagogiques?section=' + sectionName.toLowerCase(), '_blank');
         });
         
                  // Fermer la popup des documents
-         $('#documents-popup-close, #wp-bmc-documents-popup .popup-overlay').on('click', function() {
-             $('#wp-bmc-documents-popup').fadeOut(300);
-         });
+        //  $('#documents-popup-close, #wp-bmc-documents-popup .popup-overlay').on('click', function() {
+        //      $('#wp-bmc-documents-popup').fadeOut(300);
+        //  });
          
-         // Gérer les actions sur les fichiers
-         $(document).on('click', '.file-action-btn', function() {
-             var action = $(this).data('action');
-             var fileId = $(this).data('file-id');
+        //  // Gérer les actions sur les fichiers
+        //  $(document).on('click', '.file-action-btn', function() {
+        //      var action = $(this).data('action');
+        //      var fileId = $(this).data('file-id');
              
-             if (action === 'view') {
-                 // Ouvrir le fichier dans un nouvel onglet
-                 var fileUrl = $(this).closest('.file-item').find('.file-name').data('url');
-                 if (fileUrl) {
-                     window.open(fileUrl, '_blank');
-                 }
-             } else if (action === 'delete') {
-                 if (confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
-                     deleteFile(fileId);
-                 }
-             }
-         });
+        //      if (action === 'view') {
+        //          // Ouvrir le fichier dans un nouvel onglet
+        //          var fileUrl = $(this).closest('.file-item').find('.file-name').data('url');
+        //          if (fileUrl) {
+        //              window.open(fileUrl, '_blank');
+        //          }
+        //      } else if (action === 'delete') {
+        //          if (confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+        //              deleteFile(fileId);
+        //          }
+        //      }
+        //  });
      });
     
     // Initialiser l'éditeur WYSIWYG

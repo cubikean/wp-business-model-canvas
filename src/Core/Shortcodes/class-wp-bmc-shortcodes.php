@@ -14,7 +14,6 @@ class WP_BMC_Shortcodes {
      */
     public function __construct() {
         add_shortcode('wp_bmc_login', array($this, 'login_form'));
-        add_shortcode('wp_bmc_register', array($this, 'register_form'));
         add_shortcode('wp_bmc_dashboard', array($this, 'dashboard'));
         add_shortcode('wp_bmc_canvas', array($this, 'canvas'));
         add_shortcode('wp_bmc_change_password', array($this, 'change_password'));
@@ -32,17 +31,7 @@ class WP_BMC_Shortcodes {
         return WP_BMC_Template_Loader::get_template_content('public/login-form');
     }
     
-    /**
-     * Formulaire d'inscription
-     */
-    public function register_form() {
-        if (WP_BMC_Auth::is_logged_in()) {
-                return '<script>window.location.href = "' . home_url('/dashboard/') . '";</script>';
-        }
-        
-        return WP_BMC_Template_Loader::get_template_content('public/register-form');
-    }
-    
+   
     /**
      * Tableau de bord
      */
@@ -101,9 +90,35 @@ class WP_BMC_Shortcodes {
             'size' => 'medium' // small, medium, large
         ), $atts);
         
-        // Si l'utilisateur n'est pas connecté, ne rien afficher
+        // Si l'utilisateur n'est pas connecté, afficher le menu avec option de connexion
         if (!WP_BMC_Auth::is_logged_in()) {
-            return '';
+            $unique_id = 'wp-bmc-user-menu-' . uniqid();
+            $classes = array('wp-bmc-user-menu-shortcode', 'wp-bmc-not-logged-in');
+            $classes[] = 'wp-bmc-style-' . sanitize_html_class($atts['style']);
+            $classes[] = 'wp-bmc-position-' . sanitize_html_class($atts['position']);
+            $classes[] = 'wp-bmc-size-' . sanitize_html_class($atts['size']);
+            
+            ob_start();
+            ?>
+            <div class="<?php echo esc_attr(implode(' ', $classes)); ?>" id="<?php echo esc_attr($unique_id); ?>">
+                <div class="wp-bmc-user-avatar">
+                    <span class="wp-bmc-user-initials">BMC</span>
+                </div>
+                
+                <!-- Menu déroulant -->
+                <div class="wp-bmc-user-dropdown">
+                    <div class="wp-bmc-user-dropdown-separator"></div>
+                    
+                    <div class="wp-bmc-user-dropdown-actions">
+                        <a href="<?php echo home_url('/login/'); ?>" class="wp-bmc-user-dropdown-action">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Se connecter</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php
+            return ob_get_clean();
         }
         
         $user_menu_data = WP_BMC_Auth::get_user_menu_data();

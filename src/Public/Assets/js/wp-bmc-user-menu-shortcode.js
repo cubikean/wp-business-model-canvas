@@ -41,6 +41,7 @@ jQuery(document).ready(function($) {
     
     function toggleShortcodeUserDropdown(menuId) {
         const dropdown = $('#' + menuId + ' .wp-bmc-user-dropdown');
+        
         if (dropdown.hasClass('show')) {
             closeShortcodeUserDropdown(menuId);
         } else {
@@ -126,6 +127,9 @@ jQuery(document).ready(function($) {
         // Vérifier si wp_bmc_ajax est disponible
         if (typeof wp_bmc_ajax === 'undefined') {
             console.error('wp_bmc_ajax non disponible');
+            if (typeof WP_BMC_Toast !== 'undefined') {
+                WP_BMC_Toast.error('Erreur: variables AJAX non disponibles');
+            }
             return;
         }
         
@@ -165,16 +169,19 @@ jQuery(document).ready(function($) {
         // Fermer le menu déroulant
         closeAllShortcodeUserDropdowns();
         
-        // Appeler la fonction existante showChangePasswordPopup
+        // Appeler la fonction existante showChangePasswordPopup si disponible
         if (typeof window.showChangePasswordPopup === 'function') {
             window.showChangePasswordPopup();
         } else if (typeof showChangePasswordPopup === 'function') {
             showChangePasswordPopup();
         } else {
-            // Fallback si la fonction n'existe pas
+            // Fallback : rediriger vers le dashboard si la fonction n'existe pas
             if (typeof WP_BMC_Toast !== 'undefined') {
-                WP_BMC_Toast.error('Fonction de changement de mot de passe non disponible.');
+                WP_BMC_Toast.info('Redirection vers le dashboard...');
             }
+            setTimeout(function() {
+                window.location.href = '/dashboard/';
+            }, 500);
         }
     }
     

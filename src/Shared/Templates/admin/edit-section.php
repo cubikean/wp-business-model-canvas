@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
             <div class="sub-section">
                 <p id="edit-section-placeholder">Placeholder pour le contenu de la brique</p>
                 <button type="button" class="view-documents-btn btn-outline --icon" id="view-documents-btn">
-                    <i class="fa fa-file-lines"></i>Ressources pédagogiques
+                    <i class="fa fa-file"></i>Ressources pédagogiques
                 </button>
             </div>
             <div class="editor-section">

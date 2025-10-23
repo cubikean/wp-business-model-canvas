@@ -245,6 +245,16 @@
     margin: 0 15px;
 }
 
+/* Styles pour utilisateur non connecté */
+.wp-bmc-not-logged-in .wp-bmc-user-dropdown-name {
+    color: #2f52a0;
+}
+
+.wp-bmc-not-logged-in .wp-bmc-user-dropdown-email {
+    color: #999999;
+    font-style: italic;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown {

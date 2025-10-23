@@ -184,10 +184,6 @@ function wp_bmc_create_pages() {
             'title' => 'Connexion',
             'content' => '[wp_bmc_login]'
         ),
-        'register' => array(
-            'title' => 'Inscription',
-            'content' => '[wp_bmc_register]'
-        ),
         'dashboard' => array(
             'title' => 'Tableau de bord',
             'content' => '[wp_bmc_dashboard]'
@@ -210,20 +206,22 @@ function wp_bmc_create_pages() {
 
 // Charger les scripts publics
 function wp_bmc_public_scripts() {
-    // Charger seulement si l'utilisateur est connecté au plugin BMC
+    // Charger jQuery et Font Awesome (toujours nécessaires pour le menu utilisateur)
+    wp_enqueue_script('jquery');
+    wp_enqueue_style('font-awesome', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css', array(), '6.0.0');
+    
+    // Charger le système de Toast (nécessaire pour le menu utilisateur)
+    wp_enqueue_style('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css', array(), WP_BMC_VERSION);
+    wp_enqueue_script('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js', array('jquery'), WP_BMC_VERSION, true);
+    
+    // Charger les styles et scripts du menu utilisateur shortcode (toujours chargés)
+    wp_enqueue_style('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-user-menu-shortcode.css', array('font-awesome'), WP_BMC_VERSION);
+    wp_enqueue_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
+    
+    // Charger les autres assets seulement si l'utilisateur est connecté
     if (!WP_BMC_Auth::is_logged_in()) {
         return;
     }
-    
-    // Charger jQuery
-    wp_enqueue_script('jquery');
-    
-    // Charger Font Awesome
-    wp_enqueue_style('font-awesome', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css', array(), '6.0.0');
-    
-    // Charger le système de Toast
-    wp_enqueue_style('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css', array(), WP_BMC_VERSION);
-    wp_enqueue_script('wp-bmc-toast', WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-toast.js', array('jquery'), WP_BMC_VERSION, true);
     
     // Charger les styles publics
     wp_enqueue_style('wp-bmc-public', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/public.css', array('font-awesome'), WP_BMC_VERSION);
@@ -232,10 +230,6 @@ function wp_bmc_public_scripts() {
     wp_enqueue_script('wp-bmc-public', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/public.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
     wp_enqueue_script('wp-bmc-dashboard', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/dashboard.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
     wp_enqueue_script('wp-bmc-auth', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/auth.js', array('jquery', 'wp-bmc-toast'), WP_BMC_VERSION, true);
-    
-    // Charger les styles et scripts du menu utilisateur shortcode
-    wp_enqueue_style('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/wp-bmc-user-menu-shortcode.css', array(), WP_BMC_VERSION);
-    wp_enqueue_script('wp-bmc-user-menu-shortcode', WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/wp-bmc-user-menu-shortcode.js', array('jquery', 'wp-bmc-toast', 'wp-bmc-dashboard'), WP_BMC_VERSION, true);
     
     // Localiser les variables AJAX
     wp_localize_script('wp-bmc-public', 'wp_bmc_ajax', array(
@@ -258,7 +252,6 @@ function wp_bmc_add_body_class($classes) {
     // Liste des shortcodes BMC à détecter
     $bmc_shortcodes = array(
         'wp_bmc_login',
-        'wp_bmc_register',
         'wp_bmc_dashboard',
         'wp_bmc_canvas',
         'wp_bmc_change_password',
