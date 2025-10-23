@@ -28,10 +28,21 @@ jQuery(document).ready(function($) {
             
             if (action.attr('id').includes('logout-btn')) {
                 handleShortcodeLogout();
+            } else if (action.attr('id').includes('login-btn')) {
+                window.location.href = '/login/';
             } else if (action.attr('id').includes('add-account-btn')) {
                 handleShortcodeAddAccount();
             } else if (action.attr('id').includes('change-password')) {
                 handleShortcodeChangePassword();
+            }
+            else if (action.attr('id').includes('pepitizy-dashboard-btn')) {
+                window.open('https://pepite-eca.pepitizy.fr/fr/account', '_blank');
+            }
+            else if (action.attr('id').includes('pepitizy-rapports-btn')) {
+                window.open('https://pepite-eca.pepitizy.fr/fr/account/reports', '_blank');
+            }
+            else if (action.attr('id').includes('pepitizy-competences-btn')) {
+                window.open('https://pepite-eca.pepitizy.fr/fr/positionnement', '_blank');
             }
             else if (action.attr('id').includes('dashboard-btn')) {
                 window.location.href = '/dashboard/';
