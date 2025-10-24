@@ -139,10 +139,17 @@ if ($admin_view && $is_admin) {
     <?php
     // Inclure le template d'édition réutilisable pour l'admin
     wp_bmc_include_edit_section('admin');
+    
+    // Récupérer les configurations de sections pour le JavaScript
+    if (!function_exists('wp_bmc_get_canvas_sections')) {
+        include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+    }
+    $canvas_sections_config = wp_bmc_get_canvas_sections('global', true);
     ?>
     
-    <!-- Passer les demandes de notation en attente au JavaScript -->
+    <!-- Passer les configurations de sections et demandes de notation au JavaScript -->
     <script>
+        var wp_bmc_sections_config = <?php echo json_encode($canvas_sections_config); ?>;
         var wp_bmc_pending_grading_requests = <?php echo json_encode($pending_grading_requests); ?>;
     </script>
 

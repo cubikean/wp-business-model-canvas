@@ -42,7 +42,17 @@ if ($project_id) {
 
 $canvas_data = $project_id ? WP_BMC_Database::get_canvas_data($project_id) : array();
 $project_ratings = $project_id ? WP_BMC_Database::get_project_ratings($project_id) : array();
+
+// Récupérer les configurations de sections pour le JavaScript
+if (!function_exists('wp_bmc_get_canvas_sections')) {
+    include_once WP_BMC_PLUGIN_DIR . 'src/Shared/Config/canvas-sections.php';
+}
+$canvas_sections_config = wp_bmc_get_canvas_sections('global', true);
 ?>
+
+<script type="text/javascript">
+var wp_bmc_sections_config = <?php echo json_encode($canvas_sections_config); ?>;
+</script>
 
 <div class="wp-bmc-dashboard" <?php if ($project): ?>data-project-id="<?php echo $project_id; ?>" <?php endif; ?>>
     <?php if (!$project): ?>

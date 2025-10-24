@@ -2594,7 +2594,6 @@ body.popup-open {
    ===================== */
 
 #wp-bmc-edit-view {
-  max-width: 1200px;
   margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2646,8 +2645,11 @@ body.popup-open {
   p {
     margin: 0;
     color: var(--dashboard-text);
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 400;
+    line-height: 1.2;
+    text-wrap: pretty;
+    flex: 1;
   }
 }
 

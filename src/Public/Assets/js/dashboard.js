@@ -1127,6 +1127,12 @@ jQuery(document).ready(function($) {
     // ========================================
     
     function getSectionTitle(sectionName) {
+        // Utiliser les configurations de sections depuis PHP si disponibles
+        if (typeof wp_bmc_sections_config !== 'undefined' && wp_bmc_sections_config[sectionName]) {
+            return wp_bmc_sections_config[sectionName].title;
+        }
+        
+        // Fallback sur les titres par défaut
         var titles = {
             'key_partners': 'Partenaires clés',
             'key_activities': 'Activités clés',
@@ -1143,16 +1149,22 @@ jQuery(document).ready(function($) {
     }
 
     function getSectionPlaceholder(sectionName) {
+        // Utiliser les configurations de sections depuis PHP si disponibles
+        if (typeof wp_bmc_sections_config !== 'undefined' && wp_bmc_sections_config[sectionName]) {
+            return wp_bmc_sections_config[sectionName].placeholder;
+        }
+        
+        // Fallback sur les placeholders par défaut
         var placeholders = {
             'key_partners': 'Quelles sont mes principales dépenses ?',
             'key_activities': 'Quels sont les caractéristiques de ton client idéal ?',
             'key_resources': 'Quels sont les caractéristiques de ton client idéal ?',
-            'value_proposition': 'Pourquoi un client choisirait-il ton offre plutôt qu’une autre ?',
+            'value_proposition': 'Pourquoi un client choisirait-il ton offre plutôt qu\'une autre ?',
             'customer_relationships': 'Quels sont les caractéristiques de ton client idéal ?',
             'channels': 'Quels sont les caractéristiques de ton client idéal ?',
-            'customer_segments': 'Comment mon projet génère-t-il de l’argent ?',
+            'customer_segments': 'Comment mon projet génère-t-il de l\'argent ?',
             'cost_structure': 'Quelles sont mes principales dépenses ?',
-            'revenue_streams': 'Comment mon projet génère-t-il de l’argent ?'
+            'revenue_streams': 'Comment mon projet génère-t-il de l\'argent ?'
         };
         
         return placeholders[sectionName] || sectionName;
