@@ -21,26 +21,28 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>Passeport de l'entrepreneuriat</h1>
+            <h1>Passeport de l’entrepreneuriat - OpenCampusInnov</h1>
         </div>
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInnov.</p>
+            <p>Votre compte a bien été créé sur le portail étudiant du « Passeport de l’entrepreneuriat ». Vous aurez accès à des ressources, à un canevas de Business Model en ligne ainsi qu’a l’outil Pepitizy.
+            <br><br>
+            <br>Vous pouvez désormais accéder à votre espace personnel et commencer à travailler sur votre passeport de l’entrepreneuriat.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>
                 <p><strong>Adresse email :</strong> <?php echo esc_html($email); ?></p>
                 <p><strong>Mot de passe :</strong> <?php echo esc_html($password); ?></p>
+                <p><strong>URL de connexion :</strong> <a href="<?php echo home_url('/login/'); ?>"><?php echo home_url('/login/'); ?></a></p>
             </div>
             
             <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
             
-            <p>Vous pouvez maintenant accéder à votre espace personnel et commencer à travailler sur votre passeport de l'entrepreneuriat.</p>
-            
-            <p>Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.</p>
-            
-            <p>Cordialement</p>
+            <p>En cas de problème de connexion, n’hésitez pas à contacter votre chargé·e d’accompagnement ou à écrire à : <a href="mailto:opencampusinnov@univ-lr.fr">opencampusinnov@univ-lr.fr</a>
+            <br>Bien cordialement,
+            <br>L’équipe de OpenCampusInnov
+            <br>Université de La Rochelle.</p>
         </div>
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

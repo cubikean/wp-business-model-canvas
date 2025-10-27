@@ -17,8 +17,12 @@ if (isset($_POST['save_canvas_configs']) && wp_verify_nonce($_POST['wp_bmc_admin
     // Le traitement sera fait via AJAX
 }
 
+// Charger TinyMCE et les scripts nécessaires
+wp_enqueue_editor();
+wp_enqueue_script('wp-tinymce');
+
 // Inclure les assets nécessaires
-wp_enqueue_script('wp-bmc-admin-canvas-config', plugin_dir_url(__FILE__) . '../Assets/js/admin-canvas-config.js', array('jquery'), '1.0.0', true);
+wp_enqueue_script('wp-bmc-admin-canvas-config', plugin_dir_url(__FILE__) . '../Assets/js/admin-canvas-config.js', array('jquery', 'wp-tinymce'), '1.0.0', true);
 wp_localize_script('wp-bmc-admin-canvas-config', 'wp_bmc_admin_ajax', array(
     'ajax_url' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('wp_bmc_admin_nonce')
@@ -138,6 +142,16 @@ wp_localize_script('wp-bmc-admin-canvas-config', 'wp_bmc_admin_ajax', array(
 .config-field textarea {
     resize: vertical;
     min-height: 60px;
+}
+
+/* Styles pour TinyMCE */
+.config-field .mce-tinymce {
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+}
+
+.config-field .mce-edit-area {
+    border: none !important;
 }
 
 .default-value {

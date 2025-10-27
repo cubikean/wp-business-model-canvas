@@ -354,7 +354,7 @@ jQuery(document).ready(function($) {
             
             // Mettre à jour le contenu de la vue d'édition
             $('#edit-section-title').text(sectionTitle);
-            $('#edit-section-placeholder').text(sectionPlaceholder);
+            $('#edit-section-placeholder').html(sectionPlaceholder);
             $('#wp-bmc-edit-view').attr('data-section', sectionName);
             
             // Mettre à jour le titre des révisions pour cette brique spécifique
@@ -383,6 +383,9 @@ jQuery(document).ready(function($) {
             loadSectionRevisions(sectionName);
 
             loadSectionRating(sectionName);
+            
+            // Vérifier si la section a une demande de notation en attente
+            checkGradingRequestStatus(sectionName);
             
             // Vérifier si la section a une demande de notation en attente (mode admin uniquement)
             if (typeof wp_bmc_pending_grading_requests !== 'undefined') {
@@ -1063,12 +1066,42 @@ jQuery(document).ready(function($) {
     // DEMANDE DE NOTATION
     // ========================================
     
+    // Vérifier si une demande de notation est en attente pour cette section
+    function checkGradingRequestStatus(sectionName) {
+        var $btn = $('#request-grading');
+        
+        $.post(wp_bmc_ajax.ajax_url, {
+            action: 'wp_bmc_check_grading_request',
+            nonce: wp_bmc_ajax.nonce,
+            section: sectionName
+        }, function(response) {
+            if (response.success && response.data.has_pending_request) {
+                // Une demande est en attente, changer le style du bouton
+                $btn.text('Demande envoyée')
+                    .addClass('wp-bmc-btn-success')
+                    .removeClass('wp-bmc-btn-warning')
+                    .prop('disabled', true);
+            } else {
+                // Pas de demande en attente, réinitialiser le bouton
+                $btn.text('Demander une notation')
+                    .removeClass('wp-bmc-btn-success')
+                    .addClass('wp-bmc-btn-warning')
+                    .prop('disabled', false);
+            }
+        });
+    }
+    
     function requestGrading() {
         var sectionName = $('#wp-bmc-edit-view').attr('data-section');
         var sectionTitle = getSectionTitle(sectionName);
         var $btn = $('#request-grading');
         var originalText = $btn.text();
         
+        // Vérifier d'abord si une demande n'est pas déjà en attente
+        if ($btn.hasClass('wp-bmc-btn-success')) {
+            WP_BMC_Toast.info('Une demande de notation est déjà en attente pour cette section.');
+            return;
+        }
         
         // Confirmation avant envoi
         if (!confirm('Êtes-vous sûr de vouloir demander une notation pour cette section ? L\'administrateur sera notifié.')) {
@@ -1106,18 +1139,15 @@ jQuery(document).ready(function($) {
                     
                     // Fermer la vue d'édition après un délai
                     setTimeout(function() {
-                        $btn.text(originalText);
-                        $btn.removeClass('wp-bmc-btn-success').addClass('wp-bmc-btn-warning');
                         closeEditView();
                     }, 2000);
                 } else {
                     WP_BMC_Toast.error(response.data);
+                    $btn.prop('disabled', false).text(originalText);
                 }
             }).fail(function() {
                 WP_BMC_Toast.error('Erreur lors de l\'envoi de la demande. Veuillez réessayer.');
-            }).always(function() {
-                // Réactiver le bouton
-                $btn.prop('disabled', false);
+                $btn.prop('disabled', false).text(originalText);
             });
         });
     }
@@ -1907,37 +1937,37 @@ jQuery(document).ready(function($) {
         `;
     }
     
-    // Attacher les événements aux todos
+    // Attacher les événements aux todos avec délégation d'événements
     function attachTodoEvents() {
         // Ajouter une nouvelle tâche
-        $('#add-todo-btn').off('click').on('click', function() {
+        $(document).off('click', '#add-todo-btn').on('click', '#add-todo-btn', function() {
             addNewTodo();
         });
         
         // Entrée dans le champ de saisie
-        $('#todo-input').off('keypress').on('keypress', function(e) {
+        $(document).off('keypress', '#todo-input').on('keypress', '#todo-input', function(e) {
             if (e.which === 13) { // Entrée
                 addNewTodo();
             }
         });
         
-        // Cocher/décocher une tâche
-        $('.todo-checkbox').off('change').on('change', function() {
+        // Cocher/décocher une tâche (délégation d'événements)
+        $(document).off('change', '.todo-checkbox').on('change', '.todo-checkbox', function() {
             var $todoItem = $(this).closest('.todo-item');
             var todoId = $todoItem.data('todo-id');
             toggleTodo(todoId);
         });
         
-        // Modifier une tâche
-        $('.todo-edit-btn').off('click').on('click', function() {
+        // Modifier une tâche (délégation d'événements)
+        $(document).off('click', '.todo-edit-btn').on('click', '.todo-edit-btn', function() {
             var $todoItem = $(this).closest('.todo-item');
             var todoId = $todoItem.data('todo-id');
             var currentText = $todoItem.find('.todo-text').text();
             editTodo(todoId, currentText, $todoItem);
         });
         
-        // Supprimer une tâche
-        $('.todo-delete-btn').off('click').on('click', function() {
+        // Supprimer une tâche (délégation d'événements)
+        $(document).off('click', '.todo-delete-btn').on('click', '.todo-delete-btn', function() {
             var $todoItem = $(this).closest('.todo-item');
             var todoId = $todoItem.data('todo-id');
             deleteTodo(todoId);
@@ -2004,35 +2034,7 @@ jQuery(document).ready(function($) {
         var todoHtml = createTodoHtml(todo);
         $todoList.append(todoHtml);
         
-        // Réattacher les événements seulement pour cette nouvelle tâche
-        attachTodoEventsForItem(todo.id);
-    }
-    
-    // Attacher les événements pour une tâche spécifique
-    function attachTodoEventsForItem(todoId) {
-        // Chercher uniquement dans le conteneur visible
-        var $visibleContainer = $('#wp-bmc-edit-view:visible, .canvas-container:visible');
-        var $todoItem = $visibleContainer.find('.todo-item[data-todo-id="' + todoId + '"]').first();
-        
-        if (!$todoItem || $todoItem.length === 0) {
-            return;
-        }
-        
-        // Cocher/décocher une tâche
-        $todoItem.find('.todo-checkbox').off('change').on('change', function() {
-            toggleTodo(todoId);
-        });
-        
-        // Modifier une tâche
-        $todoItem.find('.todo-edit-btn').off('click').on('click', function() {
-            var currentText = $todoItem.find('.todo-text').text();
-            editTodo(todoId, currentText, $todoItem);
-        });
-        
-        // Supprimer une tâche
-        $todoItem.find('.todo-delete-btn').off('click').on('click', function() {
-            deleteTodo(todoId);
-        });
+        // Les événements sont automatiquement disponibles grâce à la délégation
     }
     
     // Mettre à jour les statistiques sans recharger

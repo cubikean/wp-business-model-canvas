@@ -71,7 +71,7 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
             </h3>
         </div>
         <h4>
-            <?php echo esc_html($section_config['placeholder']); ?>
+            <?php echo $section_config['placeholder']; ?>
         </h4>
         <div
             class="canvas-content wysiwyg-content"

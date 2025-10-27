@@ -6,6 +6,7 @@
 jQuery(document).ready(function($) {
     let canvasConfigs = {};
     let defaultConfigs = {};
+    let tinyMCEInstances = {};
     
     // Charger les configurations au démarrage
     loadCanvasConfigs();
@@ -50,6 +51,9 @@ jQuery(document).ready(function($) {
         const $container = $('.canvas-config-sections');
         $container.empty();
         
+        // Détruire les instances TinyMCE existantes
+        destroyAllTinyMCE();
+        
         // Mapper les clés des sections vers des noms plus lisibles
         const sectionLabels = {
             'key_partners': 'Partenaires clés',
@@ -87,8 +91,8 @@ jQuery(document).ready(function($) {
                     <div class="config-field">
                         <label for="placeholder_${sectionKey}">Placeholder / Question</label>
                         <textarea id="placeholder_${sectionKey}" 
+                                  class="tinymce-placeholder"
                                   name="configs[${sectionKey}][placeholder]" 
-                                  rows="3"
                                   data-default="${config.default_placeholder}">${config.placeholder}</textarea>
                         <div class="default-value">Valeur par défaut: ${config.default_placeholder}</div>
                     </div>
@@ -97,6 +101,51 @@ jQuery(document).ready(function($) {
             
             $container.append(sectionHtml);
         });
+        
+        // Initialiser TinyMCE après le rendu
+        initializeTinyMCE();
+    }
+    
+    /**
+     * Initialiser TinyMCE pour tous les placeholders
+     */
+    function initializeTinyMCE() {
+        if (typeof tinymce === 'undefined') {
+            console.warn('TinyMCE non disponible');
+            return;
+        }
+        
+        Object.keys(canvasConfigs).forEach(sectionKey => {
+            const editorId = 'placeholder_' + sectionKey;
+            
+            tinymce.init({
+                selector: '#' + editorId,
+                height: 200,
+                menubar: false,
+                plugins: 'lists link paste',
+                toolbar: 'undo redo | formatselect | bold italic | bullist numlist | removeformat',
+                content_style: 'body { font-family: urbanist, sans-serif; font-size: 14px; }',
+                paste_as_text: true,
+                branding: false,
+                statusbar: false,
+                setup: function(editor) {
+                    tinyMCEInstances[sectionKey] = editor;
+                }
+            });
+        });
+    }
+    
+    /**
+     * Détruire toutes les instances TinyMCE
+     */
+    function destroyAllTinyMCE() {
+        Object.keys(tinyMCEInstances).forEach(sectionKey => {
+            const editorId = 'placeholder_' + sectionKey;
+            if (tinymce.get(editorId)) {
+                tinymce.get(editorId).remove();
+            }
+        });
+        tinyMCEInstances = {};
     }
     
     /**
@@ -119,9 +168,18 @@ jQuery(document).ready(function($) {
             const $section = $(this);
             const sectionKey = $section.data('section');
             
+            // Récupérer le contenu depuis TinyMCE
+            let placeholderContent = '';
+            if (tinyMCEInstances[sectionKey]) {
+                placeholderContent = tinyMCEInstances[sectionKey].getContent();
+            } else {
+                // Fallback sur le textarea si TinyMCE n'est pas initialisé
+                placeholderContent = $section.find(`textarea[name="configs[${sectionKey}][placeholder]"]`).val();
+            }
+            
             formData.configs[sectionKey] = {
                 title: $section.find(`input[name="configs[${sectionKey}][title]"]`).val(),
-                placeholder: $section.find(`textarea[name="configs[${sectionKey}][placeholder]"]`).val()
+                placeholder: placeholderContent
             };
         });
         
@@ -130,8 +188,8 @@ jQuery(document).ready(function($) {
         $.post(wp_bmc_admin_ajax.ajax_url, formData, function(response) {
             if (response.success) {
                 WP_BMC_Toast.success(response.data.message);
-                // Mettre à jour les configurations locales
-                loadCanvasConfigs();
+                // Mettre à jour les configurations locales sans recharger les éditeurs
+                canvasConfigs = formData.configs;
             } else {
                 WP_BMC_Toast.error('Erreur lors de la sauvegarde: ' + response.data);
             }
@@ -154,9 +212,16 @@ jQuery(document).ready(function($) {
             const $titleInput = $section.find(`input[name="configs[${sectionKey}][title]"]`);
             $titleInput.val($titleInput.data('default'));
             
-            // Restaurer le placeholder
+            // Restaurer le placeholder dans TinyMCE
             const $placeholderTextarea = $section.find(`textarea[name="configs[${sectionKey}][placeholder]"]`);
-            $placeholderTextarea.val($placeholderTextarea.data('default'));
+            const defaultValue = $placeholderTextarea.data('default');
+            
+            if (tinyMCEInstances[sectionKey]) {
+                tinyMCEInstances[sectionKey].setContent(defaultValue);
+            } else {
+                // Fallback sur le textarea si TinyMCE n'est pas initialisé
+                $placeholderTextarea.val(defaultValue);
+            }
         });
         
         WP_BMC_Toast.success('Valeurs par défaut restaurées. N\'oubliez pas de sauvegarder.');

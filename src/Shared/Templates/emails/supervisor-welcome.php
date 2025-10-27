@@ -22,36 +22,37 @@ if (!defined('ABSPATH')) exit;
 <body>
     <div class="container">
         <div class="header">
-            <h1>Passeport de l'entrepreneuriat</h1>
-            <p><span class="badge">ACCÈS SUPERVISEUR</span></p>
+            <h1>Passeport de l’entrepreneuriat - OpenCampusInnov</h1>
+            <p><span class="badge">Accès chargé d’accompagnement</span></p>
         </div>
         <div class="content">
             <h2>Bienvenue <?php echo esc_html($first_name); ?> <?php echo esc_html($last_name); ?> !</h2>
             
-            <p>Votre compte <strong>superviseur</strong> a été créé avec succès sur la plateforme Passeport de l'entrepreneuriat - OpenCampusInnov.</p>
+            <p>Votre compte de <strong>chargé d’accompagnement</strong> a été créé avec succès sur la plateforme Passeport de l’entrepreneuriat - OpenCampusInnov.</p>
             
             <div class="credentials">
                 <h3>Vos identifiants de connexion :</h3>
                 <p><strong>Adresse email :</strong> <?php echo esc_html($email); ?></p>
                 <p><strong>Mot de passe :</strong> <?php echo esc_html($password); ?></p>
+                <p><strong>URL de connexion :</strong> <a href="<?php echo home_url('/login/'); ?>"><?php echo home_url('/login/'); ?></a></p>
             </div>
             
-            <h3>Vos privilèges superviseur :</h3>
+            <h3>Vos privilèges chargé d’accompagnement :</h3>
             <ul>
                 <li>Créer et gérer des projets</li>
                 <li>Créer et gérer des utilisateurs</li>
-                <li>Superviser les passeports de l'entrepreneuriat</li>
+                <li>Superviser les passeports de l’entrepreneuriat</li>
                 <li>Noter et commenter les sections</li>
                 <li>Accéder au tableau de bord administrateur</li>
             </ul>
             
             <p><strong>Important :</strong> Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.</p>
             
-            <p>Vous pouvez maintenant accéder à l'interface d'administration et commencer à superviser les projets.</p>
+            <p>Vous pouvez maintenant accéder à l’interface d’administration et commencer à superviser les projets.</p>
             
-            <p>Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.</p>
+            <p>Si vous avez des questions ou besoin d’assistance, n’hésitez pas à nous contacter.</p>
             
-            <p>Cordialement,<br>L'équipe OpenCampusInnov</p>
+            <p>Cordialement,<br>L’équipe OpenCampusInnov</p>
         </div>
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

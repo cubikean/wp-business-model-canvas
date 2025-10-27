@@ -1253,6 +1253,25 @@ class WP_BMC_Database {
     }
     
     /**
+     * Vérifier si une section a une demande de notation en attente
+     */
+    public static function has_pending_grading_request($project_id, $section) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'bmc_grading_requests';
+        
+        $request = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE project_id = %d AND section = %s AND status = 'pending'",
+                $project_id,
+                $section
+            )
+        );
+        
+        return $request !== null;
+    }
+    
+    /**
      * Marquer une demande de notation comme notée
      */
     public static function mark_grading_request_as_graded($project_id, $section) {
@@ -1457,7 +1476,16 @@ class WP_BMC_Database {
             $format[] = '%d';
         }
         
+        // Log pour déboguer les révisions multi-canvas
+        error_log("WP_BMC_Database::create_section_revision - Insertion pour project_id: $project_id, section: $section, reason: $revision_reason");
+        
         $result = $wpdb->insert($table, $data, $format);
+        
+        if ($result) {
+            error_log("WP_BMC_Database::create_section_revision - Révision créée avec ID: " . $wpdb->insert_id);
+        } else {
+            error_log("WP_BMC_Database::create_section_revision - ERREUR lors de la création: " . $wpdb->last_error);
+        }
         
         return $result ? $wpdb->insert_id : false;
     }

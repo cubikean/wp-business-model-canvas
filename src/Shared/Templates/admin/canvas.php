@@ -154,9 +154,9 @@ if ($admin_view && $is_admin) {
     </script>
 
     <!-- Indicateur admin -->
-    <div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+    <!-- <div class="admin-indicator" style="position: fixed; top: 20px; right: 20px; background: #0073aa; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
         <i class="fas fa-user-shield"></i> Mode Administrateur
-    </div>
+    </div> -->
 
     <button id="wp-bmc-generate-pdf" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" data-project-id="<?php echo $project_id; ?>">
         <i class="fas fa-file-pdf"></i> Exporter le canvas

@@ -208,8 +208,8 @@ $supervisors = get_users(array(
 
     <!-- Création d'un superviseur (admin) -->
     <div class="wp-bmc-section">
-        <h2>👨‍💼 Créer un superviseur individuel</h2>
-        <p class="description">Les superviseurs sont des administrateurs qui peuvent gérer les projets et les utilisateurs.</p>
+        <h2>👨‍💼 Créer un chargé d’accompagnement individuel</h2>
+        <p class="description">Les chargé d’accompagnement sont des administrateurs qui peuvent gérer les projets et les utilisateurs.</p>
         <form id="create-supervisor-form" class="wp-bmc-form">
             <?php wp_nonce_field('wp_bmc_admin_nonce', 'wp_bmc_admin_nonce'); ?>
 
@@ -241,14 +241,14 @@ $supervisors = get_users(array(
             <div class="form-group">
                 <label>
                     <input type="checkbox" id="send-email-supervisor" name="send_email" value="1" checked>
-                    <strong>Envoyer l'email d'identifiants au superviseur</strong>
+                    <strong>Envoyer l'email d'identifiants au chargé d’accompagnement</strong>
                 </label>
-                <p class="description">Si décoché, le superviseur devra être informé manuellement de ses identifiants.</p>
+                <p class="description">Si décoché, le chargé d’accompagnement devra être informé manuellement de ses identifiants.</p>
             </div>
 
             <div class="form-actions">
                 <button type="submit" class="button button-primary">
-                    <i class="fas fa-user-shield"></i> Créer le superviseur
+                    <i class="fas fa-user-shield"></i> Créer le chargé d’accompagnement
                 </button>
             </div>
         </form>
@@ -398,8 +398,8 @@ $supervisors = get_users(array(
 
     <!-- Liste des superviseurs -->
     <div class="wp-bmc-section">
-        <h2>👨‍💼 Superviseurs (Administrateurs)</h2>
-        <p class="description">Liste de tous les superviseurs ayant accès à l'administration de la plateforme.</p>
+        <h2>Chargés d’accompagnement</h2>
+        <p class="description">Liste de tous les chargés d’accompagnement ayant accès à l'administration de la plateforme.</p>
 
         <div class="users-controls">
             <div class="users-search">
@@ -408,7 +408,7 @@ $supervisors = get_users(array(
         </div>
 
         <?php if (empty($supervisors)): ?>
-            <p>Aucun superviseur n'a été trouvé.</p>
+            <p>Aucun chargé d’accompagnement n'a été trouvé.</p>
         <?php else: ?>
             <table class="wp-list-table widefat striped" id="supervisors-table">
                 <thead>
@@ -505,7 +505,7 @@ $supervisors = get_users(array(
 
             <div class="users-pagination">
                 <div class="pagination-info">
-                    <span id="supervisors-count"><?php echo count($supervisors); ?> superviseur(s) au total</span>
+                    <span id="supervisors-count"><?php echo count($supervisors); ?> chargé d’accompagnement(s) au total</span>
                 </div>
             </div>
         <?php endif; ?>

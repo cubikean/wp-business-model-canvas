@@ -85,7 +85,7 @@ $all_supervisors = get_users(array(
         <!-- Import CSV Complet (Unifié) -->
         <div class="wp-bmc-section csv-unified-section">
             <h2>Import CSV Complet (Recommandé)</h2>
-            <p class="description"><strong>Importez tout en une seule fois !</strong> Ce formulaire va créer automatiquement les utilisateurs, les superviseurs, les projets ET effectuer toutes les assignations.</p>
+            <p class="description"><strong>Importez tout en une seule fois !</strong> Ce formulaire va créer automatiquement les utilisateurs, les chargé d’accompagnement, les projets ET effectuer toutes les assignations.</p>
 
             <div class="csv-import-container">
                 <form id="import-complete-csv-form" enctype="multipart/form-data">
@@ -96,7 +96,7 @@ $all_supervisors = get_users(array(
                         <label for="csv-complete-file" class="csv-upload-label csv-upload-complete">
                             <i class="fas fa-file-csv"></i>
                             <span>Choisir un fichier CSV complet</span>
-                            <small>Import automatique : Utilisateurs + Superviseurs + Projets</small>
+                            <small>Import automatique : Utilisateurs + chargé d’accompagnement + Projets</small>
                         </label>
                         <div class="csv-complete-file-name" style="display: none;"></div>
                     </div>
@@ -105,21 +105,21 @@ $all_supervisors = get_users(array(
                         <h4>Format attendu du CSV complet :</h4>
                         <ul>
                             <li><strong>Prénom</strong> + <strong>Nom</strong> + <strong>E-mail</strong> + <strong>Candidature</strong> → Créera les utilisateurs</li>
-                            <li><strong>Tuteur</strong> + <strong>Coordonnées du tuteur</strong> → Créera les superviseurs</li>
+                            <li><strong>Tuteur</strong> + <strong>Coordonnées du tuteur</strong> → Créera les superchargé d’accompagnementviseurs</li>
                             <li><strong>Nom du projet</strong> + <strong>Résumé du projet</strong> → Créera les projets</li>
                             <li><strong>Assignations automatiques</strong> : Utilisateur + Superviseur → Projet</li>
                         </ul>
                         <p><small>
                                 <strong>Mots de passe générés :</strong><br>
                                 • Utilisateurs : <code>Candidature + Prénom</code><br>
-                                • Superviseurs : <code>Prénom + 6 caractères aléatoires</code>
+                                • chargé d’accompagnement : <code>Prénom + 6 caractères aléatoires</code>
                             </small></p>
                     </div>
 
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="send-emails-complete" checked>
-                            <strong>Envoyer les emails d'identifiants (utilisateurs + superviseurs)</strong>
+                            <strong>Envoyer les emails d'identifiants (utilisateurs + chargé d’accompagnement)</strong>
                         </label>
                     </div>
 
@@ -235,7 +235,7 @@ $all_supervisors = get_users(array(
 
                 <div class="projects-filter">
                     <select id="projects-filter-supervisor" class="regular-text">
-                        <option value="">Tous les superviseurs (<?php echo count($all_projects); ?>)</option>
+                        <option value="">Tous les chargé d’accompagnement (<?php echo count($all_projects); ?>)</option>
                         <?php foreach ($all_supervisors as $supervisor): ?>
                             <?php
                             $supervisor_projects = WP_BMC_Database::get_supervisor_projects($supervisor->ID);
@@ -326,13 +326,13 @@ $all_supervisors = get_users(array(
                             </div>
 
                             <div class="project-supervisors">
-                                <h4>Superviseurs assignés</h4>
+                                <h4>Chargés d’accompagnement assignés</h4>
                                 <div class="admins-list" id="admins-list-<?php echo $project->id; ?>">
                                     <?php
                                     $project_supervisors = WP_BMC_Database::get_project_supervisors($project->id);
                                     if (empty($project_supervisors)):
                                     ?>
-                                        <p class="no-admins">Aucun superviseur assigné</p>
+                                        <p class="no-admins">Aucun chargé d’accompagnement assigné</p>
                                     <?php else: ?>
                                         <?php foreach ($project_supervisors as $supervisor): ?>
                                             <div class="list-item" data-admin-id="<?php echo $supervisor->user_id; ?>">
@@ -426,15 +426,15 @@ $all_supervisors = get_users(array(
 <div id="manage-admins-modal" class="wp-bmc-modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Gérer les superviseurs du projet</h3>
+            <h3>Gérer les chargés d’accompagnement du projet</h3>
             <button class="modal-close">&times;</button>
         </div>
 
         <div class="modal-body">
             <div class="available-admins">
-                <h4>Superviseurs disponibles</h4>
+                <h4>Chargés d’accompagnement disponibles</h4>
                 <div class="modal-search">
-                    <input type="text" id="admins-modal-search" placeholder="Rechercher un superviseur par nom..." class="regular-text">
+                    <input type="text" id="admins-modal-search" placeholder="Rechercher un chargé d’accompagnement par nom..." class="regular-text">
                 </div>
                 <div class="admins-list" id="available-admins-list">
                     <!-- Sera rempli via JavaScript -->
