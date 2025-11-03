@@ -68,11 +68,14 @@ function wp_bmc_render_canvas_section($section_key, $section_config, $canvas_dat
         <div class="canvas-section-header">
             <h3>
                 <?php echo esc_html($section_config['title']); ?>
+                <span class="help-icon" data-tippy-content="<?php echo esc_attr($section_config['placeholder']); ?>">
+                    <i class="fas fa-question-circle"></i>
+                </span>
             </h3>
         </div>
-        <h4>
+        <!-- <h4>
             <?php echo $section_config['placeholder']; ?>
-        </h4>
+        </h4> -->
         <div
             class="canvas-content wysiwyg-content"
             data-section="<?php echo $section_key; ?>"

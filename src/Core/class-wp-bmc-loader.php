@@ -212,6 +212,33 @@ class WP_BMC_Loader {
             return;
         }
         
+        // Charger Popper.js (dépendance pour Tippy.js)
+        wp_enqueue_script(
+            'popper-js',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/popper.min.js',
+            array(),
+            '2.11.6',
+            true
+        );
+        
+        // Charger Tippy.js (tooltips)
+        wp_enqueue_script(
+            'tippy-js',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/tippy-bundle.umd.min.js',
+            array('popper-js'),
+            '6.3.7',
+            true
+        );
+        
+        // Charger le gestionnaire de tooltips Tippy
+        wp_enqueue_script(
+            'wp-bmc-tippy',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-tippy.js',
+            array('jquery', 'tippy-js'),
+            WP_BMC_VERSION,
+            true
+        );
+        
         // Charger le système de toasts (toujours nécessaire)
         wp_enqueue_script(
             'wp-bmc-toast',
@@ -224,6 +251,14 @@ class WP_BMC_Loader {
         wp_enqueue_style(
             'wp-bmc-toast-css',
             WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-toast.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
+        // Charger les styles Tippy
+        wp_enqueue_style(
+            'wp-bmc-tippy',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-tippy.css',
             array(),
             WP_BMC_VERSION
         );
@@ -341,6 +376,41 @@ class WP_BMC_Loader {
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/css/font-awesome.min.css',
             array(),
             '6.0.0'
+        );
+        
+        // Charger les styles Tippy
+        wp_enqueue_style(
+            'wp-bmc-tippy',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/css/wp-bmc-tippy.css',
+            array(),
+            WP_BMC_VERSION
+        );
+        
+        // Charger Popper.js (dépendance pour Tippy.js)
+        wp_enqueue_script(
+            'popper-js',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/popper.min.js',
+            array(),
+            '2.11.6',
+            true
+        );
+        
+        // Charger Tippy.js (tooltips)
+        wp_enqueue_script(
+            'tippy-js',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/tippy-bundle.umd.min.js',
+            array('popper-js'),
+            '6.3.7',
+            true
+        );
+        
+        // Charger le gestionnaire de tooltips Tippy
+        wp_enqueue_script(
+            'wp-bmc-tippy',
+            WP_BMC_PLUGIN_URL . 'src/Shared/Assets/js/wp-bmc-tippy.js',
+            array('jquery', 'tippy-js'),
+            WP_BMC_VERSION,
+            true
         );
         
         // Charger le système de Toast

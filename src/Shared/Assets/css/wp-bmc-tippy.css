@@ -1,0 +1,171 @@
+/**
+ * Styles pour les tooltips Tippy.js
+ * WP Business Model Canvas
+ */
+
+/* Theme personnalisé light-border */
+.tippy-box[data-theme~='light-border'] {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font-family: 'urbanist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.3;
+    padding: 8px 12px;
+}
+
+.tippy-box[data-theme~='light-border'] .tippy-content {
+    padding: 0;
+}
+
+.tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before {
+    border-top-color: #ffffff;
+}
+
+.tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before {
+    border-bottom-color: #ffffff;
+}
+
+.tippy-box[data-theme~='light-border'][data-placement^='left'] > .tippy-arrow::before {
+    border-left-color: #ffffff;
+}
+
+.tippy-box[data-theme~='light-border'][data-placement^='right'] > .tippy-arrow::before {
+    border-right-color: #ffffff;
+}
+
+/* Bordure pour la flèche */
+.tippy-box[data-theme~='light-border'] .tippy-arrow::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+}
+
+.tippy-box[data-theme~='light-border'][data-placement^='top'] .tippy-arrow::after {
+    border-top-color: #e0e0e0;
+    bottom: -8px;
+    left: 0;
+    border-width: 8px 8px 0;
+    border-style: solid;
+    border-color: transparent;
+}
+
+/* Styles pour le contenu HTML dans les tooltips */
+.tippy-box strong {
+    font-weight: 600;
+    color: #222;
+}
+
+.tippy-box em {
+    font-style: italic;
+    color: #555;
+}
+
+.tippy-box ul,
+.tippy-box ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.tippy-box li {
+    margin: 4px 0;
+}
+
+.tippy-box p {
+    margin: 8px 0;
+}
+
+.tippy-box p:first-child {
+    margin-top: 0;
+}
+
+.tippy-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* Animation scale personnalisée */
+.tippy-box[data-animation='scale'][data-state='hidden'] {
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+/* Theme sombre par défaut */
+.tippy-box[data-theme~='dark'] {
+    background-color: #333;
+    color: #fff;
+    border-radius: 6px;
+    font-family: 'urbanist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+/* Icônes d'aide */
+/* .help-icon,
+.info-icon {
+    cursor: help;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 4px;
+    transition: all 0.2s ease;
+}
+
+.help-icon:hover,
+.info-icon:hover {
+    background-color: #1976d2;
+    color: #ffffff;
+    transform: scale(1.1);
+} */
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tippy-box {
+        max-width: 90vw !important;
+        font-size: 13px;
+    }
+    
+    .tippy-box[data-theme~='light-border'] {
+        padding: 6px 10px;
+    }
+}
+
+/* Transitions douces */
+.tippy-box {
+    transition-property: transform, opacity;
+    will-change: transform, opacity;
+}
+
+/* État visible */
+.tippy-box[data-state='visible'] {
+    opacity: 1;
+}
+
+/* État caché */
+.tippy-box[data-state='hidden'] {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Z-index pour s'assurer que les tooltips sont au-dessus */
+.tippy-box {
+    z-index: 9999;
+}
+
+/* Style pour les tooltips interactifs */
+.tippy-box[data-interactive] {
+    pointer-events: auto;
+}
+
+.tippy-box[data-interactive] .tippy-content {
+    user-select: text;
+}
+

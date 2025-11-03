@@ -1170,7 +1170,7 @@
 }
 
 /* Icônes d'aide */
-.help-icon {
+/* .help-icon {
   display: inline-block;
   width: 18px;
   height: 18px;
@@ -1187,7 +1187,7 @@
 
 .help-icon:hover {
   background: var(--secondary-color);
-}
+} */
 
 /* Responsive pour les nouvelles vues */
 @media (max-width: 768px) {
