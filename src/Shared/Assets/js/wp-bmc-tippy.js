@@ -20,7 +20,7 @@
             allowHTML: true,
             placement: 'top',
             arrow: true,
-            theme: 'light-border',
+            theme: $(this).data('tippy-theme') || 'light-border',
             animation: 'scale',
             duration: [200, 150],
             delay: [300, 0], // Délai avant d'afficher, pas de délai pour cacher

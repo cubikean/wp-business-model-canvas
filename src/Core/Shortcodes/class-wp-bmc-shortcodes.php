@@ -128,6 +128,10 @@ class WP_BMC_Shortcodes
                     </div>
 
                     <div class="wp-bmc-user-dropdown-actions">
+                        <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-ressources-btn">
+                            <i class="fas fa-folder"></i>
+                            <span>Ressources pédagogiques</span>
+                        </button>
                         <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-emergence-btn">
                             <i class="fas fa-info-circle"></i>
                             <span>Sprints émergence</span>
@@ -192,11 +196,11 @@ class WP_BMC_Shortcodes
         ?>
         <div class="<?php echo esc_attr(implode(' ', $classes)); ?>" id="<?php echo esc_attr($unique_id); ?>">
             <div class="wp-bmc-user-avatar">
-            <svg class="wp-bmc-user-avatar-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                        <path fill="white" d="M12 12q-1.65 0-2.825-1.175T8 8t1.175-2.825T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m-8 8v-2.8q0-.85.438-1.562T5.6 14.55q1.55-.775 3.15-1.162T12 13t3.25.388t3.15 1.162q.725.375 1.163 1.088T20 17.2V20z" />
-                    </svg>
+                <svg class="wp-bmc-user-avatar-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                    <path fill="white" d="M12 12q-1.65 0-2.825-1.175T8 8t1.175-2.825T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m-8 8v-2.8q0-.85.438-1.562T5.6 14.55q1.55-.775 3.15-1.162T12 13t3.25.388t3.15 1.162q.725.375 1.163 1.088T20 17.2V20z" />
+                </svg>
                 <span class="wp-bmc-user-initials">
-                <?php echo WP_BMC_Auth::get_current_user()->is_admin ? 'Compte accompagnateur' : 'Compte étudiant'; ?>
+                    <?php echo WP_BMC_Auth::get_current_user()->is_admin ? 'Compte accompagnateur' : 'Compte étudiant'; ?>
                 </span>
             </div>
 
@@ -232,6 +236,10 @@ class WP_BMC_Shortcodes
                     <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-change-password">
                         <i class="fas fa-key"></i>
                         <span>Changer de mot de passe</span>
+                    </button>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-ressources-btn">
+                        <i class="fas fa-folder"></i>
+                        <span>Ressources pédagogiques</span>
                     </button>
                     <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-emergence-btn">
                         <i class="fas fa-info-circle"></i>

@@ -38,6 +38,9 @@ jQuery(document).ready(function($) {
             else if (action.attr('id').includes('emergence-btn')) {
                 window.location.href = '/sprints-emergence/';
             }
+            else if (action.attr('id').includes('ressources-btn')) {
+                window.location.href = '/ressources-pedagogiques/';
+            }
             else if (action.attr('id').includes('pepitizy-dashboard-btn')) {
                 window.open('https://pepite-eca.pepitizy.fr/fr/account', '_blank');
             }
