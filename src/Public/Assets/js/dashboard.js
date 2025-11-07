@@ -150,6 +150,110 @@ jQuery(document).ready(function($) {
             url: null
         };
     }
+
+    function getPublicAjaxConfig() {
+        if (typeof wp_bmc_ajax !== 'undefined' && wp_bmc_ajax.nonce && wp_bmc_ajax.ajax_url) {
+            return {
+                nonce: wp_bmc_ajax.nonce,
+                url: wp_bmc_ajax.ajax_url
+            };
+        }
+
+        return getAjaxConfig();
+    }
+
+    function getCurrentEditorContent() {
+        if (window.wysiwygEditor && typeof window.wysiwygEditor.getContent === 'function') {
+            return window.wysiwygEditor.getContent({ format: 'html' }) || '';
+        }
+
+        if ($('.editor-content').length) {
+            return $('.editor-content').html() || '';
+        }
+
+        return '';
+    }
+
+    function normalizeContentForDiff(html) {
+        if (!html) {
+            return '';
+        }
+
+        var container = document.createElement('div');
+        container.innerHTML = html;
+        var text = container.textContent || container.innerText || '';
+        return text
+            .replace(/\u00a0/g, ' ')
+            .replace(/[\r\f\t]+/g, ' ')
+            .replace(/\s+\n/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    function escapeDiffHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/\n/g, '<br>');
+    }
+
+    function generateDiffHtml(previousContent, revisionContent) {
+        var previousText = normalizeContentForDiff(previousContent);
+        var revisionText = normalizeContentForDiff(revisionContent);
+
+        if (!previousText && !revisionText) {
+            return '';
+        }
+
+        if (typeof diff_match_patch === 'undefined') {
+            return '';
+        }
+
+        var dmp = new diff_match_patch();
+        dmp.Diff_Timeout = 0;
+        var diff = dmp.diff_main(previousText, revisionText);
+        dmp.diff_cleanupSemantic(diff);
+
+        var hasChanges = diff.some(function(part) {
+            return part[0] !== diff_match_patch.DIFF_EQUAL;
+        });
+
+        if (!hasChanges) {
+            return '<div class="revision-diff-block"><div class="diff-result diff-result--empty">Aucune différence avec le contenu actuel.</div></div>';
+        }
+
+        var diffHtml = diff.map(function(part) {
+            var op = part[0];
+            var data = escapeDiffHtml(part[1]);
+
+            if (!data) {
+                return '';
+            }
+
+            if (op === diff_match_patch.DIFF_INSERT) {
+                return '<span class="diff-added">' + data + '</span>';
+            }
+
+            if (op === diff_match_patch.DIFF_DELETE) {
+                return '<span class="diff-removed">' + data + '</span>';
+            }
+
+            return '<span class="diff-context">' + data + '</span>';
+        }).join('');
+
+        return [
+            '<div class="revision-diff-block">',
+            '    <div class="diff-legend">',
+            '        <span class="legend-item legend-added">Ajouts</span>',
+            '        <span class="legend-item legend-removed">Suppressions</span>',
+            '    </div>',
+            '    <div class="diff-result">' + diffHtml + '</div>',
+            '</div>'
+        ].join('');
+    }
     
     // Fonction pour marquer les données comme modifiées
     function markAsDirty() {
@@ -1595,7 +1699,7 @@ jQuery(document).ready(function($) {
     // Charger les révisions d'une section
     function loadSectionRevisions(section) {
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        var ajaxConfig = getAjaxConfig();
+        var ajaxConfig = getPublicAjaxConfig();
 
         sectionRevisionsCache = {};
         currentRevisionSelection = null;
@@ -1736,20 +1840,28 @@ jQuery(document).ready(function($) {
         $('#revision-preview-title').text(reasonLabel);
         $('#revision-preview-meta').text(metaParts.join(' • '));
 
-        var previewHtml = '';
+        var noteHtml = '';
 
         if (revision.rating_comment) {
             var safeComment = $('<div>').text(revision.rating_comment).html();
-            previewHtml += '<div class="revision-preview-note"><strong>Commentaire de notation</strong><p>' + safeComment + '</p></div>';
+            noteHtml = '<div class="revision-preview-note"><strong>Commentaire de notation</strong><p>' + safeComment + '</p></div>';
         }
 
         var contentHtml = (revision.content && revision.content.trim() !== '')
             ? revision.content
             : '<p class="preview-placeholder">Aucun contenu enregistré pour cette révision.</p>';
 
-        previewHtml += contentHtml;
+        var diffHtml = generateDiffHtml(getCurrentEditorContent(), revision.content || '');
 
-        $('#revision-preview-content').html(previewHtml);
+        var finalHtml = '';
+
+        if (diffHtml) {
+            finalHtml += diffHtml;
+        }
+
+        finalHtml += '<div class="revision-preview-body">' + noteHtml + contentHtml + '</div>';
+
+        $('#revision-preview-content').html(finalHtml);
 
         $('#apply-revision-btn').prop('disabled', false).data('revisionId', revision.id);
         $('#open-revision-modal-btn').prop('disabled', false).data('revisionId', revision.id);
@@ -1804,6 +1916,8 @@ jQuery(document).ready(function($) {
 
         markAsDirty();
         WP_BMC_Toast.success('Révision restaurée dans l\'éditeur. N\'oubliez pas de sauvegarder.');
+
+        renderRevisionPreview(revision);
     }
 
     // Afficher les révisions dans la liste
@@ -1930,7 +2044,7 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        var ajaxConfig = getAjaxConfig();
+        var ajaxConfig = getPublicAjaxConfig();
         if (!ajaxConfig.url || !ajaxConfig.nonce) {
             WP_BMC_Toast.error('Impossible de récupérer cette révision.');
             return;

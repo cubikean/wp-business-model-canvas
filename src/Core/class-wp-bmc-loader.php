@@ -455,11 +455,19 @@ class WP_BMC_Loader {
             true
         );
 
+        wp_register_script(
+            'wp-bmc-diff',
+            'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch-min.js',
+            array(),
+            '20121119',
+            true
+        );
+
         // Charger le script du dashboard
         wp_enqueue_script(
             'wp-bmc-dashboard',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/dashboard.js',
-            array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce'),
+            array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce', 'wp-bmc-diff'),
             WP_BMC_VERSION,
             true
         );
@@ -496,7 +504,7 @@ class WP_BMC_Loader {
             wp_enqueue_script(
                 'wp-bmc-admin-dashboard',
                 WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js',
-                array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce'),
+                array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce', 'wp-bmc-diff'),
                 WP_BMC_VERSION,
                 true
             );
