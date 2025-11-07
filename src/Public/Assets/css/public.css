@@ -2596,14 +2596,14 @@ body.popup-open {
 #wp-bmc-edit-view {
   margin-inline: auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, auto);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
   gap: 32px;
   background: var(--dashboard-dark-blue);
 }
 
 .edit-view-container {
-  grid-column: 1/4;
+  grid-column: 1/3;
   grid-row: 1;
   border-radius: 20px;
   overflow: hidden;
@@ -2634,8 +2634,21 @@ body.popup-open {
     text-transform: uppercase;
   }
 }
-.edit-content {
+.edit-body {
   padding: 32px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.edit-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.edit-content {
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -2740,19 +2753,14 @@ body.popup-open {
   justify-content: flex-end;
   align-items: center;
   gap: 16px;
-  padding: 0 32px;
 }
 
-.history-section {
-  grid-column: 1/3;
-  grid-row: 2;
-  border-radius: 20px;
-  background-color: white;
-  padding: 32px;
+.rating-section {
+  margin-top: auto;
 }
 
 .todo-section {
-  grid-column: 3/4;
+  grid-column: 1/3;
   grid-row: 2;
   border-radius: 20px;
   background-color: var(--edit-view-color);
@@ -2763,18 +2771,67 @@ body.popup-open {
    STYLES POUR LES RÉVISIONS
    ======================================== */
 
-.history-section header {
+.revision-panel {
+  width: min(420px, 100%);
+  background-color: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 12px 24px rgba(21, 60, 168, 0.06);
+}
+
+.revision-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 12px;
 }
 
-.history-section header h4 {
+.revision-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.revision-panel-title h4 {
   margin: 0;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--dashboard-text);
+}
+
+.revision-count {
+  background-color: var(--edit-view-color, var(--dashboard-primary));
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.revision-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.revision-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.revision-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+}
+
+.revision-panel-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .no-revisions {
@@ -2807,83 +2864,256 @@ body.popup-open {
 
 .revision-item {
   background: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid rgba(21, 60, 168, 0.12);
+  border-radius: 16px;
   padding: 1rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .revision-item:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--edit-view-color, var(--dashboard-primary));
+  box-shadow: 0 12px 22px rgba(21, 60, 168, 0.12);
+}
+
+.revision-item.is-active {
+  border-color: var(--edit-view-color, var(--dashboard-primary));
+  box-shadow: 0 12px 22px rgba(21, 60, 168, 0.2);
+}
+
+.revision-select {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.revision-select:focus-visible {
+  outline: 2px solid var(--edit-view-color, var(--dashboard-primary));
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 .revision-header {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.75rem;
-  gap: 24px;
+  gap: 1rem;
 }
 
-.revision-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.revision-number {
-  font-weight: 600;
-  color: var(--text-color);
-  font-size: 0.875rem;
-}
-
-.revision-date {
-  font-size: 16px;
-  color: var(--text-muted);
-}
-
-.revision-reason {
+.revision-header .rating-score {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
-.reason-badge {
-  padding: 16px;
-  border-radius: 20px;
-  font-size: 18px;
+.revision-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.revision-meta .revision-date {
   font-weight: 500;
-  line-height: 1.4;
-  line-break: anywhere;
-  background-color: #f6f6f6;
-  color: #7c7c7c;
-}
-
-.reason-grading_request {
-  background: var(--orange-light);
-  color: var(--orange-dark);
-}
-
-.reason-manual {
-  background: var(--blue-light);
-  color: var(--blue-dark);
-}
-
-.reason-auto_save {
-  background: var(--green-light);
-  color: var(--green-dark);
+  color: var(--dashboard-text);
 }
 
 .revision-actions {
   display: flex;
   gap: 0.5rem;
-  justify-content: flex-end;
 }
 
-.view-revision-btn {
-  font-size: 16px;
-  padding: 10px 20px;
+.revision-actions .btn-outline {
+  font-size: 0.875rem;
+}
+
+.reason-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(21, 60, 168, 0.08);
+  color: var(--dashboard-text);
+  text-transform: capitalize;
+}
+
+.reason-grading_request {
+  background: rgba(241, 137, 73, 0.15);
+  color: var(--dashboard-orange);
+}
+
+.reason-admin_rating {
+  background: rgba(134, 193, 113, 0.15);
+  color: var(--dashboard-green);
+}
+
+.reason-manual {
+  background: rgba(98, 170, 221, 0.15);
+  color: var(--dashboard-blue);
+}
+
+.reason-auto_save {
+  background: rgba(255, 75, 107, 0.15);
+  color: var(--dashboard-primary);
+}
+
+.revision-preview {
+  border: 1px solid rgba(21, 60, 168, 0.12);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--white);
+}
+
+.revision-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.revision-preview-header .preview-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.revision-preview-header .preview-title {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dashboard-text);
+}
+
+.preview-meta {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.revision-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.revision-preview-actions .btn-outline.--small {
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+}
+
+.revision-preview-actions .bmc-btn-solid {
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.revision-preview-content {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--dashboard-text);
+}
+
+.revision-preview-content p:last-child {
+  margin-bottom: 0;
+}
+
+.preview-placeholder {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.revision-comment-preview {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.revision-preview-note {
+  background: rgba(241, 137, 73, 0.08);
+  border-left: 4px solid var(--dashboard-orange);
+  border-radius: 12px;
+  padding: 12px 16px;
   margin-bottom: 12px;
+}
+
+.revision-preview-note strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  color: var(--dashboard-text);
+}
+
+.revision-preview-note p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+  #wp-bmc-edit-view {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .edit-view-container {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .edit-body {
+    flex-direction: column;
+  }
+
+  .revision-panel {
+    width: 100%;
+  }
+
+  .todo-section {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .edit-body {
+    padding: 24px;
+  }
+
+  .revision-panel {
+    padding: 24px;
+  }
+
+  .revision-preview-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .revision-preview-actions .bmc-btn-solid {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Popup de révision */

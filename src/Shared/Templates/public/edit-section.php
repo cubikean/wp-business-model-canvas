@@ -22,75 +22,102 @@ if (!defined('ABSPATH')) {
             <h2 id="edit-section-title">Éditer la brique</h2>
         </div>
 
-        <div class="edit-content">
-            <!-- Section éditeur -->
-            <div class="sub-section">
-                <p id="edit-section-placeholder">Placeholder pour le contenu de la brique</p>
-                <button type="button" class="view-documents-btn btn-outline --icon" id="view-documents-btn">
-                    <i class="fa fa-file-lines"></i>Ressources pédagogiques
-                </button>
-            </div>
-            <div class="editor-section">
-                <div id="wysiwyg-editor">
-                    <!-- L'éditeur sera initialisé par JavaScript -->
+        <div class="edit-body">
+            <div class="edit-main">
+                <div class="edit-content">
+                    <!-- Section éditeur -->
+                    <div class="sub-section">
+                        <p id="edit-section-placeholder">Placeholder pour le contenu de la brique</p>
+                        <button type="button" class="view-documents-btn btn-outline --icon" id="view-documents-btn">
+                            <i class="fa fa-file-lines"></i>Ressources pédagogiques
+                        </button>
+                    </div>
+                    <div class="editor-section">
+                        <div id="wysiwyg-editor">
+                            <!-- L'éditeur sera initialisé par JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Section fichiers -->
+                    <div class="files-section">
+                        <div class="files-header">
+                            <button type="button" class="add-file-btn btn-outline --icon --icon-bg" id="add-file-btn">
+                                <i class="fas fa-plus"></i> Ajouter des documents
+                            </button>
+                        </div>
+                        <div class="files-list" id="files-list">
+                            <div class="no-files">Aucun fichier attaché</div>
+                        </div>
+                        <input type="file" id="file-input" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
+                    </div>
+                </div>
+
+                <!-- Actions d'édition -->
+                <div class="edit-actions">
+                    <!-- <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button> -->
+                    <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="request-grading">Demander une notation</button>
+                    <button type="button" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid" id="edit-save">Sauvegarder</button>
+                </div>
+
+                <div class="rating-section" id="rating-section">
+                    <div class="rating-display" id="rating-display">
+                        <div class="rating-score">
+                            <span class="rating-score-number" id="rating-score-number">-</span>
+                            <span class="rating-score-total">10</span>
+                        </div>
+                        <div class="rating-comment" id="rating-comment">
+                            <p class="no-rating">Aucune note attribuée</p>
+                        </div>
+                        <div class="rating-meta" id="rating-meta">
+                            <small class="rating-date"></small>
+                            <small class="rating-admin"></small>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Section fichiers -->
-            <div class="files-section">
-                <div class="files-header">
-                    <button type="button" class="add-file-btn btn-outline --icon --icon-bg" id="add-file-btn">
-                        <i class="fas fa-plus"></i> Ajouter des documents
+            <aside class="revision-panel" aria-labelledby="revisions-section-title">
+                <header class="revision-panel-header">
+                    <div class="revision-panel-title">
+                        <h4 id="revisions-section-title">Historique des révisions</h4>
+                        <span class="revision-count" id="revision-count">0</span>
+                    </div>
+                    <button type="button" class="btn-outline --icon --small" id="load-revisions-btn">
+                        <i class="fas fa-history"></i> Recharger
                     </button>
+                </header>
+
+                <div class="revision-panel-body">
+                    <div class="revisions-list" id="revisions-list">
+                        <div class="no-revisions">
+                            <i class="fas fa-history"></i>
+                            <p>Aucune révision disponible pour cette brique</p>
+                            <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
+                        </div>
+                    </div>
+
+                    <div class="revision-preview" id="revision-preview" aria-live="polite">
+                        <div class="revision-preview-header">
+                            <div>
+                                <p class="preview-label">Révision sélectionnée</p>
+                                <p class="preview-title" id="revision-preview-title">Aucune révision sélectionnée</p>
+                                <p class="preview-meta" id="revision-preview-meta"></p>
+                            </div>
+                            <div class="revision-preview-actions">
+                                <button type="button" class="btn-outline --small open-revision-modal" id="open-revision-modal-btn" disabled>
+                                    <i class="fas fa-up-right-from-square"></i>
+                                </button>
+                                <button type="button" class="bmc-btn-solid apply-revision-btn" id="apply-revision-btn" disabled>
+                                    Restaurer dans l'éditeur
+                                </button>
+                            </div>
+                        </div>
+                        <div class="revision-preview-content" id="revision-preview-content">
+                            <p class="preview-placeholder">Choisissez une révision pour prévisualiser son contenu et la restaurer dans l'éditeur.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="files-list" id="files-list">
-                    <div class="no-files">Aucun fichier attaché</div>
-                </div>
-                <input type="file" id="file-input" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
-            </div>
-        </div>
-
-
-        <!-- Actions d'édition -->
-        <div class="edit-actions">
-            <!-- <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="edit-cancel">Annuler</button> -->
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-secondary btn-outline --icon" id="request-grading">Demander une notation</button>
-            <button type="button" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid" id="edit-save">Sauvegarder</button>
-        </div>
-
-        <div class="rating-section" id="rating-section">
-            <div class="rating-display" id="rating-display">
-                <div class="rating-score">
-                    <span class="rating-score-number" id="rating-score-number">-</span>
-                    <span class="rating-score-total">10</span>
-                </div>
-                <div class="rating-comment" id="rating-comment">
-                    <p class="no-rating">Aucune note attribuée</p>
-                </div>
-                <div class="rating-meta" id="rating-meta">
-                    <small class="rating-date"></small>
-                    <small class="rating-admin"></small>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-
-
-    <div class="history-section">
-        <header>
-            <h4 id="revisions-section-title">Historique score de maturité</h4>
-            <button type="button" class="btn-outline --icon --small" id="load-revisions-btn">
-                <i class="fas fa-history"></i> Charger les révisions
-            </button>
-        </header>
-        <div class="revisions-list" id="revisions-list">
-            <div class="no-revisions">
-                <i class="fas fa-history"></i>
-                <p>Aucune révision disponible pour cette brique</p>
-                <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
-            </div>
+            </aside>
         </div>
     </div>
 

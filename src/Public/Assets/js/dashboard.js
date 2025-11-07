@@ -110,6 +110,8 @@ jQuery(document).ready(function($) {
     
     // Système de cache et opérations différées
     var todoCache = {};
+    var sectionRevisionsCache = {};
+    var currentRevisionSelection = null;
     var pendingOperations = {
         add: [],
         update: [],
@@ -365,6 +367,11 @@ jQuery(document).ready(function($) {
             log('Variable globale définie:', currentEditingSection);
             log('Attribut data-section défini:', $('#wp-bmc-edit-view').attr('data-section'));
             
+            resetRevisionPreview();
+            updateRevisionCount(0);
+            sectionRevisionsCache = {};
+            currentRevisionSelection = null;
+
             // Initialiser l'éditeur WYSIWYG
             let decodedContent = cleanContent(content);
 
@@ -1588,20 +1595,36 @@ jQuery(document).ready(function($) {
     // Charger les révisions d'une section
     function loadSectionRevisions(section) {
         var projectId = $('.wp-bmc-dashboard').data('project-id') || $('.wp-bmc-canvas-container').data('project-id');
-        
+        var ajaxConfig = getAjaxConfig();
+
+        sectionRevisionsCache = {};
+        currentRevisionSelection = null;
+        updateRevisionCount(0);
+        resetRevisionPreview();
+
         // Afficher le loader pour les révisions
         $('#revisions-list').html('<div class="wp-bmc-loader"><div class="loader-spinner"></div><span>Chargement des révisions...</span></div>');
-        
-        $.post(wp_bmc_ajax.ajax_url, {
+
+        if (!ajaxConfig.url || !ajaxConfig.nonce) {
+            $('#revisions-list').html('<div class="no-revisions"><i class="fas fa-plug-circle-xmark"></i><p>Impossible de charger les révisions.</p></div>');
+            return;
+        }
+
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_get_section_revisions',
             section: section,
             project_id: projectId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (response.success) {
-                displayRevisions(response.data.revisions, section);
+                displayRevisions(response.data.revisions || [], section);
+            } else if (response.data) {
+                $('#revisions-list').html('<div class="no-revisions"><i class="fas fa-history"></i><p>' + response.data + '</p></div>');
+            } else {
+                $('#revisions-list').html('<div class="no-revisions"><i class="fas fa-history"></i><p>Aucune révision disponible pour cette brique</p></div>');
             }
         }).fail(function() {
+            $('#revisions-list').html('<div class="no-revisions"><i class="fas fa-wifi"></i><p>Erreur de connexion lors du chargement des révisions.</p></div>');
         });
     }
 
@@ -1679,11 +1702,117 @@ jQuery(document).ready(function($) {
         `);
     }
 
+    function updateRevisionCount(count) {
+        $('#revision-count').text(count || 0);
+    }
+
+    function resetRevisionPreview() {
+        currentRevisionSelection = null;
+        $('#revision-preview-title').text('Aucune révision sélectionnée');
+        $('#revision-preview-meta').text('');
+        $('#revision-preview-content').html('<p class="preview-placeholder">Choisissez une révision pour prévisualiser son contenu et la restaurer dans l\'éditeur.</p>');
+        $('#apply-revision-btn').prop('disabled', true).removeData('revisionId');
+        $('#open-revision-modal-btn').prop('disabled', true).removeData('revisionId');
+    }
+
+    function renderRevisionPreview(revision) {
+        if (!revision) {
+            resetRevisionPreview();
+            return;
+        }
+
+        var formattedDate = revision.formatted_date || revision.created_at || '';
+        var metaParts = [];
+
+        metaParts.push('Par ' + (revision.admin_name || 'Admin'));
+        if (formattedDate) {
+            metaParts.push('Le ' + formattedDate);
+        }
+        if (revision.rating !== null && revision.rating !== undefined) {
+            metaParts.push(revision.rating + '/10');
+        }
+
+        var reasonLabel = getRevisionReasonLabel(revision.revision_reason || 'manual');
+        $('#revision-preview-title').text(reasonLabel);
+        $('#revision-preview-meta').text(metaParts.join(' • '));
+
+        var previewHtml = '';
+
+        if (revision.rating_comment) {
+            var safeComment = $('<div>').text(revision.rating_comment).html();
+            previewHtml += '<div class="revision-preview-note"><strong>Commentaire de notation</strong><p>' + safeComment + '</p></div>';
+        }
+
+        var contentHtml = (revision.content && revision.content.trim() !== '')
+            ? revision.content
+            : '<p class="preview-placeholder">Aucun contenu enregistré pour cette révision.</p>';
+
+        previewHtml += contentHtml;
+
+        $('#revision-preview-content').html(previewHtml);
+
+        $('#apply-revision-btn').prop('disabled', false).data('revisionId', revision.id);
+        $('#open-revision-modal-btn').prop('disabled', false).data('revisionId', revision.id);
+    }
+
+    function selectRevision(revisionId, options) {
+        if (!revisionId) {
+            return;
+        }
+
+        var revision = sectionRevisionsCache[revisionId];
+
+        if (!revision) {
+            viewRevision(revisionId);
+            return;
+        }
+
+        currentRevisionSelection = revisionId;
+
+        $('.revision-item').removeClass('is-active');
+        $('.revision-item[data-revision-id="' + revisionId + '"]').addClass('is-active');
+
+        renderRevisionPreview(revision);
+
+        if (options && options.scroll) {
+            var $item = $('.revision-item[data-revision-id="' + revisionId + '"]');
+            if ($item.length) {
+                $item[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }
+
+    function applyRevisionToEditor(revisionId) {
+        var revision = sectionRevisionsCache[revisionId];
+
+        if (!revision) {
+            WP_BMC_Toast.error('Révision introuvable.');
+            return;
+        }
+
+        var contentToApply = revision.content || '';
+
+        if (window.wysiwygEditor && typeof window.wysiwygEditor.undoManager !== 'undefined') {
+            window.wysiwygEditor.undoManager.transact(function() {
+                window.wysiwygEditor.setContent(contentToApply);
+            });
+            window.wysiwygEditor.fire('change');
+            window.wysiwygEditor.focus();
+        } else if ($('.editor-content').length) {
+            $('.editor-content').html(contentToApply);
+        }
+
+        markAsDirty();
+        WP_BMC_Toast.success('Révision restaurée dans l\'éditeur. N\'oubliez pas de sauvegarder.');
+    }
+
     // Afficher les révisions dans la liste
     function displayRevisions(revisions, section) {
         var $revisionsList = $('#revisions-list');
         
-        if (revisions.length === 0) {
+        updateRevisionCount(revisions.length);
+
+        if (!revisions.length) {
             $revisionsList.html(`
                 <div class="no-revisions">
                     <i class="fas fa-history"></i>
@@ -1691,18 +1820,23 @@ jQuery(document).ready(function($) {
                     <small>Les révisions sont créées automatiquement lors des demandes de notation</small>
                 </div>
             `);
+            resetRevisionPreview();
             return;
         }
-        
+
+        sectionRevisionsCache = {};
+
         var html = '<div class="revisions-items">';
-        
+        var firstRevisionId = null;
+
         revisions.forEach(function(revision, index) {
             // Utiliser la date formatée selon les paramètres WordPress
             var formattedDate = revision.formatted_date || revision.created_at;
-            
-            
-            // Ajouter les informations de notation si disponibles
+            var reasonClass = revision.revision_reason ? revision.revision_reason : 'manual';
+            var reasonLabel = getRevisionReasonLabel(revision.revision_reason || 'manual');
             var ratingInfo = '';
+            var commentPreview = '';
+            
             if (revision.rating !== null && revision.rating !== undefined) {
                 ratingInfo = `
                     
@@ -1713,39 +1847,68 @@ jQuery(document).ready(function($) {
                 `;
             }
 
-            
-            html += `
-                <div class="revision-item" data-revision-id="${revision.id}">
+            if (revision.rating_comment) {
+                var safePreview = $('<div>').text(revision.rating_comment).html();
+                commentPreview = `<p class="revision-comment-preview">${safePreview}</p>`;
+            }
 
+            sectionRevisionsCache[revision.id] = revision;
+
+            if (index === 0) {
+                firstRevisionId = revision.id;
+            }
+
+            html += `
+                <article class="revision-item${index === 0 ? ' is-active' : ''}" data-revision-id="${revision.id}">
+                    <button class="revision-select" type="button" data-revision-id="${revision.id}">
+                        <div class="revision-header">
+                            ${ratingInfo}
+                            <div class="revision-reason">
+                                <span class="reason-badge reason-${reasonClass}">${reasonLabel}</span>
+                            </div>
+                        </div>
+                        ${commentPreview}
+                        <div class="revision-meta">
+                            <span class="revision-admin">Par ${revision.admin_name || 'Admin'}</span>
+                            <span class="revision-date">Le ${formattedDate}</span>
+                        </div>
+                    </button>
                     <div class="revision-actions">
                         <button class="btn-outline --small view-revision-btn" data-revision-id="${revision.id}">
-                            Lire cette version
+                            <i class="fas fa-eye"></i> Aperçu
+                        </button>
+                        <button class="btn-outline --small quick-apply-revision-btn" data-revision-id="${revision.id}">
+                            <i class="fas fa-rotate-left"></i> Restaurer
                         </button>
                     </div>
-
-                    <div class="revision-header">
-                        ${ratingInfo}
-                        <div class="revision-reason">
-                            <span class="reason-badge reason-${revision.revision_reason}">${revision.rating_comment || 'Aucun commentaire'}</span>
-                        </div>
-                    </div>
-
-                   
-                    <div class="revision-meta">
-                        <span class="revision-admin">Par ${revision.admin_name || 'Admin'} </span>
-                        <span class="revision-date">Le ${formattedDate}</span>
-                    </div>
-                </div>
+                </article>
             `;
         });
         
         html += '</div>';
         $revisionsList.html(html);
-        
+
+        if (firstRevisionId) {
+            selectRevision(firstRevisionId);
+        }
+
         // Attacher les événements aux boutons
-        $('.view-revision-btn').on('click', function() {
+        $('.view-revision-btn').on('click', function(e) {
+            e.preventDefault();
             var revisionId = $(this).data('revision-id');
             viewRevision(revisionId);
+        });
+
+        $('.quick-apply-revision-btn').on('click', function(e) {
+            e.preventDefault();
+            var revisionId = $(this).data('revision-id');
+            selectRevision(revisionId);
+            applyRevisionToEditor(revisionId);
+        });
+
+        $('.revision-select').on('click', function() {
+            var revisionId = $(this).data('revision-id');
+            selectRevision(revisionId, { scroll: false });
         });
     }
     
@@ -1762,15 +1925,28 @@ jQuery(document).ready(function($) {
     
     // Visualiser une révision dans un popup
     function viewRevision(revisionId) {
-        $.post(wp_bmc_ajax.ajax_url, {
+        if (sectionRevisionsCache[revisionId]) {
+            showRevisionPopup(sectionRevisionsCache[revisionId]);
+            return;
+        }
+
+        var ajaxConfig = getAjaxConfig();
+        if (!ajaxConfig.url || !ajaxConfig.nonce) {
+            WP_BMC_Toast.error('Impossible de récupérer cette révision.');
+            return;
+        }
+
+        $.post(ajaxConfig.url, {
             action: 'wp_bmc_get_section_revision',
             revision_id: revisionId,
-            nonce: wp_bmc_ajax.nonce
+            nonce: ajaxConfig.nonce
         }, function(response) {
             if (response.success) {
+                sectionRevisionsCache[revisionId] = response.data.revision;
                 showRevisionPopup(response.data.revision);
             } 
         }).fail(function() {
+            WP_BMC_Toast.error('Erreur lors de la récupération de la révision.');
         });
     }
     
@@ -1831,6 +2007,22 @@ jQuery(document).ready(function($) {
                     <p>Erreur : Impossible de déterminer la section actuelle</p>
                 </div>
             `);
+        }
+    });
+
+    $(document).on('click', '#apply-revision-btn', function() {
+        var revisionId = $(this).data('revisionId');
+        if (revisionId) {
+            selectRevision(revisionId);
+            applyRevisionToEditor(revisionId);
+        }
+    });
+
+    $(document).on('click', '#open-revision-modal-btn', function() {
+        var revisionId = $(this).data('revisionId');
+        if (revisionId) {
+            selectRevision(revisionId);
+            viewRevision(revisionId);
         }
     });
     
