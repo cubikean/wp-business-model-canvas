@@ -2087,18 +2087,22 @@ function wp_bmc_save_section_rating_handler() {
         wp_send_json_error('Accès réservé aux administrateurs.');
     }
     
-    if (!isset($_POST['section']) || !isset($_POST['project_id']) || !isset($_POST['rating'])) {
+    if (!isset($_POST['section']) || !isset($_POST['project_id']) || !isset($_POST['rating']) || !isset($_POST['comment'])) {
         wp_send_json_error('Paramètres manquants pour la notation.');
     }
     
     $section = sanitize_text_field($_POST['section']);
     $project_id = intval($_POST['project_id']);
     $rating = intval($_POST['rating']);
-    $comment = isset($_POST['comment']) ? sanitize_textarea_field($_POST['comment']) : '';
+    $comment = sanitize_textarea_field($_POST['comment']);
     $admin_id = get_current_user_id();
     
     if (empty($section) || !$project_id || $rating < 0 || $rating > 10) {
         wp_send_json_error('Paramètres invalides.');
+    }
+
+    if ('' === trim($comment)) {
+        wp_send_json_error('Le commentaire est obligatoire pour la notation.');
     }
     
     $result = WP_BMC_Database::save_section_rating($project_id, $section, $admin_id, $rating, $comment);
@@ -3137,7 +3141,8 @@ function compile_handlebars_template($template, $data) {
                     error_log('HANDLEBARS: Section ' . $section_key . ' avec contenu (' . strlen($section_data['content']) . ' chars)');
                     return $if_content;
                 } else {
-                    $else_content = str_replace('{{placeholder}}', htmlspecialchars($section_data['placeholder']), $else_content);
+                    $placeholder_text = wp_strip_all_tags(html_entity_decode($section_data['placeholder'] ?? '', ENT_QUOTES, 'UTF-8'));
+                    $else_content = str_replace('{{placeholder}}', htmlspecialchars($placeholder_text, ENT_QUOTES, 'UTF-8'), $else_content);
                     error_log('HANDLEBARS: Section ' . $section_key . ' sans contenu, placeholder utilisé');
                     return $else_content;
                 }

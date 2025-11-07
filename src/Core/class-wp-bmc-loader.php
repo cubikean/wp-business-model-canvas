@@ -446,11 +446,20 @@ class WP_BMC_Loader {
             true
         );
         
+        // Charger TinyMCE depuis un CDN incluant les plugins nécessaires
+        wp_register_script(
+            'wp-bmc-tinymce',
+            'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js',
+            array(),
+            '6.8.3',
+            true
+        );
+
         // Charger le script du dashboard
         wp_enqueue_script(
             'wp-bmc-dashboard',
             WP_BMC_PLUGIN_URL . 'src/Public/Assets/js/dashboard.js',
-            array('jquery', 'wp-bmc-toast'),
+            array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce'),
             WP_BMC_VERSION,
             true
         );
@@ -487,7 +496,7 @@ class WP_BMC_Loader {
             wp_enqueue_script(
                 'wp-bmc-admin-dashboard',
                 WP_BMC_PLUGIN_URL . 'src/Admin/Assets/js/admin-dashboard.js',
-                array('jquery', 'wp-bmc-toast'),
+                array('jquery', 'wp-bmc-toast', 'wp-bmc-tinymce'),
                 WP_BMC_VERSION,
                 true
             );

@@ -117,19 +117,27 @@ jQuery(document).ready(function($) {
         
         Object.keys(canvasConfigs).forEach(sectionKey => {
             const editorId = 'placeholder_' + sectionKey;
-            
+
+            if (tinymce.get(editorId)) {
+                tinymce.get(editorId).remove();
+            }
+
             tinymce.init({
                 selector: '#' + editorId,
                 height: 200,
                 menubar: false,
                 plugins: 'lists link paste',
                 toolbar: 'undo redo | formatselect | bold italic | bullist numlist | removeformat',
+                promotion: false,
                 content_style: 'body { font-family: urbanist, sans-serif; font-size: 14px; }',
                 paste_as_text: true,
                 branding: false,
                 statusbar: false,
                 setup: function(editor) {
                     tinyMCEInstances[sectionKey] = editor;
+                    editor.on('init', function() {
+                        editor.setContent(canvasConfigs[sectionKey].placeholder || '');
+                    });
                 }
             });
         });

@@ -589,7 +589,7 @@ jQuery(document).ready(function ($) {
         "</div>" +
         "</div>" +
         '<div class="grading-field">' +
-        '<textarea id="comment" name="comment" rows="7" placeholder="Commentaires sur cette section..."></textarea>' +
+        '<textarea id="comment" name="comment" rows="7" placeholder="Commentaires sur cette section..." required></textarea>' +
         "</div>" +
         '<div class="grading-actions">' +
         '<button type="submit" class="wp-bmc-btn wp-bmc-btn-primary bmc-btn-solid">Enregistrer</button>' +
@@ -634,6 +634,13 @@ jQuery(document).ready(function ($) {
 
       var ratingValue = modal.find("#rating").val();
       var commentValue = modal.find("#comment").val();
+
+      if (!commentValue || commentValue.trim() === "") {
+        WP_BMC_Toast.error("Veuillez ajouter un commentaire avant d'enregistrer la note.");
+        modal.find("#comment").focus();
+        $submitBtn.prop("disabled", false).text(originalText);
+        return;
+      }
 
       var formData = {
         action: "wp_bmc_save_section_rating",

@@ -434,7 +434,7 @@ jQuery(document).ready(function($) {
             
             // Détruire l'éditeur WYSIWYG
             if (window.wysiwygEditor) {
-                window.wysiwygEditor.destroy();
+                window.wysiwygEditor.remove();
                 window.wysiwygEditor = null;
             }
         });
@@ -521,26 +521,26 @@ jQuery(document).ready(function($) {
     function initWysiwygEditor(content) {
         // Utiliser TinyMCE si disponible, sinon un éditeur simple
         if (typeof tinymce !== 'undefined') {
+            if (tinymce.get('wysiwyg-editor')) {
+                tinymce.get('wysiwyg-editor').remove();
+            }
+
             tinymce.init({
                 selector: '#wysiwyg-editor',
                 height: 300,
-                menubar: false,
-                plugins: [
-                    'advlist autolink lists link image charmap print preview anchor',
-                    'searchreplace visualblocks code fullscreen',
-                    'insertdatetime media table paste code help wordcount'
-                ],
+                menubar: true,
+                plugins: [ "image", "code", "table", "link", "media", "codesample"],
                 toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
-                // Forcer le collage en texte brut (Ctrl+V = Ctrl+Shift+V)
+                content_style: 'body { font-family: urbanist, sans-serif; font-size: 14px; }',
                 paste_as_text: true,
-                // Configurations supplémentaires pour le nettoyage
-                paste_retain_style_properties: '',
-                paste_remove_styles_if_webkit: true,
-                paste_strip_class_attributes: 'all',
+                promotion: false,
+                branding: false,
+                statusbar: false,
                 setup: function(editor) {
                     window.wysiwygEditor = editor;
-                    editor.setContent(content || '');
+                    editor.on('init', function() {
+                        editor.setContent(content || '');
+                    });
                 }
             });
         } else {
@@ -561,32 +561,32 @@ jQuery(document).ready(function($) {
             $('#wysiwyg-editor').html(simpleEditor);
             
             // Gérer les boutons de la toolbar
-            $('.toolbar-btn').on('click', function() {
-                var command = $(this).data('command');
-                document.execCommand(command, false, null);
-            });
+            // $('.toolbar-btn').on('click', function() {
+            //     var command = $(this).data('command');
+            //     document.execCommand(command, false, null);
+            // });
             
             // Gérer le collage pour supprimer la mise en forme (Ctrl+V = Ctrl+Shift+V)
-            $('.editor-content').on('paste', function(e) {
-                e.preventDefault();
+            // $('.editor-content').on('paste', function(e) {
+            //     e.preventDefault();
                 
-                // Récupérer le texte brut depuis le presse-papiers
-                var text = '';
-                if (e.originalEvent.clipboardData || e.originalEvent.clipboardData) {
-                    text = (e.originalEvent || e).clipboardData.getData('text/plain');
-                } else if (window.clipboardData) {
-                    text = window.clipboardData.getData('Text');
-                }
+            //     // Récupérer le texte brut depuis le presse-papiers
+            //     var text = '';
+            //     if (e.originalEvent.clipboardData || e.originalEvent.clipboardData) {
+            //         text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            //     } else if (window.clipboardData) {
+            //         text = window.clipboardData.getData('Text');
+            //     }
                 
-                // Insérer le texte brut
-                if (document.queryCommandSupported('insertText')) {
-                    document.execCommand('insertText', false, text);
-                } else {
-                    // Fallback pour les navigateurs plus anciens
-                    document.execCommand('paste', false, text);
-                }
+            //     // Insérer le texte brut
+            //     if (document.queryCommandSupported('insertText')) {
+            //         document.execCommand('insertText', false, text);
+            //     } else {
+            //         // Fallback pour les navigateurs plus anciens
+            //         document.execCommand('paste', false, text);
+            //     }
                 
-            });
+            // });
         }
     }
     
