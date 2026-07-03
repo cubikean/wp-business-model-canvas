@@ -1,0 +1,627 @@
+.wp-bmc-admin-users {
+  max-width: 100%;
+}
+
+/* Lien Pepitizy dans le tableau du dashboard */
+#users-table td.pepitizy-url {
+  text-align: center;
+  vertical-align: middle;
+}
+
+#users-table td.pepitizy-url .pepitizy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2196F3;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+#users-table td.pepitizy-url .pepitizy-link:hover {
+  background-color: #e3f2fd;
+  color: #1976D2;
+  text-decoration: none;
+}
+
+#users-table td.pepitizy-url .pepitizy-link i {
+  font-size: 12px;
+}
+
+#users-table td.pepitizy-url .no-pepitizy-id {
+  color: #999;
+  font-style: italic;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.stat-card h3 {
+  margin: 0 0 10px 0;
+  color: #0073aa;
+  font-size: 16px;
+}
+
+.stat-number {
+  font-size: 2em;
+  font-weight: bold;
+  color: #333;
+}
+
+.wp-bmc-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.wp-bmc-section h2 {
+  margin-top: 0;
+  color: #0073aa;
+  border-bottom: 2px solid #0073aa;
+  padding-bottom: 10px;
+}
+
+.wp-bmc-form {
+  max-width: 800px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.form-group small.description {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-style: italic;
+}
+
+.form-actions {
+  margin-top: 20px;
+}
+
+.users-controls {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.users-search {
+  flex: 1;
+}
+
+.users-filters {
+  flex: 0 0 200px;
+}
+
+table.fixed {
+  table-layout: inherit;
+}
+
+#users-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+#users-table thead th {
+  background: #f1f1f1;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #0073aa;
+  padding: 12px 8px;
+}
+
+#users-table thead th.sortable {
+  cursor: pointer;
+  position: relative;
+}
+
+#users-table thead th.sortable:hover {
+  background: #e9ecef;
+}
+
+#users-table thead th.sortable.asc::after {
+  content: " ▲";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#users-table thead th.sortable.desc::after {
+  content: " ▼";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#users-table tbody td {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+#users-table tbody td.user-name {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+#users-table tbody tr {
+  border-bottom: 1px solid #e1e1e1;
+}
+
+#users-table tbody tr:hover td {
+  background: #f9f9f9;
+}
+
+.user-custom-id {
+  font-family: monospace;
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.user-name strong {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.user-email a {
+  color: #0073aa;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.user-email a:hover {
+  text-decoration: underline;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.action-buttons .button {
+  padding: 4px 8px;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-buttons .button i {
+  font-size: 12px;
+}
+
+.users-pagination {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pagination-info {
+  color: #666;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .users-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .users-filters {
+    flex: none;
+  }
+
+  #users-table {
+    font-size: 14px;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+}
+
+/* Styles pour les statuts utilisateur */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-disabled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-actions {
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.status-actions .button {
+  margin: 0 2px;
+}
+
+/* Responsive pour les actions de statut */
+@media (max-width: 768px) {
+  .status-actions {
+    display: block;
+    margin-top: 5px;
+  }
+}
+
+/* ========================================
+   STYLES POUR LES SUPERVISEURS
+   ======================================== */
+
+/* Styles identiques au tableau des utilisateurs */
+#supervisors-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+#supervisors-table thead th {
+  background: #f1f1f1;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #0073aa;
+  padding: 12px 8px;
+}
+
+#supervisors-table thead th.sortable {
+  cursor: pointer;
+  position: relative;
+}
+
+#supervisors-table thead th.sortable:hover {
+  background: #e9ecef;
+}
+
+#supervisors-table thead th.sortable.asc::after {
+  content: " ▲";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#supervisors-table thead th.sortable.desc::after {
+  content: " ▼";
+  color: #0073aa;
+  position: absolute;
+  right: 8px;
+}
+
+#supervisors-table tbody td {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+#supervisors-table tbody tr {
+  border-bottom: 1px solid #e1e1e1;
+}
+
+#supervisors-table tbody tr:hover td {
+  background: #f9f9f9;
+}
+
+/* Typographie des superviseurs - identique aux utilisateurs */
+.supervisor-name strong {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.supervisor-email a {
+  color: #0073aa;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.supervisor-email a:hover {
+  text-decoration: underline;
+}
+
+/* Badge "Vous" pour le superviseur connecté */
+.current-user-badge {
+  display: inline-block;
+  background: #d4edda;
+  color: #155724;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #c3e6cb;
+}
+
+.current-user-badge i {
+  margin-right: 5px;
+}
+
+/* ========================================
+   STYLES POUR L'IMPORT CSV
+   ======================================== */
+
+.csv-import-container {
+  max-width: 800px;
+}
+
+.csv-upload-area {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.csv-upload-area input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.csv-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 2px dashed #0073aa;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.csv-upload-label:hover {
+  background: #e9ecef;
+  border-color: #005177;
+}
+
+.csv-upload-label i {
+  font-size: 48px;
+  color: #0073aa;
+  margin-bottom: 10px;
+}
+
+.csv-upload-label span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.csv-upload-label small {
+  font-size: 14px;
+  color: #666;
+}
+
+.csv-file-name {
+  margin-top: 10px;
+  padding: 10px;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.csv-info-box {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.csv-info-box h4 {
+  margin-top: 0;
+  color: #856404;
+}
+
+.csv-info-box ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.csv-info-box li {
+  margin-bottom: 8px;
+}
+
+.csv-info-box code {
+  background: #856404;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+/* Résultats de l'import */
+#csv-import-results {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#csv-import-results h3 {
+  margin-top: 0;
+  color: #0073aa;
+  border-bottom: 2px solid #0073aa;
+  padding-bottom: 10px;
+}
+
+.import-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.import-stats-grid > div {
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.stat-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.stat-success i {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.stat-skipped {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.stat-skipped i {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.stat-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.stat-error i {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.import-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.success-section {
+  background: #d4edda;
+  border-left: 4px solid #28a745;
+}
+
+.success-section h4 {
+  color: #155724;
+  margin-top: 0;
+}
+
+.success-section ul {
+  margin: 10px 0;
+  padding-left: 20px;
+  color: #155724;
+}
+
+.error-section {
+  background: #f8d7da;
+  border-left: 4px solid #dc3545;
+}
+
+.error-section h4 {
+  color: #721c24;
+  margin-top: 0;
+}
+
+.error-section ul {
+  margin: 10px 0;
+  padding-left: 20px;
+  color: #721c24;
+}
+
+.access-allowed,
+.action-buttons .button.access-allowed {
+  background: #d4edda;
+  color: #155724;
+  padding: 4px 14px;
+  border-radius: 99px;
+  line-height: 1.2;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.access-blocked,
+.action-buttons .button.access-blocked {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 4px 14px;
+  border-radius: 99px;
+  line-height: 1.2;
+  font-weight: 600;
+  gap: 6px;
+}
+
+/* Responsive pour l'import CSV */
+@media (max-width: 768px) {
+  .import-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .csv-upload-label {
+    padding: 30px 20px;
+  }
+
+  .csv-upload-label i {
+    font-size: 36px;
+  }
+}

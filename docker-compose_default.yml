@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "8000:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      # Configuration SMTP pour MailHog
+      WORDPRESS_SMTP_HOST: mailhog
+      WORDPRESS_SMTP_PORT: 1025
+      WORDPRESS_SMTP_USER: ""
+      WORDPRESS_SMTP_PASS: ""
+    volumes:
+      - ./wordpress:/var/www/html
+    depends_on:
+      - db
+      - mailhog
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  # Service MailHog pour capturer et afficher les emails
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - "1025:1025"  # Port SMTP
+      - "8025:8025"  # Interface web MailHog
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /maildir
+      MH_SMTP_BIND_ADDR: 0.0.0.0:1025
+      MH_UI_BIND_ADDR: 0.0.0.0:8025
+    volumes:
+      - mailhog_data:/maildir
+
+volumes:
+  db_data:
+  mailhog_data:

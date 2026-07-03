@@ -1,0 +1,850 @@
+/* ========================================
+   DASHBOARD ADMIN - STYLES MODERNES
+   ======================================== */
+
+/* Variables CSS pour les couleurs de notation */
+
+
+/* ========================================
+   CONTAINER PRINCIPAL
+   ======================================== */
+
+.wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: var(--font-family);
+}
+
+body:not(.wp-admin) .wrap h1 {
+    color: white;
+    font-size: 1.8em;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+/* ========================================
+   TABLEAU ADMIN MODERNE
+   ======================================== */
+
+.wp-bmc-all-users {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.wp-bmc-all-users h2 {
+    background: var(--dashboard-primary);
+    color: white;
+    margin: 0;
+    padding: 20px 25px;
+    font-size: 1.2em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Contrôles utilisateurs */
+.wp-bmc-users-controls {
+    padding: 20px 25px;
+    background: var(--dashboard-light-grey);
+    border-bottom: 1px solid var(--dashboard-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.users-search input {
+    padding: 12px 16px;
+    border: 1px solid #E1E1E1;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.users-search input:focus {
+    outline: none;
+    border-color: var(--dashboard-primary);
+    box-shadow: 0 0 0 3px rgba(255, 75, 107, 0.1);
+}
+
+.users-filters select {
+    padding: 12px 16px;
+    border: 1px solid #E1E1E1;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    min-width: 180px;
+    transition: all 0.3s ease;
+}
+
+.users-filters select:focus {
+    outline: none;
+    border-color: var(--dashboard-primary);
+    box-shadow: 0 0 0 3px rgba(255, 75, 107, 0.1);
+}
+
+/* ========================================
+   TABLEAU PRINCIPAL
+   ======================================== */
+
+#users-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    background: white;
+}
+
+/* Header du tableau */
+#users-table thead th {
+    background: var(--dashboard-primary);
+    color: white;
+    padding: 18px 20px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    position: relative;
+}
+
+#users-table thead th:first-child {
+    border-top-left-radius: 0;
+}
+
+#users-table thead th:last-child {
+    border-top-right-radius: 0;
+}
+
+#users-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+}
+
+#users-table thead th.sortable:hover {
+    background: #e63946;
+}
+
+#users-table thead th.sortable.asc::after {
+    content: ' ↑';
+    color: white;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+#users-table thead th.sortable.desc::after {
+    content: ' ↓';
+    color: white;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* Corps du tableau */
+#users-table tbody td {
+    padding: 20px;
+    border-bottom: 1px solid var(--dashboard-border);
+    vertical-align: middle;
+    background: var(--dashboard-light-grey);
+    transition: background-color 0.3s ease;
+}
+
+#users-table tbody tr:hover td {
+    background: #f1f3f4;
+}
+
+#users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#users-table tbody td .users-list{
+    font-size: 16px;
+    font-weight: 500;
+
+}
+
+#users-table tbody td .users-list span{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 12px;
+    background: rgb(47, 82, 160, .2);
+    border-radius: 99px;
+    width: fit-content;
+    color: var(--dashboard-dark-blue);
+    line-height: 1.2;
+}
+#users-table tbody td .users-list .user-badge:not(:last-child){
+    margin-bottom: 4px;
+}
+
+/* ========================================
+   COLONNES SPÉCIFIQUES
+   ======================================== */
+
+/* Colonne Prénom/Nom avec avatar */
+.user-name {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--dashboard-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+/* Colonne Email */
+.user-email a {
+    color: var(--dashboard-text-light);
+    text-decoration: none;
+    font-size: 18px;
+    transition: color 0.3s ease;
+}
+
+.user-email a:hover {
+    color: var(--dashboard-primary);
+}
+
+/* Colonne Nom du projet */
+.user-project-name {
+    color: var(--dashboard-text);
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.project-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.project-title {
+    font-weight: 500;
+    color: var(--dashboard-text);
+    font-size: 20px;
+}
+
+.project-title .no-project{
+    color: var(--dashboard-text-light);
+    font-size: 14px;
+    font-style: italic;
+}
+
+.project-description {
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+    line-height: 1.3;
+    max-width: 70%;
+    overflow: hidden;
+    line-clamp: 3;
+}
+
+/* ========================================
+   BADGES DE STATUT
+   ======================================== */
+
+.grading-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    border: none;
+    line-height: 1;
+}
+
+.grading-status.no-requests {
+    background: var(--dashboard-light-green);
+    color: var(--dashboard-green);
+}
+
+.grading-status.pending {
+    background: var(--dashboard-light-pink);
+    color: var(--dashboard-primary);
+}
+
+.grading-status.graded {
+    background: var(--dashboard-light-green);
+    color: var(--dashboard-green);
+}
+
+.grading-status.other {
+    background: var(--dashboard-light-orange);
+    color: var(--dashboard-orange);
+}
+
+.grading-status i {
+    font-size: 18px;
+}
+
+.grading-status p{
+    margin: 0;
+    text-box: trim-both cap alphabetic;
+}
+
+.request-count {
+    font-size: 14px;
+    line-height: 1;
+    text-box: trim-both cap alphabetic;
+
+}
+
+.grading-date {
+    font-size: 11px;
+    color: var(--dashboard-text-light);
+    margin-top: 6px;
+    font-style: italic;
+    line-height: 1;
+}
+
+/* ========================================
+   BARRES DE PROGRESSION
+   ======================================== */
+
+.advancement-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 200px;
+}
+
+.advancement-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rating-value {
+    color: var(--dashboard-text);
+    font-weight: 400;
+    font-size: 18px;
+    min-width: 40px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 16px;
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--dashboard-border);
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.3s ease-in-out;
+    position: relative;
+}
+
+/* Couleurs des barres de progression */
+.progress-bar.red-rating{
+    background-color: var(--admin-red_light-rating);
+}
+    .progress-bar.orange-rating{
+    background-color: var(--admin-orange_light-rating);
+}
+.progress-bar.blue-rating{
+    background-color: var(--admin-blue_light-rating);
+}
+.progress-bar.green-rating{
+    background-color: var(--admin-green_light-rating);
+}
+
+.progress-bar.red-rating .progress-fill {
+    background: var(--dashboard-primary);
+}
+
+.progress-bar.orange-rating .progress-fill {
+    background: var(--dashboard-orange);
+}
+
+.progress-bar.blue-rating .progress-fill {
+    background: var(--dashboard-blue);
+}
+
+.progress-bar.green-rating .progress-fill {
+    background: var(--dashboard-green);
+}
+
+/* Bouton d'action */
+.action-button {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--dashboard-light-grey);
+    border: 2px solid var(--dashboard-border);
+    color: var(--dashboard-text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.action-button:hover {
+    background: var(--dashboard-primary);
+    color: white;
+    border-color: var(--dashboard-primary);
+}
+
+/* ========================================
+   ACTIONS UTILISATEURS
+   ======================================== */
+
+.user-actions {
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-buttons .button {
+    padding: 12px;
+    border-radius: 99px;
+    font-size: 26px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.action-buttons .button-primary {
+    background: rgb(47, 82, 160, .2);
+    color: var(--dashboard-dark-blue);
+}
+
+.action-buttons .button-primary:hover {
+    background: var(--dashboard-dark-blue);
+    color: white;
+}
+
+/* ========================================
+   PAGINATION
+   ======================================== */
+
+.wp-bmc-users-pagination {
+    padding: 20px 25px;
+    background: var(--dashboard-light-grey);
+    border-top: 1px solid var(--dashboard-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pagination-info {
+    color: var(--dashboard-text-light);
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .wrap {
+        padding: 15px;
+    }
+    
+    #users-table thead th,
+    #users-table tbody td {
+        padding: 15px 12px;
+    }
+    
+    .advancement-container {
+        min-width: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wp-bmc-users-controls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .users-search input {
+        width: 100%;
+    }
+    
+    .users-filters select {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    #users-table {
+        font-size: 18px;
+    }
+    
+    #users-table thead th,
+    #users-table tbody td {
+        padding: 12px 8px;
+    }
+    
+    .user-name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .advancement-container {
+        flex-direction: column;
+        gap: 8px;
+        min-width: 120px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    #users-table thead th:nth-child(3),
+    #users-table tbody td:nth-child(3) {
+        display: none;
+    }
+    
+    #users-table thead th:nth-child(4),
+    #users-table tbody td:nth-child(4) {
+        display: none;
+    }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wp-bmc-all-users {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+#users-table tbody tr {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Animation pour les boutons */
+.action-button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ========================================
+   NOTIFICATIONS ET DEMANDES DE NOTATION
+   ======================================== */
+
+.wp-bmc-notifications-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.grading-requests-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.grading-requests-header {
+    background: var(--dashboard-orange);
+    color: white;
+    padding: 20px 25px;
+}
+
+.grading-requests-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.grading-count {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 99px;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+}
+
+.grading-requests-list {
+    padding: 0;
+}
+
+.grading-request-item {
+    display: flex;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.grading-request-item:last-child {
+    border-bottom: none;
+}
+
+.grading-request-item:hover {
+    background: var(--dashboard-light-grey);
+}
+
+.request-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.request-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.request-user {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dashboard-text);
+    margin-bottom: 5px;
+}
+
+.request-details {
+    font-size: 18px;
+    color: var(--dashboard-text-light);
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.section-name {
+    background: #fff3cd;
+    color: #856404;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.project-name {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.request-meta {
+    font-size: 13px;
+    color: #888;
+}
+
+.request-date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.request-actions {
+    flex-shrink: 0;
+}
+
+.request-actions .button {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.request-actions .grade-section-btn {
+    background: var(--dashboard-orange);
+    border: none;
+    color: white;
+    border: 1px solid var(--dashboard-orange);
+    padding: 6px 16px;
+}
+
+.request-actions .grade-section-btn:hover {
+    background: transparent;
+    color: var(--dashboard-orange);
+    border-color: var(--dashboard-orange);
+    box-shadow: 0 4px 8px rgba(21, 60, 168, 0.3);
+}
+
+/* ========================================
+   STYLES POUR LES GROUPES D'ÉTUDIANTS
+   ======================================== */
+
+/* Statut de groupe */
+.group-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.group-status.managed-student {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.group-status.not-managed {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.group-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-left: 8px;
+}
+
+.group-badge.my-student-badge {
+    background: #007cba;
+    color: white;
+    border: 1px solid #005a87;
+}
+
+.action-disabled {
+    padding: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    border-radius: 99px;
+    cursor: not-allowed;
+    font-size: 14px;
+}
+
+.group-status i {
+    font-size: 14px;
+}
+
+/* Boutons d'action pour les groupes */
+.add-student-btn,
+.remove-student-btn {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-student-btn {
+    background: var(--dashboard-primary);
+    border: 1px solid var(--dashboard-primary);
+    color: white;
+}
+
+.add-student-btn:hover {
+    background: var(--dashboard-dark-blue);
+    border-color: var(--dashboard-dark-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.remove-student-btn {
+    background: var(--dashboard-primary);
+    border: 1px solid var(--dashboard-primary);
+    color: white;
+}   
+
+.remove-student-btn:hover {
+    background: var(--dashboard-primary);
+    border-color: var(--dashboard-primary);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Filtre par groupe */
+#users-filter-group {
+    margin-right: 10px;
+}
+
+/* Animation pour les changements de statut */
+.group-status {
+    transition: all 0.3s ease;
+}
+
+.user-group {
+    min-width: 120px;
+}
+
+.pepitizy-link {
+    padding: 4px 14px;
+    border-radius: 99px;
+    background: var(--blue-color);
+    font-size: 16px;
+    color: white;
+    &:hover{
+        color: white;
+    }
+}

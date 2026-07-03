@@ -1,0 +1,313 @@
+/* Styles pour le shortcode menu utilisateur WP Business Model Canvas */
+
+.wp-bmc-user-menu-shortcode {
+    position: relative;
+    display: inline-block;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-avatar {
+    border-radius: 99px;
+    background-color: #62aadd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: none;
+    padding: 0 16px 0 12px;
+    position: relative;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-initials {
+    color: white;
+    font-weight: bold;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-grading-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: var(--admin-red-rating);
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: bold;
+    padding: 0 6px;
+    z-index: 10;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-header {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-header.pb-0 {
+    padding-bottom: 0;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-avatar {
+    border-radius: 50%;
+    background-color: #62aadd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-initials {
+    color: white;
+    font-weight: bold;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-name {
+    line-height: 1.2;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2f52a0;
+    margin-bottom: 4px;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-email {
+    font-size: 14px;
+    line-height: 1.2;
+    color: #666666;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-separator {
+    height: 1px;
+    background-color: #ecf0f1;
+    margin: 0 20px;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-actions {
+    padding: 8px 0;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-action {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+    color: #2f52a0;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-action:hover {
+    background-color: #f8f9fa;
+}
+
+.wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown-action i {
+    width: 16px;
+    text-align: center;
+    color: #62aadd;
+}
+
+/* Styles selon la position */
+.wp-bmc-position-right .wp-bmc-user-dropdown {
+    top: 50px;
+    right: 0;
+    min-width: 280px;
+}
+
+.wp-bmc-position-left .wp-bmc-user-dropdown {
+    top: 50px;
+    left: 0;
+    min-width: 280px;
+}
+
+.wp-bmc-position-center .wp-bmc-user-dropdown {
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    min-width: 280px;
+}
+
+.wp-bmc-position-center .wp-bmc-user-dropdown.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Styles selon la taille */
+.wp-bmc-size-small .wp-bmc-user-avatar {
+    width: 30px;
+    height: 30px;
+}
+
+.wp-bmc-size-small .wp-bmc-user-initials {
+    font-size: 12px;
+}
+
+.wp-bmc-size-small .wp-bmc-user-dropdown {
+    min-width: 240px;
+}
+
+.wp-bmc-size-small .wp-bmc-user-dropdown-header {
+    padding: 15px;
+}
+
+.wp-bmc-size-small .wp-bmc-user-dropdown-avatar {
+    width: 35px;
+    height: 35px;
+}
+
+.wp-bmc-size-small .wp-bmc-user-dropdown-initials {
+    font-size: 14px;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-avatar {
+    height: 42px;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-initials {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-dropdown {
+    min-width: 280px;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-dropdown-header {
+    padding: 20px;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-dropdown-avatar {
+    width: 45px;
+    height: 45px;
+}
+
+.wp-bmc-size-medium .wp-bmc-user-dropdown-initials {
+    font-size: 16px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-avatar {
+    width: 50px;
+    height: 50px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-initials {
+    font-size: 16px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-dropdown {
+    min-width: 320px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-dropdown-header {
+    padding: 25px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-dropdown-avatar {
+    width: 55px;
+    height: 55px;
+}
+
+.wp-bmc-size-large .wp-bmc-user-dropdown-initials {
+    font-size: 18px;
+}
+
+/* Styles selon le style */
+.wp-bmc-style-compact .wp-bmc-user-dropdown-header {
+    padding: 15px;
+}
+
+.wp-bmc-style-compact .wp-bmc-user-dropdown-action {
+    padding: 8px 15px;
+    font-size: 13px;
+}
+
+.wp-bmc-style-minimal .wp-bmc-user-dropdown-header {
+    padding: 10px 15px;
+}
+
+.wp-bmc-style-minimal .wp-bmc-user-dropdown-action {
+    padding: 6px 15px;
+    font-size: 12px;
+}
+
+.wp-bmc-style-minimal .wp-bmc-user-dropdown-separator {
+    margin: 0 15px;
+}
+
+/* Styles pour utilisateur non connecté */
+.wp-bmc-not-logged-in .wp-bmc-user-dropdown-name {
+    color: #2f52a0;
+}
+
+.wp-bmc-not-logged-in .wp-bmc-user-dropdown-email {
+    color: #999999;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown {
+        min-width: 260px;
+    }
+    
+    .wp-bmc-position-right .wp-bmc-user-dropdown {
+        right: -20px;
+    }
+    
+    .wp-bmc-position-left .wp-bmc-user-dropdown {
+        left: -20px;
+    }
+    .wp-bmc-size-medium .wp-bmc-user-initials{
+        display: none;
+    }
+    .wp-bmc-user-menu-shortcode .wp-bmc-user-avatar{
+        padding: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wp-bmc-user-menu-shortcode .wp-bmc-user-dropdown {
+        min-width: 240px;
+    }
+    
+    .wp-bmc-position-right .wp-bmc-user-dropdown {
+        right: -40px;
+    }
+    
+    .wp-bmc-position-left .wp-bmc-user-dropdown {
+        left: -40px;
+    }
+}

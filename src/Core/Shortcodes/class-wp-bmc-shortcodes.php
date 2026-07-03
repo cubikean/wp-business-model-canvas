@@ -1,0 +1,311 @@
+<?php
+
+/**
+ * Classe des shortcodes pour WP Business Model Canvas
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class WP_BMC_Shortcodes
+{
+
+    /**
+     * Constructeur
+     */
+    public function __construct()
+    {
+        add_shortcode('wp_bmc_login', array($this, 'login_form'));
+        add_shortcode('wp_bmc_dashboard', array($this, 'dashboard'));
+        add_shortcode('wp_bmc_canvas', array($this, 'canvas'));
+        add_shortcode('wp_bmc_change_password', array($this, 'change_password'));
+        add_shortcode('wp_bmc_user_menu', array($this, 'user_menu'));
+    }
+
+    /**
+     * Formulaire de connexion
+     */
+    public function login_form()
+    {
+        if (WP_BMC_Auth::is_logged_in()) {
+            return '<script>window.location.href = "' . home_url('/dashboard/') . '";</script>';
+        }
+
+        return WP_BMC_Template_Loader::get_template_content('public/login-form');
+    }
+
+
+    /**
+     * Tableau de bord
+     */
+    public function dashboard()
+    {
+        WP_BMC_Auth::require_login();
+
+        // Si c'est un administrateur WordPress, utiliser le template admin
+        if (current_user_can('manage_options')) {
+            return WP_BMC_Template_Loader::get_template_content('admin/dashboard');
+        }
+
+        return WP_BMC_Template_Loader::get_template_content('public/dashboard');
+    }
+
+    /**
+     * Canvas Business Model
+     */
+    public function canvas()
+    {
+        WP_BMC_Auth::require_login();
+
+        // Vérifier si c'est une vue admin
+        $admin_view = isset($_GET['admin_view']) && $_GET['admin_view'] === 'true';
+
+        // Si c'est une vue admin et que l'utilisateur est admin, utiliser le template admin
+        if ($admin_view && current_user_can('manage_options')) {
+            return WP_BMC_Template_Loader::get_template_content('admin/canvas');
+        }
+
+        // Sinon, rediriger vers le dashboard avec les paramètres appropriés
+        $project_id = isset($_GET['project_id']) ? intval($_GET['project_id']) : null;
+        $view = isset($_GET['view']) ? sanitize_text_field($_GET['view']) : 'global';
+
+        if ($project_id) {
+            $redirect_url = add_query_arg(array(
+                'project_id' => $project_id,
+                'view' => $view
+            ), home_url('/dashboard/'));
+        } else {
+            $redirect_url = add_query_arg('view', $view, home_url('/dashboard/'));
+        }
+
+        wp_redirect($redirect_url);
+        exit;
+    }
+
+    /**
+     * Menu utilisateur pour intégration dans le thème
+     */
+    public function user_menu($atts)
+    {
+        // Paramètres par défaut
+        $atts = shortcode_atts(array(
+            'style' => 'default', // default, compact, minimal
+            'position' => 'right', // left, right, center
+            'show_name' => 'true', // true, false
+            'show_email' => 'true', // true, false
+            'size' => 'medium' // small, medium, large
+        ), $atts);
+
+        // Si l'utilisateur n'est pas connecté, afficher le menu avec option de connexion
+        if (!WP_BMC_Auth::is_logged_in()) {
+            $unique_id = 'wp-bmc-user-menu-' . uniqid();
+            $classes = array('wp-bmc-user-menu-shortcode', 'wp-bmc-not-logged-in');
+            $classes[] = 'wp-bmc-style-' . sanitize_html_class($atts['style']);
+            $classes[] = 'wp-bmc-position-' . sanitize_html_class($atts['position']);
+            $classes[] = 'wp-bmc-size-' . sanitize_html_class($atts['size']);
+
+            ob_start();
+?>
+            <div class="<?php echo esc_attr(implode(' ', $classes)); ?>" id="<?php echo esc_attr($unique_id); ?>">
+                <div class="wp-bmc-user-avatar">
+                    <svg class="wp-bmc-user-avatar-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                        <path fill="white" d="M12 12q-1.65 0-2.825-1.175T8 8t1.175-2.825T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m-8 8v-2.8q0-.85.438-1.562T5.6 14.55q1.55-.775 3.15-1.162T12 13t3.25.388t3.15 1.162q.725.375 1.163 1.088T20 17.2V20z" />
+                    </svg>
+                    <span class="wp-bmc-user-initials">
+                        Compte étudiant
+                    </span>
+                </div>
+
+                <!-- Menu déroulant -->
+                <div class="wp-bmc-user-dropdown">
+                    <div class="wp-bmc-user-dropdown-separator"></div>
+
+                    <div class="wp-bmc-user-dropdown-header pb-0">
+                        <div class="wp-bmc-user-dropdown-info">
+                            <div class="wp-bmc-user-dropdown-name">Passeport</div>
+                        </div>
+                    </div>
+
+                    <div class="wp-bmc-user-dropdown-actions">
+                        <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-ressources-btn">
+                            <i class="fas fa-folder"></i>
+                            <span>Ressources pédagogiques</span>
+                        </button>
+                        <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-emergence-btn">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Sprints émergence</span>
+                        </button>
+                        <a href="<?php echo home_url('/login/'); ?>" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-login-btn">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Se connecter</span>
+                        </a>
+                    </div>
+
+                    <div class="wp-bmc-user-dropdown-separator"></div>
+
+                    <div class="wp-bmc-user-dropdown-header pb-0">
+                        <div class="wp-bmc-user-dropdown-info">
+                            <div class="wp-bmc-user-dropdown-name">Pepitizy</div>
+                        </div>
+                    </div>
+
+
+                    <div class="wp-bmc-user-dropdown-actions">
+                        <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/account" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-dashboard-btn">
+                            <i class="fas fa-home"></i>
+                            <span>Tableau de bord</span>
+                        </a>
+                        <?php if ($pepitizy_id): ?>
+                            <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/admin/projects/<?php echo esc_attr($pepitizy_id); ?>/reports/list" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-rapports-btn">
+                                <i class="fas fa-file"></i>
+                                <span>Rapports</span>
+                            </a>
+                        <?php else: ?>
+                            <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/account/reports" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-rapports-btn">
+                                <i class="fas fa-file"></i>
+                                <span>Rapports</span>
+                            </a>
+                        <?php endif; ?>
+                        <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/positionnement" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-competences-btn">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Compétences</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php
+            return ob_get_clean();
+        }
+
+        $user_menu_data = WP_BMC_Auth::get_user_menu_data();
+        if (!$user_menu_data) {
+            return '';
+        }
+
+        // Récupérer l'ID Pepitizy du projet de l'utilisateur
+        $current_user = WP_BMC_Auth::get_current_user();
+        $pepitizy_id = null;
+        if ($current_user) {
+            $pepitizy_id = WP_BMC_Database::get_user_project_pepitizy_id($current_user->user_id);
+        }
+
+        // Générer un ID unique pour éviter les conflits
+        $unique_id = 'wp-bmc-user-menu-' . uniqid();
+
+        // Classes CSS selon les paramètres
+        $classes = array('wp-bmc-user-menu-shortcode');
+        $classes[] = 'wp-bmc-style-' . sanitize_html_class($atts['style']);
+        $classes[] = 'wp-bmc-position-' . sanitize_html_class($atts['position']);
+        $classes[] = 'wp-bmc-size-' . sanitize_html_class($atts['size']);
+
+        if ($atts['show_name'] === 'false') {
+            $classes[] = 'wp-bmc-hide-name';
+        }
+        if ($atts['show_email'] === 'false') {
+            $classes[] = 'wp-bmc-hide-email';
+        }
+
+        ob_start();
+        ?>
+        <div class="<?php echo esc_attr(implode(' ', $classes)); ?>" id="<?php echo esc_attr($unique_id); ?>">
+            <div class="wp-bmc-user-avatar">
+                <svg class="wp-bmc-user-avatar-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                    <path fill="white" d="M12 12q-1.65 0-2.825-1.175T8 8t1.175-2.825T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m-8 8v-2.8q0-.85.438-1.562T5.6 14.55q1.55-.775 3.15-1.162T12 13t3.25.388t3.15 1.162q.725.375 1.163 1.088T20 17.2V20z" />
+                </svg>
+                <span class="wp-bmc-user-initials">
+                    <?php echo WP_BMC_Auth::get_current_user()->is_admin ? 'Compte accompagnateur' : 'Compte étudiant'; ?>
+                </span>
+                <?php if (WP_BMC_Auth::get_current_user()->is_admin || current_user_can('manage_options')): ?>
+                    <span class="wp-bmc-grading-badge" id="wp-bmc-grading-badge-<?php echo esc_attr($unique_id); ?>" style="display: none;">0</span>
+                <?php endif; ?>
+            </div>
+
+            <!-- Menu déroulant -->
+            <div class="wp-bmc-user-dropdown">
+                <div class="wp-bmc-user-dropdown-header">
+                    <div class="wp-bmc-user-dropdown-avatar">
+                        <span class="wp-bmc-user-dropdown-initials"><?php echo esc_html($user_menu_data['initials']); ?></span>
+                    </div>
+                    <div class="wp-bmc-user-dropdown-info">
+                        <?php if ($atts['show_name'] !== 'false'): ?>
+                            <div class="wp-bmc-user-dropdown-name"><?php echo esc_html($user_menu_data['full_name']); ?></div>
+                        <?php endif; ?>
+                        <?php if ($atts['show_email'] !== 'false'): ?>
+                            <div class="wp-bmc-user-dropdown-email"><?php echo esc_html($user_menu_data['email']); ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="wp-bmc-user-dropdown-separator"></div>
+
+                <div class="wp-bmc-user-dropdown-header pb-0">
+                    <div class="wp-bmc-user-dropdown-info">
+                        <div class="wp-bmc-user-dropdown-name">Passeport</div>
+                    </div>
+                </div>
+
+                <div class="wp-bmc-user-dropdown-actions">
+                    <a href="<?php echo home_url('/dashboard/'); ?>" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-dashboard-btn">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-change-password">
+                        <i class="fas fa-key"></i>
+                        <span>Changer de mot de passe</span>
+                    </button>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-ressources-btn">
+                        <i class="fas fa-folder"></i>
+                        <span>Ressources pédagogiques</span>
+                    </button>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-emergence-btn">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Sprints émergence</span>
+                    </button>
+                    <button class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Se déconnecter</span>
+                    </button>
+                </div>
+
+                <div class="wp-bmc-user-dropdown-separator"></div>
+
+                <div class="wp-bmc-user-dropdown-header pb-0">
+                    <div class="wp-bmc-user-dropdown-info">
+                        <div class="wp-bmc-user-dropdown-name">Pepitizy</div>
+                    </div>
+                </div>
+
+                <div class="wp-bmc-user-dropdown-actions">
+                    <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/account" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-dashboard-btn">
+                        <i class="fas fa-home"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                    <?php if ($pepitizy_id): ?>
+                        <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/admin/projects/<?php echo esc_attr($pepitizy_id); ?>/reports/list" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-rapports-btn">
+                            <i class="fas fa-file"></i>
+                            <span>Rapports</span>
+                        </a>
+                    <?php else: ?>
+                        <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/account/reports" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-rapports-btn">
+                            <i class="fas fa-file"></i>
+                            <span>Rapports</span>
+                        </a>
+                    <?php endif; ?>
+                    <a target="_blank" href="https://pepite-eca.pepitizy.fr/fr/positionnement" class="wp-bmc-user-dropdown-action" id="<?php echo esc_attr($unique_id); ?>-pepitizy-competences-btn">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Compétences</span>
+                    </a>
+                </div>
+
+
+            </div>
+        </div>
+<?php
+
+        return ob_get_clean();
+    }
+}
+
+// Initialiser les shortcodes
+new WP_BMC_Shortcodes();

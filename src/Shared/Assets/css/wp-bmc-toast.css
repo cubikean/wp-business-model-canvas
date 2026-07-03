@@ -1,0 +1,231 @@
+/**
+ * Styles pour le système de Toast WP Business Model Canvas
+ */
+
+/* Conteneur principal */
+.wp-bmc-toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99999;
+    pointer-events: none;
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Toast individuel */
+.wp-bmc-toast {
+    position: relative;
+    background: var(--white, #ffffff);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 12px;
+    overflow: hidden;
+    pointer-events: auto;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid;
+    max-width: 100%;
+    min-width: 300px;
+}
+
+/* États d'animation */
+.wp-bmc-toast-show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.wp-bmc-toast-hide {
+    transform: translateX(100%);
+    opacity: 0;
+    margin-bottom: 0;
+    max-height: 0;
+}
+
+/* Types de toast */
+.wp-bmc-toast-success {
+    border-left-color: var(--dashboard-green, #86c171);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-green_light-rating);
+    }
+}
+
+.wp-bmc-toast-error {
+    border-left-color: var(--dashboard-primary, #ff4b6b);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-red_light-rating);
+    }
+}
+
+.wp-bmc-toast-warning {
+    border-left-color: var(--dashboard-orange, #f18949);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-orange_light-rating);
+    }
+}
+
+.wp-bmc-toast-info {
+    border-left-color: var(--dashboard-blue, #62aadd);
+    .wp-bmc-toast-content{
+        background-color: var(--admin-blue_light-rating);
+    }
+}
+
+/* Contenu du toast */
+.wp-bmc-toast-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+}
+
+.wp-bmc-toast-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.wp-bmc-toast-success .wp-bmc-toast-icon {
+    color: var(--dashboard-green, #86c171);
+}
+
+.wp-bmc-toast-error .wp-bmc-toast-icon {
+    color: var(--dashboard-primary, #ff4b6b);
+}
+
+.wp-bmc-toast-warning .wp-bmc-toast-icon {
+    color: var(--dashboard-orange, #f18949);
+}
+
+.wp-bmc-toast-info .wp-bmc-toast-icon {
+    color: var(--dashboard-blue, #62aadd);
+}
+
+.wp-bmc-toast-message {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 600;
+    color: var(--dashboard-text, #2f52a0);
+    word-wrap: break-word;
+}
+
+.wp-bmc-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--dashboard-text-light, #666666);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i{
+        font-size: 16px;
+        color: var(--dashboard-text, #2f52a0);
+    }
+}
+
+.wp-bmc-toast-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--dashboard-text, #2f52a0);
+}
+
+/* Barre de progression */
+.wp-bmc-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: currentColor;
+    opacity: 0.3;
+    animation: toast-progress linear forwards;
+    transform-origin: left;
+}
+
+.wp-bmc-toast-success .wp-bmc-toast-progress {
+    color: var(--dashboard-green, #86c171);
+}
+
+.wp-bmc-toast-error .wp-bmc-toast-progress {
+    color: var(--dashboard-primary, #ff4b6b);
+}
+
+.wp-bmc-toast-warning .wp-bmc-toast-progress {
+    color: var(--dashboard-orange, #f18949);
+}
+
+.wp-bmc-toast-info .wp-bmc-toast-progress {
+    color: var(--dashboard-blue, #62aadd);
+}
+
+@keyframes toast-progress {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wp-bmc-toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .wp-bmc-toast {
+        min-width: auto;
+        margin-bottom: 8px;
+    }
+
+    .wp-bmc-toast-content {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .wp-bmc-toast-message {
+        font-size: 13px;
+    }
+}
+
+/* Animation pour les toasts multiples */
+.wp-bmc-toast:nth-child(1) { animation-delay: 0ms; }
+.wp-bmc-toast:nth-child(2) { animation-delay: 100ms; }
+.wp-bmc-toast:nth-child(3) { animation-delay: 200ms; }
+.wp-bmc-toast:nth-child(4) { animation-delay: 300ms; }
+.wp-bmc-toast:nth-child(5) { animation-delay: 400ms; }
+
+/* Thème sombre (optionnel) */
+@media (prefers-color-scheme: dark) {
+    .wp-bmc-toast {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+
+    .wp-bmc-toast-message {
+        color: #e2e8f0;
+    }
+
+    .wp-bmc-toast-close {
+        color: #a0aec0;
+    }
+
+    .wp-bmc-toast-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+    }
+}

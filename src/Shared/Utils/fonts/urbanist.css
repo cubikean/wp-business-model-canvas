@@ -1,0 +1,60 @@
+/* ========================================
+   POLICE URBANIST - DÉFINITIONS
+   ======================================== */
+
+@font-face {
+    font-family: 'Urbanist';
+    src: url('Urbanist-var.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ========================================
+   VARIABLES CSS POUR LES POLICES
+   ======================================== */
+
+:root {
+    --font-primary: 'Urbanist', sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+}
+
+/* ========================================
+   APPLICATION GLOBALE DE LA POLICE
+   ======================================== */
+
+body,
+.wrap,
+.wp-bmc-all-users,
+.wp-bmc-notifications-section,
+.grading-requests-section {
+    font-family: var(--font-primary);
+}
+
+/* ========================================
+   CLASSES UTILITAIRES POUR LES POLICES
+   ======================================== */
+
+.font-normal {
+    font-weight: var(--font-weight-normal);
+}
+
+.font-medium {
+    font-weight: var(--font-weight-medium);
+}
+
+.font-semibold {
+    font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+    font-weight: var(--font-weight-bold);
+}
+
+.font-extrabold {
+    font-weight: var(--font-weight-extrabold);
+}
